@@ -2,18 +2,19 @@
   <div v-show="chooseEmoji" class="emoji-wrapper">
     <span
       class="emoji-item"
-      v-for="(value, key, index) of emojiList"
+      v-for="(value, index) in emojiList"
       :key="index"
-      @click="addEmoji(key)"
+      @click="addEmoji(value)"
     >
-      <v-img
+      <!-- <v-img
         :lazy-src="value"
         :src="value"
         :title="key"
         class="emoji"
         width="24"
         height="24"
-      />
+      /> -->
+      <p class="emoji" width="16" height="16">{{ value }}</p>
     </span>
   </div>
 </template>
@@ -32,8 +33,8 @@ export default {
     };
   },
   methods: {
-    addEmoji(key) {
-      this.$emit("addEmoji", key);
+    addEmoji(value) {
+      this.$emit("addEmoji", value);
     }
   }
 };
@@ -42,13 +43,14 @@ export default {
 <style scoped>
 .emoji {
   user-select: none;
-  margin: 0.25rem;
+  margin: 0.1rem;
   display: inline-block;
   vertical-align: middle;
 }
 .emoji-item {
   cursor: pointer;
   display: inline-block;
+  height: 25px;
 }
 .emoji-item:hover {
   transition: all 0.2s;

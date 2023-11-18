@@ -1,7 +1,7 @@
 export default {
-  "[微笑]": "https://static.talkxj.com/emoji/smile.jpg",
+  "[微笑]": "https://neverpast.obs.cn-north-1.myhuaweicloud.com/emoji/%F0%9F%98%80%E5%98%BF%E5%98%BF%28240%20x%20240%29.png",
 
-  "[笑]": " https://static.talkxj.com/emoji/dx.jpg",
+  "[笑]":"😀",
 
   "[呲牙]": "https://static.talkxj.com/emoji/cy.jpg",
 

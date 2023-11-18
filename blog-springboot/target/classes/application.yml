@@ -7,12 +7,14 @@ server:
 
 # 配置mysql数据库
 spring:
+  mvc:
+    static-path-pattern: /**
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://114.115.253.78:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    url: jdbc:mysql://39.101.73.73:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true
     username: root
-    password: root
+    password: 123456
     hikari:
       minimum-idle: 5
       # 空闲连接存活最大时间，默认600000（10分钟）
@@ -30,12 +32,12 @@ spring:
       connection-test-query: SELECT 1
   # redis配置
   redis:
-    host: 114.115.253.78
+    host: 39.101.73.73
     port: 6379
     password: 123456
   # mq配置
   rabbitmq:
-    host: 114.115.253.78
+    host: 39.101.73.73
     port: 5672
     username: guest
     password: guest
@@ -46,9 +48,9 @@ spring:
           max-attempts: 3 #最大重试次数
           initial-interval: 3000 #重试间隔时间（单位毫秒）
   # es配置 若搜索模式为mysql可删除
-#  elasticsearch:
-#    rest:
-#      uris: 你的IP:9200
+  #  elasticsearch:
+  #    rest:
+  #      uris: 你的IP:9200
   # 邮箱配置
   mail:
     host: smtp.qq.com
@@ -85,7 +87,7 @@ upload:
   mode: obs
   local:
     # nginx映射本地文件路径，无域名则为 ip:83
-#    url: http://你的文件上传子域名/
+    #    url: http://你的文件上传子域名/
     url: static.ticastr.com
     # 本地文件存储路径
     path: /usr/local/upload/
