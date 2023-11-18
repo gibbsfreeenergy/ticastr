@@ -12,7 +12,7 @@
         <img
           width="32"
           height="32"
-          src="https://static.talkxj.com/config/logo.png"
+          src="https://img.51miz.com/preview/element/00/01/04/46/E-1044689-C1B529F6.jpg"
         />
         <div style="margin-left:12px">
           <div>聊天室</div>
@@ -146,7 +146,7 @@
       <img
         width="100%"
         height="100%"
-        src="https://static.talkxj.com/config/logo.png"
+        src="https://img.51miz.com/preview/element/00/01/04/46/E-1044689-C1B529F6.jpg"
       />
     </div>
   </div>
@@ -155,7 +155,7 @@
 <script>
 import Recorderx, { ENCODE_TYPE } from "recorderx";
 import Emoji from "./Emoji";
-import EmojiList from "../assets/js/emoji";
+// import EmojiList from "../assets/js/emoji";
 export default {
   components: {
     Emoji
@@ -280,14 +280,14 @@ export default {
         return false;
       }
       //解析表情
-      var reg = /\[.+?\]/g;
-      this.content = this.content.replace(reg, function(str) {
-        return (
-          "<img src= '" +
-          EmojiList[str] +
-          "' width='24'height='24' style='margin: 0 1px;vertical-align: text-bottom'/>"
-        );
-      });
+      // var reg = /\[.+?\]/g;
+      // this.content = this.content.replace(reg, function(str) {
+      //   return (
+      //     "<p>" +
+      //     EmojiList[str] +
+      //     "' width='24'height='24' style='margin: 0 1px;vertical-align: text-bottom'/>"
+      //   );
+      // });
       var socketMsg = {
         nickname: this.nickname,
         avatar: this.avatar,
@@ -302,10 +302,10 @@ export default {
       this.websocket.send(JSON.stringify(this.WebsocketMessage));
       this.content = "";
     },
-    addEmoji(key) {
+    addEmoji(value) {
       this.isEmoji = false;
       this.$refs.chatInput.focus();
-      this.content += key;
+      this.content += value;
     },
     // 展示菜单
     showBack(item, index, e) {
@@ -553,7 +553,7 @@ export default {
 .footer textarea {
   background: #fff;
   padding-left: 10px;
-  padding-top: 8px;
+  padding-top: 6px;
   width: 100%;
   height: 32px;
   outline: none;
@@ -590,8 +590,10 @@ export default {
 }
 .my-message {
   display: flex;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  margin-left: 30px;
   justify-content: flex-end;
+  align-items: center;
 }
 .left-avatar {
   margin-right: 10px;
@@ -601,8 +603,8 @@ export default {
   margin-left: 10px;
 }
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
 }
 .nickname {
@@ -624,8 +626,8 @@ export default {
 }
 .my-content {
   position: relative;
-  border-radius: 20px 5px 20px 20px;
-  padding: 12px;
+  border-radius: 8px 8px 8px 8px;
+  padding: 6px;
   background: #12b7f5;
   color: #fff;
   white-space: pre-line;
@@ -648,7 +650,7 @@ export default {
   right: 20px;
   bottom: 52px;
   height: 180px;
-  width: 300px;
+  width: 360px;
   overflow-y: auto;
   padding: 6px 16px;
 }

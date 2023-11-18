@@ -7,6 +7,7 @@ npm install
 
 ### Compiles and hot-reloads for development
 ```
+$env:NODE_OPTIONS="--openssl-legacy-provider"
 npm run serve
 ```
 
