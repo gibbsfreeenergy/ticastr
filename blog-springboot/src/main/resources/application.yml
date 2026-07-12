@@ -26,10 +26,11 @@ spring:
       max-lifetime: ${DB_MAX_LIFETIME_MS:1800000}
       connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
       connection-test-query: SELECT 1
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
