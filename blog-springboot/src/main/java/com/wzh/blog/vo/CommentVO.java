@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * 评论
@@ -38,6 +39,7 @@ public class CommentVO {
      * 评论内容
      */
     @NotBlank(message = "评论内容不能为空")
+    @Size(max = 10000, message = "评论内容不能超过10000个字符")
     @Schema(description = "评论内容")
     private String commentContent;
 

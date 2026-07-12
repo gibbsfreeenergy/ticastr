@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 
@@ -31,6 +32,7 @@ public class ArticleVO {
      * 标题
      */
     @NotBlank(message = "文章标题不能为空")
+    @Size(max = 255, message = "文章标题不能超过255个字符")
     @Schema(description = "文章标题")
     private String articleTitle;
 
@@ -38,6 +40,7 @@ public class ArticleVO {
      * 内容
      */
     @NotBlank(message = "文章内容不能为空")
+    @Size(max = 100000, message = "文章内容不能超过100000个字符")
     @Schema(description = "文章内容")
     private String articleContent;
 

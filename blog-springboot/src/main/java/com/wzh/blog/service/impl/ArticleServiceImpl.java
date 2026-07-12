@@ -18,6 +18,7 @@ import com.wzh.blog.service.TagService;
 import com.wzh.blog.strategy.context.SearchStrategyContext;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.CommonUtils;
+import com.wzh.blog.util.HTMLUtils;
 import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
@@ -220,6 +221,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public void saveOrUpdateArticle(ArticleVO articleVO) {
+        articleVO.setArticleTitle(HTMLUtils.sanitizePlainText(articleVO.getArticleTitle()));
+        articleVO.setArticleContent(HTMLUtils.sanitizeRichText(articleVO.getArticleContent()));
         // 保存文章分类
         Category category = saveArticleCategory(articleVO);
         // 保存或修改文章

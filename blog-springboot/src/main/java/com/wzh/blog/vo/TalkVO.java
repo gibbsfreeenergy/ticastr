@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * 说说
@@ -33,6 +34,7 @@ public class TalkVO {
      */
     @Schema(description = "说说内容")
     @NotBlank(message = "说说内容不能为空")
+    @Size(max = 10000, message = "说说内容不能超过10000个字符")
     private String content;
 
     /**

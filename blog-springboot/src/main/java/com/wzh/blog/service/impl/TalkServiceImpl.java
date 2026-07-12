@@ -131,6 +131,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
     @Override
     public void saveOrUpdateTalk(TalkVO talkVO) {
+        talkVO.setContent(HTMLUtils.sanitizeRichText(talkVO.getContent()));
         Talk talk = BeanCopyUtils.copyObject(talkVO, Talk.class);
         talk.setUserId(UserUtils.getLoginUser().getUserInfoId());
         this.saveOrUpdate(talk);

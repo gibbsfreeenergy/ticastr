@@ -1,14 +1,15 @@
 package com.wzh.blog.util;
 
 import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
+import org.owasp.html.HtmlPolicyBuilder;
+import org.owasp.html.PolicyFactory;
 
 /**
- * HTML工具类
- *
- * @author yezhiqiu
- * @date 2021/07/27
+ * Sanitizes user-provided text before it is persisted or rendered with
+ * {@code v-html}. Regex-based tag stripping is deliberately avoided because
+ * it cannot safely parse malformed HTML or URL protocols.
  */
-public class HTMLUtils {
+public final class HTMLUtils {
 
     private static final SensitiveWordBs WORD_BS = SensitiveWordBs.newInstance()
             .ignoreCase(true)
@@ -22,37 +23,53 @@ public class HTMLUtils {
             .enableUrlCheck(false)
             .init();
 
+    private static final PolicyFactory RICH_TEXT_POLICY = new HtmlPolicyBuilder()
+            .allowElements("p", "br", "strong", "b", "em", "i", "u", "s", "del", "blockquote",
+                    "pre", "code", "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6", "hr",
+                    "a", "img", "table", "thead", "tbody", "tr", "th", "td")
+            .allowAttributes("href", "title").onElements("a")
+            .allowAttributes("src", "alt", "title", "width", "height").onElements("img")
+            .allowAttributes("colspan", "rowspan").onElements("th", "td")
+            .allowUrlProtocols("http", "https")
+            .requireRelNofollowOnLinks()
+            .toFactory();
+
+    private static final PolicyFactory PLAIN_TEXT_POLICY = new HtmlPolicyBuilder().toFactory();
+
+    private HTMLUtils() {
+    }
 
     /**
-     * 删除标签
-     *
-     * @param source 需要进行剔除HTML的文本
-     * @return 过滤后的内容
+     * Keeps only the explicitly allowed rich-text markup and URL protocols.
+     */
+    public static String sanitizeRichText(String source) {
+        if (source == null || source.isBlank()) {
+            return "";
+        }
+        return RICH_TEXT_POLICY.sanitize(WORD_BS.replace(source));
+    }
+
+    /**
+     * Removes every HTML element for values that are displayed as text.
+     */
+    public static String sanitizePlainText(String source) {
+        if (source == null || source.isBlank()) {
+            return "";
+        }
+        return PLAIN_TEXT_POLICY.sanitize(WORD_BS.replace(source)).strip();
+    }
+
+    /**
+     * Backwards-compatible entry point for comments, messages and chat text.
      */
     public static String filter(String source) {
-        // 敏感词过滤
-        source = WORD_BS.replace(source);
-        // 保留图片标签
-        source = source.replaceAll("(?!<(img).*?>)<.*?>", "")
-                .replaceAll("(onload(.*?)=)", "")
-                .replaceAll("(onerror(.*?)=)", "");
-        return deleteHMTLTag(source);
+        return sanitizeRichText(source);
     }
 
     /**
-     * 删除标签
-     *
-     * @param source 文本
-     * @return 过滤后的文本
+     * Backwards-compatible entry point for plain-text previews.
      */
     public static String deleteHMTLTag(String source) {
-        // 删除转义字符
-        source = source.replaceAll("&.{2,6}?;", "");
-        // 删除script标签
-        source = source.replaceAll("<[\\s]*?script[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?script[\\s]*?>", "");
-        // 删除style标签
-        source = source.replaceAll("<[\\s]*?style[^>]*?>[\\s\\S]*?<[\\s]*?\\/[\\s]*?style[\\s]*?>", "");
-        return source;
+        return sanitizePlainText(source);
     }
-
 }
