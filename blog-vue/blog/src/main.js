@@ -8,6 +8,7 @@ import "./assets/css/index.css";
 import "./assets/css/iconfont.css";
 import "./assets/css/markdown.css";
 import config from "./assets/js/config";
+import { loadSocialSdk } from "./plugins/socialSdk";
 import dayjs from "dayjs";
 import axios from "axios";
 import InfiniteLoading from "v3-infinite-loading";
@@ -18,6 +19,7 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 
 const app = createApp(App);
+loadSocialSdk(config);
 axios.defaults.timeout = 15000;
 axios.defaults.withCredentials = true;
 axios.defaults.xsrfCookieName = "XSRF-TOKEN";
@@ -59,7 +61,8 @@ axios.interceptors.response.use(
   },
   error => {
     const status = error.response?.status;
-    const message = status === 401
+    const serverMessage = typeof error.response?.data?.message === "string" ? error.response.data.message : "";
+    const message = serverMessage || (status === 401
       ? "登录已过期，请重新登录"
       : status === 403
         ? "没有执行此操作的权限"
@@ -69,7 +72,7 @@ axios.interceptors.response.use(
             ? "服务暂时不可用，请稍后重试"
             : error.code === "ECONNABORTED"
               ? "请求超时，请检查网络后重试"
-              : "网络请求失败，请稍后重试";
+              : "网络请求失败，请稍后重试");
     app.config.globalProperties.$toast({ type: "error", message });
     return Promise.reject(error);
   }

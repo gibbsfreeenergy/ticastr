@@ -56,7 +56,8 @@ axios.interceptors.response.use(
   },
   error => {
     const status = error.response?.status;
-    const message = status === 401
+    const serverMessage = typeof error.response?.data?.message === "string" ? error.response.data.message : "";
+    const message = serverMessage || (status === 401
       ? "登录已过期，请重新登录"
       : status === 403
         ? "没有执行此操作的权限"
@@ -66,7 +67,7 @@ axios.interceptors.response.use(
             ? "服务暂时不可用，请稍后重试"
             : error.code === "ECONNABORTED"
               ? "请求超时，请检查网络后重试"
-              : "网络请求失败，请稍后重试";
+              : "网络请求失败，请稍后重试");
     ElMessage.error(message);
     if (status === 401) {
       store.commit("logout");
