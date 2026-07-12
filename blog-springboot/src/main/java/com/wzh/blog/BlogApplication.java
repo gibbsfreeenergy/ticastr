@@ -1,6 +1,7 @@
 package com.wzh.blog;
 
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
  * @author yezhiqiu
  * @date 2021/08/14
  */
-@MapperScan("com.wzh.blog.dao")
+@MapperScan(basePackages = "com.wzh.blog.dao", markerInterface = BaseMapper.class)
 @SpringBootApplication
 @EnableScheduling
 public class BlogApplication {
