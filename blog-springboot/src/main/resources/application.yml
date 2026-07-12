@@ -1,0 +1,123 @@
+server:
+  port: ${SERVER_PORT:8090}
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT_SECONDS:21600}
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax
+
+spring:
+  mvc:
+    static-path-pattern: /**
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true}
+    username: ${DB_USERNAME:blog}
+    password: ${DB_PASSWORD:}
+    hikari:
+      minimum-idle: ${DB_MINIMUM_IDLE:5}
+      idle-timeout: ${DB_IDLE_TIMEOUT_MS:180000}
+      maximum-pool-size: ${DB_MAXIMUM_POOL_SIZE:10}
+      auto-commit: true
+      pool-name: BlogHikariPool
+      max-lifetime: ${DB_MAX_LIFETIME_MS:1800000}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
+      connection-test-query: SELECT 1
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:blog}
+    password: ${RABBITMQ_PASSWORD:}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 3000
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    port: ${MAIL_PORT:587}
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+  servlet:
+    multipart:
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:20MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:20MB}
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+search:
+  mode: ${SEARCH_MODE:mysql}
+
+upload:
+  mode: ${UPLOAD_MODE:local}
+  local:
+    url: ${UPLOAD_LOCAL_URL:http://localhost:8090}
+    path: ${UPLOAD_LOCAL_PATH:./uploads/}
+  oss:
+    url: ${OSS_URL:}
+    endpoint: ${OSS_ENDPOINT:}
+    accessKeyId: ${OSS_ACCESS_KEY_ID:}
+    accessKeySecret: ${OSS_ACCESS_KEY_SECRET:}
+    bucketName: ${OSS_BUCKET_NAME:}
+  cos:
+    url: ${COS_URL:}
+    secretId: ${COS_SECRET_ID:}
+    secretKey: ${COS_SECRET_KEY:}
+    region: ${COS_REGION:}
+    bucketName: ${COS_BUCKET_NAME:}
+  obs:
+    url: ${OBS_URL:}
+    accessKey: ${OBS_ACCESS_KEY:}
+    accessKeySecret: ${OBS_ACCESS_KEY_SECRET:}
+    endpoint: ${OBS_ENDPOINT:}
+    bucketName: ${OBS_BUCKET_NAME:}
+
+website:
+  url: ${WEBSITE_URL:http://localhost:8080}
+
+qq:
+  app-id: ${QQ_APP_ID:}
+  check-token-url: https://graph.qq.com/oauth2.0/me?access_token={access_token}
+  user-info-url: https://graph.qq.com/user/get_user_info?openid={openid}&access_token={access_token}&oauth_consumer_key={oauth_consumer_key}
+
+weibo:
+  app-id: ${WEIBO_APP_ID:}
+  app-secret: ${WEIBO_APP_SECRET:}
+  grant-type: authorization_code
+  redirect-url: ${WEIBO_REDIRECT_URL:http://localhost:8080/oauth/login/weibo}
+  access-token-url: https://api.weibo.com/oauth2/access_token
+  user-info-url: https://api.weibo.com/2/users/show.json?uid={uid}&access_token={access_token}
+
+app:
+  security:
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    mail:
+      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
