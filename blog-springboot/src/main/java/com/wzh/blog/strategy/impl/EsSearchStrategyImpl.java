@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dto.ArticleSearchDTO;
 import com.wzh.blog.strategy.SearchStrategy;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -27,6 +28,7 @@ import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
 /** Elasticsearch 8/9 search implementation using the ELC client. */
 @Log4j2
 @Service("esSearchStrategyImpl")
+@ConditionalOnProperty(name = "search.mode", havingValue = "elasticsearch")
 public class EsSearchStrategyImpl implements SearchStrategy {
 
     private final ElasticsearchTemplate elasticsearchTemplate;

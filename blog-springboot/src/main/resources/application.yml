@@ -119,5 +119,7 @@ management:
         enabled: true
       show-details: never
   health:
+    elasticsearch:
+      enabled: ${MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED:false}
     mail:
       enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
