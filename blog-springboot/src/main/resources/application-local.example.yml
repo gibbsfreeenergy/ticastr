@@ -1,0 +1,35 @@
+# Copy the required values into environment variables or an untracked
+# application-local.yml file. Never commit production credentials.
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true
+    username: blog
+    password: change-me
+  redis:
+    host: localhost
+    port: 6379
+    password: change-me
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: blog
+    password: change-me
+  mail:
+    username: noreply@example.com
+    password: change-me
+
+upload:
+  mode: local
+  local:
+    url: http://localhost:8090
+    path: ./uploads/
+
+website:
+  url: http://localhost:8080
+
+qq:
+  app-id: replace-me
+
+weibo:
+  app-id: replace-me
+  app-secret: change-me
