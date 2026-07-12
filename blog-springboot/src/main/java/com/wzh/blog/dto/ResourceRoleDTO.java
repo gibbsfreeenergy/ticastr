@@ -29,6 +29,12 @@ public class ResourceRoleDTO {
     private String requestMethod;
 
     /**
+     * Whether the endpoint is explicitly public. This must remain distinct
+     * from an endpoint that has not been registered as a resource.
+     */
+    private Boolean anonymous;
+
+    /**
      * 角色名
      */
     private List<String> roleList;

@@ -2,84 +2,61 @@ package com.wzh.blog.handler;
 
 import com.wzh.blog.dao.RoleDao;
 import com.wzh.blog.dto.ResourceRoleDTO;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.ConfigAttribute;
-import org.springframework.security.access.SecurityConfig;
-import org.springframework.security.web.FilterInvocation;
-import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-/**
- * 接口拦截规则
- *
- * @author yezhiqiu
- * @date 2021/07/27
- */
+/** Resolves URL permissions from the database for Spring Security 7. */
 @Component
-public class FilterInvocationSecurityMetadataSourceImpl implements FilterInvocationSecurityMetadataSource {
+public class FilterInvocationSecurityMetadataSourceImpl {
 
-    /**
-     * 资源角色列表
-     */
-    private static List<ResourceRoleDTO> resourceRoleList;
+    private volatile List<ResourceRoleDTO> resourceRoleList = List.of();
 
-    @Autowired
-    private RoleDao roleDao;
+    private final RoleDao roleDao;
 
-    /**
-     * 加载资源角色信息
-     */
+    public FilterInvocationSecurityMetadataSourceImpl(RoleDao roleDao) {
+        this.roleDao = roleDao;
+    }
+
     @PostConstruct
     private void loadDataSource() {
-        resourceRoleList = roleDao.listResourceRoles();
+        resourceRoleList = List.copyOf(roleDao.listResourceRoles());
+    }
+
+    public void clearDataSource() {
+        resourceRoleList = List.of();
     }
 
     /**
-     * 清空接口角色信息
+     * Returns an empty optional only when the URL has not been registered.
+     * An empty role collection represents an explicitly public URL; the
+     * "disable" role represents a registered, but unassigned, URL.
      */
-    public void clearDataSource() {
-        resourceRoleList = null;
-    }
-
-    @Override
-    public Collection<ConfigAttribute> getAttributes(Object object) throws IllegalArgumentException {
-        // 修改接口角色关系后重新加载
+    public Optional<Collection<String>> findRequiredRoles(HttpServletRequest request) {
         if (CollectionUtils.isEmpty(resourceRoleList)) {
-            this.loadDataSource();
+            loadDataSource();
         }
-        FilterInvocation fi = (FilterInvocation) object;
-        // 获取用户请求方式
-        String method = fi.getRequest().getMethod();
-        // 获取用户请求Url
-        String url = fi.getRequest().getRequestURI();
+        String method = request.getMethod();
+        String url = request.getRequestURI();
         AntPathMatcher antPathMatcher = new AntPathMatcher();
-        // 获取接口角色信息，若为匿名接口则放行，若无对应角色则禁止
         for (ResourceRoleDTO resourceRoleDTO : resourceRoleList) {
-            if (antPathMatcher.match(resourceRoleDTO.getUrl(), url) && resourceRoleDTO.getRequestMethod().equals(method)) {
-                List<String> roleList = resourceRoleDTO.getRoleList();
-                if (CollectionUtils.isEmpty(roleList)) {
-                    return SecurityConfig.createList("disable");
+            if (resourceRoleDTO.getUrl() != null
+                    && resourceRoleDTO.getRequestMethod() != null
+                    && antPathMatcher.match(resourceRoleDTO.getUrl(), url)
+                    && resourceRoleDTO.getRequestMethod().equals(method)) {
+                if (Boolean.TRUE.equals(resourceRoleDTO.getAnonymous())) {
+                    return Optional.of(List.of());
                 }
-                return SecurityConfig.createList(roleList.toArray(new String[]{}));
+                List<String> roleList = resourceRoleDTO.getRoleList();
+                return Optional.of(CollectionUtils.isEmpty(roleList) ? List.of("disable") : roleList);
             }
         }
-        return null;
+        return Optional.empty();
     }
-
-    @Override
-    public Collection<ConfigAttribute> getAllConfigAttributes() {
-        return null;
-    }
-
-    @Override
-    public boolean supports(Class<?> aClass) {
-        return FilterInvocation.class.isAssignableFrom(aClass);
-    }
-
 }

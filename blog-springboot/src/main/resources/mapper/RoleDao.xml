@@ -36,6 +36,7 @@
          re.id,
          url,
          request_method,
+         is_anonymous,
          role_label
          FROM
          tb_resource re
@@ -43,7 +44,8 @@
          LEFT JOIN tb_role r on rep.role_id = r.id
          WHERE
          parent_id is NOT NULL
-         AND is_anonymous = 0
+         AND url is NOT NULL
+         AND request_method is NOT NULL
     </select>
 
     <select id="listRolesByUserInfoId" resultType="java.lang.String">
