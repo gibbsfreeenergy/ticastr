@@ -86,7 +86,7 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
         if (count > 0) {
             throw new BizException("删除失败，该标签下存在文章");
         }
-        tagDao.deleteBatchIds(tagIdList);
+        tagDao.deleteByIds(tagIdList);
     }
 
     @Transactional(rollbackFor = Exception.class)

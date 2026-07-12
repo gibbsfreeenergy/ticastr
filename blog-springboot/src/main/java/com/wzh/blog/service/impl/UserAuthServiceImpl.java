@@ -101,7 +101,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
                 // 查询注册用户区域分布
                 Object userArea = redisService.get(USER_AREA);
                 if (Objects.nonNull(userArea)) {
-                    userAreaDTOList = JSON.parseObject(userArea.toString(), List.class);
+                    userAreaDTOList = JSON.parseArray(userArea.toString(), UserAreaDTO.class);
                 }
                 return userAreaDTOList;
             case VISITOR:

@@ -133,7 +133,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
         if (count > 0) {
             throw new BizException("该角色下存在用户");
         }
-        roleDao.deleteBatchIds(roleIdList);
+        roleDao.deleteByIds(roleIdList);
     }
 
 }

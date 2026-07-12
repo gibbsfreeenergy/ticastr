@@ -81,7 +81,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> impl
         if (count > 0) {
             throw new BizException("删除失败，该分类下存在文章");
         }
-        categoryDao.deleteBatchIds(categoryIdList);
+        categoryDao.deleteByIds(categoryIdList);
     }
 
 

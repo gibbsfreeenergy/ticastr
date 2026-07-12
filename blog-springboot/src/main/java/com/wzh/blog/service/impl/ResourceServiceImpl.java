@@ -70,7 +70,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
                 .map(Resource::getId)
                 .collect(Collectors.toList());
         resourceIdList.add(resourceId);
-        resourceDao.deleteBatchIds(resourceIdList);
+        resourceDao.deleteByIds(resourceIdList);
     }
 
 

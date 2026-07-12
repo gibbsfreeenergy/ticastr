@@ -141,7 +141,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
     @Override
     public void deleteTalks(List<Integer> talkIdList) {
-        talkDao.deleteBatchIds(talkIdList);
+        talkDao.deleteByIds(talkIdList);
     }
 
 

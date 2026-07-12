@@ -293,7 +293,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         articleTagDao.delete(new LambdaQueryWrapper<ArticleTag>()
                 .in(ArticleTag::getArticleId, articleIdList));
         // 删除文章
-        articleDao.deleteBatchIds(articleIdList);
+        articleDao.deleteByIds(articleIdList);
     }
 
 

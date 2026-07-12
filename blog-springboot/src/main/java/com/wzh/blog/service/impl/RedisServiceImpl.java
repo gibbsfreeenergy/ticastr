@@ -11,14 +11,16 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -36,7 +38,7 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public void set(String key, Object value, long time) {
-        redisTemplate.opsForValue().set(key, value, time, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(time));
     }
 
     @Override
@@ -61,12 +63,12 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public Boolean expire(String key, long time) {
-        return redisTemplate.expire(key, time, TimeUnit.SECONDS);
+        return redisTemplate.expire(key, Expiration.seconds(time));
     }
 
     @Override
     public Long getExpire(String key) {
-        return redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        return redisTemplate.getExpire(key);
     }
 
     @Override
@@ -83,7 +85,7 @@ public class RedisServiceImpl implements RedisService {
     public Long incrExpire(String key, long time) {
         Long count = redisTemplate.opsForValue().increment(key, 1);
         if (count != null && count == 1) {
-            redisTemplate.expire(key, time, TimeUnit.SECONDS);
+            redisTemplate.expire(key, Expiration.seconds(time));
         }
         return count;
     }
@@ -110,8 +112,9 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public Map hGetAll(String key) {
-        return redisTemplate.opsForHash().entries(key);
+    public Map<String, Object> hGetAll(String key) {
+        return redisTemplate.opsForHash().entries(key).entrySet().stream()
+                .collect(Collectors.toMap(entry -> String.valueOf(entry.getKey()), Map.Entry::getValue));
     }
 
     @Override
@@ -262,19 +265,21 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public Long bitCount(String key) {
-        return redisTemplate.execute((RedisCallback<Long>) con -> con.bitCount(key.getBytes()));
+        return redisTemplate.execute((RedisCallback<Long>) con ->
+                con.stringCommands().bitCount(key.getBytes(StandardCharsets.UTF_8)));
     }
 
     @Override
     public List<Long> bitField(String key, int limit, int offset) {
         return redisTemplate.execute((RedisCallback<List<Long>>) con ->
-                con.bitField(key.getBytes(),
+                con.stringCommands().bitField(key.getBytes(StandardCharsets.UTF_8),
                         BitFieldSubCommands.create().get(BitFieldSubCommands.BitFieldType.unsigned(limit)).valueAt(offset)));
     }
 
     @Override
     public byte[] bitGetAll(String key) {
-        return redisTemplate.execute((RedisCallback<byte[]>) con -> con.get(key.getBytes()));
+        return redisTemplate.execute((RedisCallback<byte[]>) con ->
+                con.stringCommands().get(key.getBytes(StandardCharsets.UTF_8)));
     }
 
     @Override
@@ -324,8 +329,9 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public List<String> geoGetHash(String key, String... place) {
+        Object[] places = place;
         return redisTemplate.opsForGeo()
-                .hash(key, place);
+                .hash(key, places);
     }
 
 }

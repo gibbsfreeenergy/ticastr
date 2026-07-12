@@ -125,7 +125,7 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
 
     @Override
     public void deletePhotos(List<Integer> photoIdList) {
-        photoDao.deleteBatchIds(photoIdList);
+        photoDao.deleteByIds(photoIdList);
     }
 
 

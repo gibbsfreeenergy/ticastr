@@ -62,7 +62,7 @@ public class PageServiceImpl extends ServiceImpl<PageDao, Page> implements PageS
         // 查找缓存信息，不存在则从mysql读取，更新缓存
         Object pageList = redisService.get(PAGE_COVER);
         if (Objects.nonNull(pageList)) {
-            pageVOList = JSON.parseObject(pageList.toString(), List.class);
+            pageVOList = JSON.parseArray(pageList.toString(), PageVO.class);
         } else {
             pageVOList = BeanCopyUtils.copyList(pageDao.selectList(null), PageVO.class);
             redisService.set(PAGE_COVER, JSON.toJSONString(pageVOList));

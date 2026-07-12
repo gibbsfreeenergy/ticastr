@@ -11,7 +11,9 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.vo.WeiboLoginVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -80,7 +82,9 @@ public class WeiboLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
         weiboData.add(GRANT_TYPE, weiboConfigProperties.getGrantType());
         weiboData.add(REDIRECT_URI, weiboConfigProperties.getRedirectUrl());
         weiboData.add(CODE, weiBoLoginVO.getCode());
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(weiboData);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(weiboData, headers);
         try {
             return restTemplate.exchange(weiboConfigProperties.getAccessTokenUrl(), HttpMethod.POST, requestEntity, WeiboTokenDTO.class).getBody();
         } catch (Exception e) {

@@ -103,7 +103,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
                 .map(Menu::getId)
                 .collect(Collectors.toList());
         menuIdList.add(menuId);
-        menuDao.deleteBatchIds(menuIdList);
+        menuDao.deleteByIds(menuIdList);
     }
 
 
