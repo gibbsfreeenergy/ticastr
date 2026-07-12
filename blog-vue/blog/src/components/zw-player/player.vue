@@ -645,5 +645,4 @@ export default {
 </script>
 <style scoped>
 @import url("./player.css");
-@import url("./playermobile.css");
 </style>
