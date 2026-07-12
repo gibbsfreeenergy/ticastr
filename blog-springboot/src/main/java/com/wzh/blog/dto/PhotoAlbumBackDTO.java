@@ -40,7 +40,7 @@ public class PhotoAlbumBackDTO {
     /**
      * 照片数量
      */
-    private Integer photoCount;
+    private Long photoCount;
 
     /**
      * 状态值 1公开 2私密

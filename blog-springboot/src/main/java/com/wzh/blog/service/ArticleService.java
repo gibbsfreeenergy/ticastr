@@ -2,7 +2,7 @@ package com.wzh.blog.service;
 
 import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Article;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
 
 import java.util.List;

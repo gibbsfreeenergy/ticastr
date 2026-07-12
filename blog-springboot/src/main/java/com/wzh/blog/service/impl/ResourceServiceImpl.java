@@ -3,7 +3,7 @@ package com.wzh.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.ResourceDao;
 import com.wzh.blog.dao.RoleResourceDao;
 import com.wzh.blog.dto.ResourceDTO;
@@ -40,6 +40,9 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
     private FilterInvocationSecurityMetadataSourceImpl filterInvocationSecurityMetadataSource;
 
 
+
+
+
     @Override
     public void saveOrUpdateResource(ResourceVO resourceVO) {
         // 更新资源信息
@@ -49,10 +52,12 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
         filterInvocationSecurityMetadataSource.clearDataSource();
     }
 
+
+
     @Override
     public void deleteResource(Integer resourceId) {
         // 查询是否有角色关联
-        Integer count = roleResourceDao.selectCount(new LambdaQueryWrapper<RoleResource>()
+        Long count = roleResourceDao.selectCount(new LambdaQueryWrapper<RoleResource>()
                 .eq(RoleResource::getResourceId, resourceId));
         if (count > 0) {
             throw new BizException("该资源下存在角色");
@@ -67,6 +72,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
         resourceIdList.add(resourceId);
         resourceDao.deleteBatchIds(resourceIdList);
     }
+
+
 
     @Override
     public List<ResourceDTO> listResources(ConditionVO conditionVO) {
@@ -96,6 +103,8 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
         }
         return resourceDTOList;
     }
+
+
 
     @Override
     public List<LabelOptionDTO> listResourceOption() {

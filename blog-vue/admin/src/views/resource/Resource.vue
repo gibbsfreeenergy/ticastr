@@ -19,7 +19,7 @@
           size="small"
           placeholder="请输入资源名"
           style="width:200px"
-          @keyup.enter.native="listResources"
+          @keyup.enter="listResources"
         />
         <el-button
           type="primary"
@@ -42,14 +42,14 @@
       <el-table-column prop="resourceName" label="资源名" width="220" />
       <el-table-column prop="url" label="资源路径" width="300" />
       <el-table-column prop="requetMethod" label="请求方式">
-        <template slot-scope="scope" v-if="scope.row.requestMethod">
+        <template #default="scope" v-if="scope.row.requestMethod">
           <el-tag :type="tagType(scope.row.requestMethod)">
             {{ scope.row.requestMethod }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="isAnonymous" label="匿名访问" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-switch
             v-if="scope.row.url"
             v-model="scope.row.isAnonymous"
@@ -62,13 +62,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="创建时间" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | date }}
+          {{ date(scope.row.createTime) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="200">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             type="text"
             size="mini"
@@ -89,31 +89,31 @@
             style="margin-left:10px"
             @confirm="deleteResource(scope.row.id)"
           >
-            <el-button size="mini" type="text" slot="reference">
+            <template #reference><el-button size="mini" type="text">
               <i class="el-icon-delete" /> 删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
     <!-- 新增模态框 -->
-    <el-dialog :visible.sync="addModule" width="30%">
-      <div class="dialog-title-container" slot="title" ref="moduleTitle" />
+    <el-dialog v-model="addModule" width="30%">
+      <template #header><div class="dialog-title-container" ref="moduleTitle" /></template>
       <el-form label-width="80px" size="medium" :model="resourceForm">
         <el-form-item label="模块名">
           <el-input v-model="resourceForm.resourceName" style="width:220px" />
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <template #footer><span class="dialog-footer">
         <el-button @click="addModule = false">取 消</el-button>
         <el-button type="primary" @click="addOrEditResource">
           确 定
         </el-button>
-      </span>
+      </span></template>
     </el-dialog>
     <!-- 新增模态框 -->
-    <el-dialog :visible.sync="addResource" width="30%">
-      <div class="dialog-title-container" slot="title" ref="resourceTitle" />
+    <el-dialog v-model="addResource" width="30%">
+      <template #header><div class="dialog-title-container" ref="resourceTitle" /></template>
       <el-form label-width="80px" size="medium" :model="resourceForm">
         <el-form-item label="资源名">
           <el-input v-model="resourceForm.resourceName" style="width:220px" />
@@ -130,12 +130,12 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <template #footer><span class="dialog-footer">
         <el-button @click="addResource = false">取 消</el-button>
         <el-button type="primary" @click="addOrEditResource">
           确 定
         </el-button>
-      </span>
+      </span></template>
     </el-dialog>
   </el-card>
 </template>

@@ -5,7 +5,7 @@ import com.wzh.blog.dto.CommentDTO;
 import com.wzh.blog.vo.*;
 import com.wzh.blog.dto.ReplyDTO;
 import com.wzh.blog.entity.Comment;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 
 import java.util.List;
 

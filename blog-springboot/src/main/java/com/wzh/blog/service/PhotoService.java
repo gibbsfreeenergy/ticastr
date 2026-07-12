@@ -3,7 +3,7 @@ package com.wzh.blog.service;
 import com.wzh.blog.dto.PhotoBackDTO;
 import com.wzh.blog.dto.PhotoDTO;
 import com.wzh.blog.entity.Photo;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
 
 import java.util.List;

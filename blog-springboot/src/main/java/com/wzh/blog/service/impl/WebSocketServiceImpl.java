@@ -1,7 +1,7 @@
 package com.wzh.blog.service.impl;
 
 import cn.hutool.core.date.DateUtil;
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.wzh.blog.dao.ChatRecordDao;
 import com.wzh.blog.dto.ChatRecordDTO;
@@ -17,10 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import javax.websocket.*;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
+import jakarta.websocket.*;
+import jakarta.websocket.server.HandshakeRequest;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;

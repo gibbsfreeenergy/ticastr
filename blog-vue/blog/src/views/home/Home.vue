@@ -85,7 +85,7 @@
               </span>
               <!-- 发表时间 -->
               <v-icon size="14">mdi-calendar-month-outline</v-icon>
-              {{ item.createTime | date }}
+              {{ date(item.createTime) }}
               <span class="separator">|</span>
               <!-- 文章分类 -->
               <router-link :to="'/categories/' + item.categoryId">
@@ -112,7 +112,7 @@
         </v-card>
         <!-- 无限加载 -->
         <infinite-loading @infinite="infiniteHandler">
-          <div slot="no-more" />
+          <template #complete><div /></template>
         </infinite-loading>
       </v-col>
       <!-- 博主信息 -->
@@ -221,7 +221,7 @@
       </v-col>
     </v-row>
     <!-- 提示消息 -->
-    <v-snackbar v-model="tip" top color="#49b1f5" :timeout="2000">
+    <v-snackbar v-model="tip" location="top" color="#49b1f5" :timeout="2000">
       按CTRL+D 键将本页加入书签
     </v-snackbar>
   </div>

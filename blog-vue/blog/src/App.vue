@@ -5,9 +5,9 @@
     <!-- 侧边导航栏 -->
     <SideNavBar></SideNavBar>
     <!-- 内容 -->
-    <v-content>
+    <v-main>
       <router-view :key="$route.fullPath" />
-    </v-content>
+    </v-main>
     <!-- 页脚 -->
     <Footer></Footer>
     <!-- 返回顶部 -->
@@ -26,6 +26,7 @@
     <Player v-if="blogInfo.websiteConfig.isMusicPlayer == 1 && !isMobile" />
     <!-- 聊天室 -->
     <ChatRoom v-if="blogInfo.websiteConfig.isChatRoom == 1"></ChatRoom>
+    <ImagePreview />
   </v-app>
 </template>
 
@@ -41,6 +42,7 @@ import ForgetModel from "./components/model/ForgetModel";
 import EmailModel from "./components/model/EmailModel";
 import Player from "./components/zw-player/player.vue";
 import ChatRoom from "./components/ChatRoom";
+import ImagePreview from "./components/ImagePreview";
 export default {
   created() {
     // 获取博客信息
@@ -59,7 +61,8 @@ export default {
     RegisterModel,
     ForgetModel,
     EmailModel,
-    ChatRoom
+    ChatRoom,
+    ImagePreview
   },
   methods: {
     getBlogInfo() {

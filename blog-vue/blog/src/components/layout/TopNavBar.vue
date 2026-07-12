@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar app :class="navClass" hide-on-scroll flat height="60">
+  <v-app-bar :class="navClass" hide-on-scroll flat height="60">
     <!-- 手机端导航栏 -->
     <div class="d-md-none nav-mobile-container">
       <div style="font-size:18px;font-weight:bold">
@@ -202,10 +202,10 @@ ul {
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow: 0 5px 6px -5px rgba(133, 133, 133, 0.6);
 }
-.theme--dark.nav-fixed {
+.v-theme--dark.nav-fixed {
   background: rgba(18, 18, 18, 0.8) !important;
 }
-.theme--dark.nav-fixed a {
+.v-theme--dark.nav-fixed a {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 .theme--light.nav-fixed a {

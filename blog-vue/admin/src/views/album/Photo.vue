@@ -71,11 +71,11 @@
               <div class="photo-opreation">
                 <el-dropdown @command="handleCommand">
                   <i class="el-icon-more" style="color:#fff" />
-                  <el-dropdown-menu slot="dropdown">
+                  <template #dropdown><el-dropdown-menu>
                     <el-dropdown-item :command="JSON.stringify(item)">
                       <i class="el-icon-edit" />编辑
                     </el-dropdown-item>
-                  </el-dropdown-menu>
+                  </el-dropdown-menu></template>
                 </el-dropdown>
               </div>
               <el-image
@@ -102,10 +102,10 @@
       layout="prev, pager, next"
     />
     <!-- 上传模态框 -->
-    <el-dialog :visible.sync="uploadPhoto" width="70%" top="10vh">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="uploadPhoto" width="70%" top="10vh">
+      <template #header><div class="dialog-title-container">
         上传照片
-      </div>
+      </div></template>
       <!-- 上传 -->
       <div class="upload-container">
         <el-upload
@@ -134,13 +134,13 @@
             <div class="el-upload__text">
               将文件拖到此处，或<em>点击上传</em>
             </div>
-            <div class="el-upload__tip" slot="tip">
+            <template #tip><div class="el-upload__tip">
               支持上传jpg/png文件
-            </div>
+            </div></template>
           </el-upload>
         </div>
       </div>
-      <div slot="footer">
+      <template #footer><div>
         <div class="upload-footer">
           <div class="upload-count">共上传{{ uploadList.length }}张照片</div>
           <div style="margin-left:auto">
@@ -155,12 +155,13 @@
           </div>
         </div>
       </div>
+      </template>
     </el-dialog>
     <!-- 编辑对话框 -->
-    <el-dialog :visible.sync="editPhoto" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="editPhoto" width="30%">
+      <template #header><div class="dialog-title-container">
         修改信息
-      </div>
+      </div></template>
       <el-form label-width="80px" size="medium" :model="photoForm">
         <el-form-item label="照片名称">
           <el-input style="width:220px" v-model="photoForm.photoName" />
@@ -169,31 +170,31 @@
           <el-input style="width:220px" v-model="photoForm.photoDesc" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="editPhoto = false">取 消</el-button>
         <el-button type="primary" @click="updatePhoto">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- 批量删除对话框 -->
-    <el-dialog :visible.sync="batchDeletePhoto" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="batchDeletePhoto" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否删除选中照片？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="batchDeletePhoto = false">取 消</el-button>
         <el-button type="primary" @click="updatePhotoDelete(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- 移动对话框 -->
-    <el-dialog :visible.sync="movePhoto" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="movePhoto" width="30%">
+      <template #header><div class="dialog-title-container">
         移动照片
-      </div>
+      </div></template>
       <el-empty v-if="albumList.length < 2" description="暂无其他相册" />
       <el-form v-else label-width="80px" size="medium" :model="photoForm">
         <el-radio-group v-model="albumId">
@@ -218,7 +219,7 @@
           </div>
         </el-radio-group>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="movePhoto = false">取 消</el-button>
         <el-button
           :disabled="albumId == null"
@@ -227,7 +228,7 @@
         >
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

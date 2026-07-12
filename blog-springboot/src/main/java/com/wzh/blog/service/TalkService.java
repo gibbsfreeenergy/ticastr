@@ -3,7 +3,7 @@ package com.wzh.blog.service;
 import com.wzh.blog.dto.TalkBackDTO;
 import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.entity.Talk;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.ConditionVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.TalkVO;

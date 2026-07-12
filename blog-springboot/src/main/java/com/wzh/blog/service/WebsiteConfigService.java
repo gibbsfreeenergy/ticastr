@@ -1,7 +1,7 @@
 package com.wzh.blog.service;
 
 import com.wzh.blog.entity.WebsiteConfig;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 
 /**
  * 网站配置服务

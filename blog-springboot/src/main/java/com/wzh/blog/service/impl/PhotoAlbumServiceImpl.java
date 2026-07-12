@@ -3,7 +3,7 @@ package com.wzh.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.PhotoAlbumDao;
 import com.wzh.blog.dao.PhotoDao;
 import com.wzh.blog.dto.PhotoAlbumBackDTO;
@@ -43,6 +43,9 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
     private PhotoDao photoDao;
 
     @Transactional(rollbackFor = Exception.class)
+
+
+
     @Override
     public void saveOrUpdatePhotoAlbum(PhotoAlbumVO photoAlbumVO) {
         // 查询相册名是否存在
@@ -56,10 +59,12 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         this.saveOrUpdate(photoAlbum);
     }
 
+
+
     @Override
     public PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(ConditionVO condition) {
         // 查询相册数量
-        Integer count = photoAlbumDao.selectCount(new LambdaQueryWrapper<PhotoAlbum>()
+        Long count = photoAlbumDao.selectCount(new LambdaQueryWrapper<PhotoAlbum>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), PhotoAlbum::getAlbumName, condition.getKeywords())
                 .eq(PhotoAlbum::getIsDelete, FALSE));
         if (count == 0) {
@@ -70,6 +75,8 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         return new PageResult<>(photoAlbumBackList, count);
     }
 
+
+
     @Override
     public List<PhotoAlbumDTO> listPhotoAlbumBackInfos() {
         List<PhotoAlbum> photoAlbumList = photoAlbumDao.selectList(new LambdaQueryWrapper<PhotoAlbum>()
@@ -77,12 +84,14 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         return BeanCopyUtils.copyList(photoAlbumList, PhotoAlbumDTO.class);
     }
 
+
+
     @Override
     public PhotoAlbumBackDTO getPhotoAlbumBackById(Integer albumId) {
         // 查询相册信息
         PhotoAlbum photoAlbum = photoAlbumDao.selectById(albumId);
         // 查询照片数量
-        Integer photoCount = photoDao.selectCount(new LambdaQueryWrapper<Photo>()
+        Long photoCount = photoDao.selectCount(new LambdaQueryWrapper<Photo>()
                 .eq(Photo::getAlbumId, albumId)
                 .eq(Photo::getIsDelete, FALSE));
         PhotoAlbumBackDTO album = BeanCopyUtils.copyObject(photoAlbum, PhotoAlbumBackDTO.class);
@@ -90,10 +99,12 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         return album;
     }
 
+
+
     @Override
     public void deletePhotoAlbumById(Integer albumId) {
         // 查询照片数量
-        Integer count = photoDao.selectCount(new LambdaQueryWrapper<Photo>()
+        Long count = photoDao.selectCount(new LambdaQueryWrapper<Photo>()
                 .eq(Photo::getAlbumId, albumId));
         if (count > 0) {
             // 若相册下存在照片则逻辑删除相册和照片
@@ -109,6 +120,8 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
             photoAlbumDao.deleteById(albumId);
         }
     }
+
+
 
     @Override
     public List<PhotoAlbumDTO> listPhotoAlbums() {

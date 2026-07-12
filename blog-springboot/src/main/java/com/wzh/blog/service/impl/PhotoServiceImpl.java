@@ -4,7 +4,7 @@ package com.wzh.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.PhotoDao;
 import com.wzh.blog.dto.PhotoBackDTO;
 import com.wzh.blog.dto.PhotoDTO;
@@ -40,6 +40,9 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     @Autowired
     private PhotoAlbumService photoAlbumService;
 
+
+
+
     @Override
     public PageResult<PhotoBackDTO> listPhotos(ConditionVO condition) {
         // 查询照片列表
@@ -54,6 +57,8 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updatePhoto(PhotoInfoVO photoInfoVO) {
         Photo photo = BeanCopyUtils.copyObject(photoInfoVO, Photo.class);
@@ -61,6 +66,8 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void savePhotos(PhotoVO photoVO) {
         List<Photo> photoList = photoVO.getPhotoUrlList().stream().map(item -> Photo.builder()
@@ -73,6 +80,8 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updatePhotosAlbum(PhotoVO photoVO) {
         List<Photo> photoList = photoVO.getPhotoIdList().stream().map(item -> Photo.builder()
@@ -84,6 +93,8 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updatePhotoDelete(DeleteVO deleteVO) {
         // 更新照片状态
@@ -110,10 +121,14 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void deletePhotos(List<Integer> photoIdList) {
         photoDao.deleteBatchIds(photoIdList);
     }
+
+
 
     @Override
     public PhotoDTO listPhotosByAlbumId(Integer albumId) {

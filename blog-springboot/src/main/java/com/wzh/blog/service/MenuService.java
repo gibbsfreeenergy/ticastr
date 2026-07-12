@@ -1,6 +1,6 @@
 package com.wzh.blog.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.dto.MenuDTO;
 import com.wzh.blog.dto.LabelOptionDTO;
 import com.wzh.blog.dto.UserMenuDTO;

@@ -15,7 +15,7 @@ export default {
   mounted() {
     window.addEventListener("scroll", this.scrollToTop);
   },
-  destroyed() {
+  unmounted() {
     window.removeEventListener("scroll", this.scrollToTop);
   },
   data: function() {
@@ -54,7 +54,9 @@ export default {
     check() {
       const flag = this.icon == "iconyueliang";
       this.icon = flag ? "icontaiyang" : "iconyueliang";
-      this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+      this.$vuetify.theme.global.name.value = this.$vuetify.theme.global.current.value.dark
+        ? "light"
+        : "dark";
     }
   }
 };

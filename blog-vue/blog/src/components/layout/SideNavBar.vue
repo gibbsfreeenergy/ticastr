@@ -4,7 +4,7 @@
     v-model="drawer"
     width="250"
     disable-resize-watcher
-    right
+    location="right"
     overlay-opacity="0.8"
   >
     <!-- 博主介绍 -->

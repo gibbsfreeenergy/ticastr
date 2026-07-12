@@ -1,28 +1,25 @@
-import Vue from "vue";
-import VueRouter from "vue-router";
-
-Vue.use(VueRouter);
+import { createRouter, createWebHistory } from "vue-router";
 
 const routes = [
   {
     path: "/login",
-    name: "登录",
+    name: "login",
     hidden: true,
     component: () => import("../views/login/Login.vue")
   }
 ];
 
-const createRouter = () =>
-  new VueRouter({
-    mode: "history",
-    routes: routes
-  });
-
-const router = createRouter();
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+});
 
 export function resetRouter() {
-  const newRouter = createRouter();
-  router.matcher = newRouter.matcher;
+  router.getRoutes().forEach(route => {
+    if (route.name && route.name !== "login") {
+      router.removeRoute(route.name);
+    }
+  });
 }
 
 export default router;

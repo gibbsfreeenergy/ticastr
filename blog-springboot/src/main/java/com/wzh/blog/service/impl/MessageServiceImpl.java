@@ -15,7 +15,7 @@ import com.wzh.blog.dto.MessageDTO;
 import com.wzh.blog.entity.Message;
 import com.wzh.blog.dao.MessageDao;
 import com.wzh.blog.service.MessageService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.vo.ReviewVO;
@@ -23,8 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -48,6 +48,9 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
     private BlogInfoService blogInfoService;
 
     @Transactional(rollbackFor = Exception.class)
+
+
+
     @Override
     public void saveMessage(MessageVO messageVO) {
         // 判断是否需要审核
@@ -63,6 +66,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
         messageDao.insert(message);
     }
 
+
+
     @Override
     public List<MessageDTO> listMessages() {
         // 查询留言列表
@@ -73,6 +78,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updateMessagesReview(ReviewVO reviewVO) {
         // 修改留言审核状态
@@ -83,6 +90,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
                 .collect(Collectors.toList());
         this.updateBatchById(messageList);
     }
+
+
 
     @Override
     public PageResult<MessageBackDTO> listMessageBackDTO(ConditionVO condition) {

@@ -1,7 +1,7 @@
 package com.wzh.blog.service;
 
 import com.wzh.blog.entity.ArticleTag;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 
 /**
  * 文章标签服务

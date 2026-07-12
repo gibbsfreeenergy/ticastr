@@ -43,7 +43,7 @@
         <el-form label-width="70px" :model="passwordForm" style="width:320px">
           <el-form-item label="旧密码">
             <el-input
-              @keyup.enter.native="updatePassword"
+              @keyup.enter="updatePassword"
               v-model="passwordForm.oldPassword"
               size="small"
               show-password
@@ -51,7 +51,7 @@
           </el-form-item>
           <el-form-item label="新密码">
             <el-input
-              @keyup.enter.native="updatePassword"
+              @keyup.enter="updatePassword"
               v-model="passwordForm.newPassword"
               size="small"
               show-password
@@ -59,7 +59,7 @@
           </el-form-item>
           <el-form-item label="确认密码">
             <el-input
-              @keyup.enter.native="updatePassword"
+              @keyup.enter="updatePassword"
               v-model="passwordForm.confirmPassword"
               size="small"
               show-password

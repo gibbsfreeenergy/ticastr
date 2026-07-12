@@ -12,15 +12,15 @@ import com.wzh.blog.vo.BlogInfoVO;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.VoiceVO;
 import com.wzh.blog.vo.WebsiteConfigVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import static com.wzh.blog.constant.OptTypeConst.UPDATE;
 
@@ -30,7 +30,7 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
  * @author yezhiqiu
  * @date 2021/07/28
  */
-@Api(tags = "博客信息模块")
+@Tag(name = "博客信息模块")
 @RestController
 public class BlogInfoController {
     @Autowired
@@ -45,7 +45,7 @@ public class BlogInfoController {
      *
      * @return {@link Result<BlogHomeInfoDTO>} 博客信息
      */
-    @ApiOperation(value = "查看博客信息")
+    @Operation(summary = "查看博客信息")
     @GetMapping("/")
     public Result<BlogHomeInfoDTO> getBlogHomeInfo() {
         return Result.ok(blogInfoService.getBlogHomeInfo());
@@ -56,7 +56,7 @@ public class BlogInfoController {
      *
      * @return {@link Result<BlogBackInfoDTO>} 后台信息
      */
-    @ApiOperation(value = "查看后台信息")
+    @Operation(summary = "查看后台信息")
     @GetMapping("/admin")
     public Result<BlogBackInfoDTO> getBlogBackInfo() {
         return Result.ok(blogInfoService.getBlogBackInfo());
@@ -68,8 +68,8 @@ public class BlogInfoController {
      * @param file 文件
      * @return {@link Result<String>} 博客配置图片
      */
-    @ApiOperation(value = "上传博客配置图片")
-    @ApiImplicitParam(name = "file", value = "图片", required = true, dataType = "MultipartFile")
+    @Operation(summary = "上传博客配置图片")
+    @Parameter(name = "file", description = "图片", required = true)
     @PostMapping("/admin/config/images")
     public Result<String> savePhotoAlbumCover(MultipartFile file) {
         return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.CONFIG.getPath()));
@@ -81,7 +81,7 @@ public class BlogInfoController {
      * @param websiteConfigVO 网站配置信息
      * @return {@link Result}
      */
-    @ApiOperation(value = "更新网站配置")
+    @Operation(summary = "更新网站配置")
     @PutMapping("/admin/website/config")
     public Result<?> updateWebsiteConfig(@Valid @RequestBody WebsiteConfigVO websiteConfigVO) {
         blogInfoService.updateWebsiteConfig(websiteConfigVO);
@@ -93,7 +93,7 @@ public class BlogInfoController {
      *
      * @return {@link Result<WebsiteConfigVO>} 网站配置
      */
-    @ApiOperation(value = "获取网站配置")
+    @Operation(summary = "获取网站配置")
     @GetMapping("/admin/website/config")
     public Result<WebsiteConfigVO> getWebsiteConfig() {
         return Result.ok(blogInfoService.getWebsiteConfig());
@@ -104,7 +104,7 @@ public class BlogInfoController {
      *
      * @return {@link Result<String>} 关于我信息
      */
-    @ApiOperation(value = "查看关于我信息")
+    @Operation(summary = "查看关于我信息")
     @GetMapping("/about")
     public Result<String> getAbout() {
         return Result.ok(blogInfoService.getAbout());
@@ -117,7 +117,7 @@ public class BlogInfoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "修改关于我信息")
+    @Operation(summary = "修改关于我信息")
     @PutMapping("/admin/about")
     public Result<?> updateAbout(@Valid @RequestBody BlogInfoVO blogInfoVO) {
         blogInfoService.updateAbout(blogInfoVO);
@@ -130,7 +130,7 @@ public class BlogInfoController {
      * @param voiceVO 语音信息
      * @return {@link Result<String>} 语音地址
      */
-    @ApiOperation(value = "上传语音")
+    @Operation(summary = "上传语音")
     @PostMapping("/voice")
     public Result<String> sendVoice(VoiceVO voiceVO) {
         webSocketService.sendVoice(voiceVO);

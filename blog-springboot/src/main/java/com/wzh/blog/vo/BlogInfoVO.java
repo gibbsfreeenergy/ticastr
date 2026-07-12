@@ -1,7 +1,6 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,13 +16,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ApiModel(description = "博客信息")
+@Schema(description = "博客信息")
 public class BlogInfoVO {
 
     /**
      * 关于我内容
      */
-    @ApiModelProperty(name = "aboutContent", value = "关于我内容", required = true, dataType = "String")
+    @Schema(description = "关于我内容")
     private String aboutContent;
 
 }

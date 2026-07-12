@@ -2,7 +2,7 @@ package com.wzh.blog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.constant.CommonConst;
 import com.wzh.blog.dao.RoleDao;
 import com.wzh.blog.dao.UserRoleDao;
@@ -49,6 +49,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
     @Autowired
     private FilterInvocationSecurityMetadataSourceImpl filterInvocationSecurityMetadataSource;
 
+
+
+
     @Override
     public List<UserRoleDTO> listUserRoles() {
         // 查询角色列表
@@ -57,17 +60,21 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
         return BeanCopyUtils.copyList(roleList, UserRoleDTO.class);
     }
 
+
+
     @Override
     public PageResult<RoleDTO> listRoles(ConditionVO conditionVO) {
         // 查询角色列表
         List<RoleDTO> roleDTOList = roleDao.listRoles(PageUtils.getLimitCurrent(), PageUtils.getSize(), conditionVO);
         // 查询总量
-        Integer count = roleDao.selectCount(new LambdaQueryWrapper<Role>()
+        Long count = roleDao.selectCount(new LambdaQueryWrapper<Role>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), Role::getRoleName, conditionVO.getKeywords()));
         return new PageResult<>(roleDTOList, count);
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveOrUpdateRole(RoleVO roleVO) {
         // 判断角色名重复
@@ -116,10 +123,12 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
         }
     }
 
+
+
     @Override
     public void deleteRoles(List<Integer> roleIdList) {
         // 判断角色下是否有用户
-        Integer count = userRoleDao.selectCount(new LambdaQueryWrapper<UserRole>()
+        Long count = userRoleDao.selectCount(new LambdaQueryWrapper<UserRole>()
                 .in(UserRole::getRoleId, roleIdList));
         if (count > 0) {
             throw new BizException("该角色下存在用户");

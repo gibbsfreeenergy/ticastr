@@ -22,7 +22,7 @@
             placeholder="请输入6位验证码"
             @keyup.enter="register"
           />
-          <v-btn text small :disabled="flag" @click="sendCode">
+          <v-btn variant="text" size="small" :disabled="flag" @click="sendCode">
             {{ codeMsg }}
           </v-btn>
         </div>
@@ -33,7 +33,7 @@
           label="密码"
           placeholder="请输入您的密码"
           @keyup.enter="register"
-          :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+          :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
           :type="show ? 'text' : 'password'"
           @click:append="show = !show"
         />

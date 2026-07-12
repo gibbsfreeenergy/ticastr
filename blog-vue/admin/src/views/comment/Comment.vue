@@ -64,7 +64,7 @@
           size="small"
           placeholder="请输入用户昵称"
           style="width:200px"
-          @keyup.enter.native="searchComments"
+          @keyup.enter="searchComments"
         />
         <el-button
           type="primary"
@@ -87,7 +87,7 @@
       <!-- 表格列 -->
       <el-table-column type="selection" width="55" />
       <el-table-column prop="avatar" label="头像" align="center" width="120">
-        <template slot-scope="scope">
+        <template #default="scope">
           <img :src="scope.row.avatar" width="40" height="40" />
         </template>
       </el-table-column>
@@ -105,7 +105,7 @@
         align="center"
         width="120"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <span v-if="scope.row.replyNickname">
             {{ scope.row.replyNickname }}
           </span>
@@ -114,7 +114,7 @@
       </el-table-column>
       <!-- 评论文章标题 -->
       <el-table-column prop="articleTitle" label="文章标题" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span v-if="scope.row.articleTitle">
             {{ scope.row.articleTitle }}
           </span>
@@ -123,7 +123,7 @@
       </el-table-column>
       <!-- 评论内容 -->
       <el-table-column prop="commentContent" label="评论内容" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span v-html="scope.row.commentContent" class="comment-content" />
         </template>
       </el-table-column>
@@ -134,21 +134,21 @@
         width="150"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | date }}
+          {{ date(scope.row.createTime) }}
         </template>
       </el-table-column>
       <!-- 状态 -->
       <el-table-column prop="isReview" label="状态" width="80" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag v-if="scope.row.isReview == 0" type="warning">审核中</el-tag>
           <el-tag v-if="scope.row.isReview == 1" type="success">正常</el-tag>
         </template>
       </el-table-column>
       <!-- 来源 -->
       <el-table-column label="来源" align="center" width="100">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag v-if="scope.row.type == 1">文章</el-tag>
           <el-tag v-if="scope.row.type == 2" type="warning">友链</el-tag>
           <el-tag v-if="scope.row.type == 3" type="danger">说说</el-tag>
@@ -156,12 +156,11 @@
       </el-table-column>
       <!-- 列操作 -->
       <el-table-column label="操作" width="160" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             v-if="scope.row.isReview == 0"
             size="mini"
             type="success"
-            slot="reference"
             @click="updateCommentReview(scope.row.id)"
           >
             通过
@@ -171,9 +170,9 @@
             title="确定删除吗？"
             @confirm="deleteComments(scope.row.id)"
           >
-            <el-button size="mini" type="danger" slot="reference">
+            <template #reference><el-button size="mini" type="danger">
               删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
@@ -191,17 +190,17 @@
       layout="total, sizes, prev, pager, next, jumper"
     />
     <!-- 批量彻底删除对话框 -->
-    <el-dialog :visible.sync="remove" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="remove" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否彻底删除选中项？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="remove = false">取 消</el-button>
         <el-button type="primary" @click="deleteComments(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

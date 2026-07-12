@@ -22,7 +22,7 @@
               </div>
               <!-- 发表时间 -->
               <div class="time">
-                {{ item.createTime | time }}
+                {{ time(item.createTime) }}
                 <span class="top" v-if="item.isTop == 1">
                   <i class="iconfont iconzhiding" /> 置顶
                 </span>
@@ -77,7 +77,7 @@
         v-if="talkList && count > talkList.length"
         @click="listTalks"
       >
-        <v-btn outlined>
+        <v-btn variant="outlined">
           加载更多...
         </v-btn>
       </div>

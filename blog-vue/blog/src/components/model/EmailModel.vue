@@ -22,7 +22,7 @@
             placeholder="请输入6位验证码"
             @keyup.enter="register"
           />
-          <v-btn text small :disabled="flag" @click="sendCode">
+          <v-btn variant="text" size="small" :disabled="flag" @click="sendCode">
             {{ codeMsg }}
           </v-btn>
         </div>

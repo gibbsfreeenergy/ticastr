@@ -27,17 +27,17 @@
       </el-button>
     </div>
     <!-- 文章内容 -->
-    <mavon-editor
+    <md-editor
       ref="md"
       v-model="article.articleContent"
-      @imgAdd="uploadImg"
+      @onUploadImg="uploadImg"
       style="height:calc(100vh - 260px)"
     />
     <!-- 添加文章对话框 -->
-    <el-dialog :visible.sync="addOrEdit" width="40%" top="3vh">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="addOrEdit" width="40%" top="3vh">
+      <template #header><div class="dialog-title-container">
         发布文章
-      </div>
+      </div></template>
       <!-- 文章数据 -->
       <el-form label-width="80px" size="medium" :model="article">
         <!-- 文章分类 -->
@@ -66,10 +66,10 @@
               :fetch-suggestions="searchCategories"
               placeholder="请输入分类名搜索，enter可添加自定义分类"
               :trigger-on-focus="false"
-              @keyup.enter.native="saveCategory"
+              @keyup.enter="saveCategory"
               @select="handleSelectCategories"
             >
-              <template slot-scope="{ item }">
+              <template #default="{ item }">
                 <div>{{ item.categoryName }}</div>
               </template>
             </el-autocomplete>
@@ -84,9 +84,9 @@
                 {{ item.categoryName }}
               </div>
             </div>
-            <el-button type="success" plain slot="reference" size="small">
+            <template #reference><el-button type="success" plain size="small">
               添加分类
-            </el-button>
+            </el-button></template>
           </el-popover>
         </el-form-item>
         <!-- 文章标签 -->
@@ -115,10 +115,10 @@
               :fetch-suggestions="searchTags"
               placeholder="请输入标签名搜索，enter可添加自定义标签"
               :trigger-on-focus="false"
-              @keyup.enter.native="saveTag"
+              @keyup.enter="saveTag"
               @select="handleSelectTag"
             >
-              <template slot-scope="{ item }">
+              <template #default="{ item }">
                 <div>{{ item.tagName }}</div>
               </template>
             </el-autocomplete>
@@ -134,9 +134,9 @@
                 {{ item.tagName }}
               </el-tag>
             </div>
-            <el-button type="primary" plain slot="reference" size="small">
+            <template #reference><el-button type="primary" plain size="small">
               添加标签
-            </el-button>
+            </el-button></template>
           </el-popover>
         </el-form-item>
         <el-form-item label="文章类型">
@@ -193,12 +193,12 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="addOrEdit = false">取 消</el-button>
         <el-button type="danger" @click="saveOrUpdateArticle">
           发 表
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>
@@ -221,7 +221,7 @@ export default {
       }
     }
   },
-  destroyed() {
+  unmounted() {
     //文章自动保存功能
     this.autoSaveArticle();
   },
@@ -301,33 +301,21 @@ export default {
           });
       });
     },
-    uploadImg(pos, file) {
-      var formdata = new FormData();
-      if (file.size / 1024 < this.config.UPLOAD_SIZE) {
-        formdata.append("file", file);
-        this.axios
-          .post("/api/admin/articles/images", formdata)
-          .then(({ data }) => {
-            this.$refs.md.$img2Url(pos, data.data);
-          });
-      } else {
-        // 压缩到200KB,这里的200就是要压缩的大小,可自定义
-        imageConversion
-          .compressAccurately(file, this.config.UPLOAD_SIZE)
-          .then(res => {
-            formdata.append(
-              "file",
-              new window.File([res], file.name, { type: file.type })
-            );
-            this.axios
-              .post("/api/admin/articles/images", formdata)
-              .then(({ data }) => {
-                this.$refs.md.$img2Url(pos, data.data);
-              });
-          });
-      }
+    async uploadImg(files, callback) {
+      const urls = await Promise.all(Array.from(files).map(file => this.uploadImage(file)));
+      callback(urls);
     },
-    saveArticleDraft() {
+    async uploadImage(file) {
+      const formdata = new FormData();
+      let uploadFile = file;
+      if (file.size / 1024 >= this.config.UPLOAD_SIZE) {
+        const compressedFile = await imageConversion.compressAccurately(file, this.config.UPLOAD_SIZE);
+        uploadFile = new window.File([compressedFile], file.name, { type: file.type });
+      }
+      formdata.append("file", uploadFile);
+      const { data } = await this.axios.post("/api/admin/articles/images", formdata);
+      return data.data;
+    },    saveArticleDraft() {
       if (this.article.articleTitle.trim() == "") {
         this.$message.error("文章标题不能为空");
         return false;

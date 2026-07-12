@@ -7,13 +7,13 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.ReplyDTO;
 import com.wzh.blog.service.CommentService;
 import com.wzh.blog.vo.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.wzh.blog.constant.OptTypeConst.*;
@@ -24,7 +24,7 @@ import static com.wzh.blog.constant.OptTypeConst.*;
  * @author xiaojie
  * @date 2021/07/29
  */
-@Api(tags = "评论模块")
+@Tag(name = "评论模块")
 @RestController
 public class CommentController {
     @Autowired
@@ -36,7 +36,7 @@ public class CommentController {
      * @param commentVO 评论信息
      * @return {@link Result<CommentDTO>}
      */
-    @ApiOperation(value = "查询评论")
+    @Operation(summary = "查询评论")
     @GetMapping("/comments")
     public Result<PageResult<CommentDTO>> listComments(CommentVO commentVO) {
         return Result.ok(commentService.listComments(commentVO));
@@ -48,7 +48,7 @@ public class CommentController {
      * @param commentVO 评论信息
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "添加评论")
+    @Operation(summary = "添加评论")
     @PostMapping("/comments")
     public Result<?> saveComment(@Valid @RequestBody CommentVO commentVO) {
         commentService.saveComment(commentVO);
@@ -61,8 +61,8 @@ public class CommentController {
      * @param commentId 评论id
      * @return {@link Result<ReplyDTO>} 回复列表
      */
-    @ApiOperation(value = "查询评论下的回复")
-    @ApiImplicitParam(name = "commentId", value = "评论id", required = true, dataType = "Integer")
+    @Operation(summary = "查询评论下的回复")
+    @Parameter(name = "commentId", description = "评论id", required = true)
     @GetMapping("/comments/{commentId}/replies")
     public Result<List<ReplyDTO>> listRepliesByCommentId(@PathVariable("commentId") Integer commentId) {
         return Result.ok(commentService.listRepliesByCommentId(commentId));
@@ -74,7 +74,7 @@ public class CommentController {
      * @param commentId 评论id
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "评论点赞")
+    @Operation(summary = "评论点赞")
     @PostMapping("/comments/{commentId}/like")
     public Result<?> saveCommentLike(@PathVariable("commentId") Integer commentId) {
         commentService.saveCommentLike(commentId);
@@ -88,7 +88,7 @@ public class CommentController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "审核评论")
+    @Operation(summary = "审核评论")
     @PutMapping("/admin/comments/review")
     public Result<?> updateCommentsReview(@Valid @RequestBody ReviewVO reviewVO) {
         commentService.updateCommentsReview(reviewVO);
@@ -102,7 +102,7 @@ public class CommentController {
      * @return {@link Result<>}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "删除评论")
+    @Operation(summary = "删除评论")
     @DeleteMapping("/admin/comments")
     public Result<?> deleteComments(@RequestBody List<Integer> commentIdList) {
         commentService.removeByIds(commentIdList);
@@ -115,7 +115,7 @@ public class CommentController {
      * @param condition 条件
      * @return {@link Result<CommentBackDTO>} 后台评论
      */
-    @ApiOperation(value = "查询后台评论")
+    @Operation(summary = "查询后台评论")
     @GetMapping("/admin/comments")
     public Result<PageResult<CommentBackDTO>> listCommentBackDTO(ConditionVO condition) {
         return Result.ok(commentService.listCommentBackDTO(condition));

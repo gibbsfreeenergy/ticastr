@@ -1,13 +1,12 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * 资源
@@ -19,44 +18,44 @@ import javax.validation.constraints.NotBlank;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "资源")
+@Schema(description = "资源")
 public class ResourceVO {
 
     /**
      * 资源id
      */
-    @ApiModelProperty(name = "id", value = "资源id", required = true, dataType = "Integer")
+    @Schema(description = "资源id")
     private Integer id;
 
     /**
      * 资源名
      */
     @NotBlank(message = "资源名不能为空")
-    @ApiModelProperty(name = "resourceName", value = "资源名", required = true, dataType = "String")
+    @Schema(description = "资源名")
     private String resourceName;
 
     /**
      * 路径
      */
-    @ApiModelProperty(name = "url", value = "资源路径", required = true, dataType = "String")
+    @Schema(description = "资源路径")
     private String url;
 
     /**
      * 请求方式
      */
-    @ApiModelProperty(name = "url", value = "资源路径", required = true, dataType = "String")
+    @Schema(description = "资源路径")
     private String requestMethod;
 
     /**
      * 父资源id
      */
-    @ApiModelProperty(name = "parentId", value = "父资源id", required = true, dataType = "Integer")
+    @Schema(description = "父资源id")
     private Integer parentId;
 
     /**
      * 是否匿名访问
      */
-    @ApiModelProperty(name = "isAnonymous", value = "是否匿名访问", required = true, dataType = "Integer")
+    @Schema(description = "是否匿名访问")
     private Integer isAnonymous;
 
 }

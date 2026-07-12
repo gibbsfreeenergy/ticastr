@@ -1,13 +1,12 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * 用户信息vo
@@ -19,25 +18,25 @@ import javax.validation.constraints.NotBlank;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "用户信息对象")
+@Schema(description = "用户信息对象")
 public class UserInfoVO {
 
     /**
      * 用户昵称
      */
     @NotBlank(message = "昵称不能为空")
-    @ApiModelProperty(name = "nickname", value = "昵称", dataType = "String")
+    @Schema(description = "昵称")
     private String nickname;
 
     /**
      * 用户简介
      */
-    @ApiModelProperty(name = "intro", value = "介绍", dataType = "String")
+    @Schema(description = "介绍")
     private String intro;
 
     /**
      * 个人网站
      */
-    @ApiModelProperty(name = "webSite", value = "个人网站", dataType = "String")
+    @Schema(description = "个人网站")
     private String webSite;
 }

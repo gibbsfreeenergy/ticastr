@@ -1,6 +1,6 @@
 package com.wzh.blog.consumer;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.dao.ElasticsearchDao;
 import com.wzh.blog.dto.ArticleSearchDTO;
 import com.wzh.blog.dto.MaxwellDataDTO;

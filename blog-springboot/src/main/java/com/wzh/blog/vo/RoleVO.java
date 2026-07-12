@@ -1,13 +1,12 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 /**
@@ -20,39 +19,39 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "角色")
+@Schema(description = "角色")
 public class RoleVO {
 
     /**
      * id
      */
-    @ApiModelProperty(name = "id", value = "用户id", dataType = "Integer")
+    @Schema(description = "用户id")
     private Integer id;
 
     /**
      * 标签名
      */
     @NotBlank(message = "角色名不能为空")
-    @ApiModelProperty(name = "roleName", value = "角色名", required = true, dataType = "String")
+    @Schema(description = "角色名")
     private String roleName;
 
     /**
      * 标签名
      */
     @NotBlank(message = "权限标签不能为空")
-    @ApiModelProperty(name = "categoryName", value = "标签名", required = true, dataType = "String")
+    @Schema(description = "标签名")
     private String roleLabel;
 
     /**
      * 资源列表
      */
-    @ApiModelProperty(name = "resourceIdList", value = "资源列表", required = true, dataType = "List<Integer>")
+    @Schema(description = "资源列表")
     private List<Integer> resourceIdList;
 
     /**
      * 菜单列表
      */
-    @ApiModelProperty(name = "menuIdList", value = "菜单列表", required = true, dataType = "List<Integer>")
+    @Schema(description = "菜单列表")
     private List<Integer> menuIdList;
 
 }

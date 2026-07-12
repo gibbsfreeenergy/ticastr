@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -12,7 +12,7 @@ import com.wzh.blog.entity.Comment;
 import com.wzh.blog.dao.CommentDao;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.CommentService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.util.HTMLUtils;
 import com.wzh.blog.util.PageUtils;
@@ -65,10 +65,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
     @Value("${website.url}")
     private String websiteUrl;
 
+
+
+
     @Override
     public PageResult<CommentDTO> listComments(CommentVO commentVO) {
         // 查询评论量
-        Integer commentCount = commentDao.selectCount(new LambdaQueryWrapper<Comment>()
+        Long commentCount = commentDao.selectCount(new LambdaQueryWrapper<Comment>()
                 .eq(Objects.nonNull(commentVO.getTopicId()), Comment::getTopicId, commentVO.getTopicId())
                 .eq(Comment::getType, commentVO.getType())
                 .isNull(Comment::getParentId)
@@ -106,6 +109,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         return new PageResult<>(commentDTOList, commentCount);
     }
 
+
+
     @Override
     public List<ReplyDTO> listRepliesByCommentId(Integer commentId) {
         // 转换页码查询评论下的回复
@@ -116,6 +121,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         replyDTOList.forEach(item -> item.setLikeCount((Integer) likeCountMap.get(item.getId().toString())));
         return replyDTOList;
     }
+
+
 
     @Override
     public void saveComment(CommentVO commentVO) {
@@ -140,6 +147,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         }
     }
 
+
+
     @Override
     public void saveCommentLike(Integer commentId) {
         // 判断是否点赞
@@ -157,6 +166,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         }
     }
 
+
+
     @Override
     public void updateCommentsReview(ReviewVO reviewVO) {
         // 修改评论审核状态
@@ -167,6 +178,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
                 .collect(Collectors.toList());
         this.updateBatchById(commentList);
     }
+
+
 
     @Override
     public PageResult<CommentBackDTO> listCommentBackDTO(ConditionVO condition) {

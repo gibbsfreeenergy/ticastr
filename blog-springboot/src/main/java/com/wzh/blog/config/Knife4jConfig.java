@@ -1,48 +1,35 @@
 package com.wzh.blog.config;
 
-
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2WebMvc;
 
-import java.util.Collections;
+import java.util.List;
 
 /**
- * Knife4j配置类
- *
- * @author yezhiqiu
+ * OpenAPI 3 configuration. The class name is retained to avoid breaking any
+ * existing component scans or external references to the former Knife4j setup.
  */
 @Configuration
-@EnableSwagger2WebMvc
 public class Knife4jConfig {
 
     @Bean
-    public Docket createRestApi() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .protocols(Collections.singleton("http"))
-                .host("http://ticastr.com")
-                .apiInfo(apiInfo())
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.wzh.blog.controller"))
-                .paths(PathSelectors.any())
-                .build();
+    public OpenAPI openAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Blog API")
+                        .description("Ticastr blog service API")
+                        .version("1.0")
+                        .termsOfService("https://ticastr.com/api")
+                        .contact(new Contact()
+                                .name("Ticstar")
+                                .url("https://github.com/gibbsfreeenergy")
+                                .email("1036421779@qq.com")))
+                .servers(List.of(new Server()
+                        .url("https://ticastr.com")
+                        .description("Production")));
     }
-
-    private ApiInfo apiInfo() {
-        return new ApiInfoBuilder()
-                .title("博客api")
-                .description("天上的星星是哑巴")
-                .contact(new Contact("Ticstar", "https://github.com/gibbsfreeenergy", "1036421779@qq.com"))
-                .termsOfServiceUrl("http://ticastr.com/api")
-                .version("1.0")
-                .build();
-    }
-
 }

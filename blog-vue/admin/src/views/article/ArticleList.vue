@@ -97,7 +97,7 @@
           size="small"
           placeholder="请输入文章名"
           style="width:200px"
-          @keyup.enter.native="searchArticles"
+          @keyup.enter="searchArticles"
         />
         <el-button
           type="primary"
@@ -126,7 +126,7 @@
         width="180"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-image
             class="article-cover"
             :src="
@@ -165,7 +165,7 @@
         width="170"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag
             v-for="item of scope.row.tagDTOList"
             :key="item.tagId"
@@ -182,7 +182,7 @@
         width="70"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <span v-if="scope.row.viewsCount">
             {{ scope.row.viewsCount }}
           </span>
@@ -196,7 +196,7 @@
         width="70"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <span v-if="scope.row.likeCount">
             {{ scope.row.likeCount }}
           </span>
@@ -205,7 +205,7 @@
       </el-table-column>
       <!-- 文章类型 -->
       <el-table-column prop="type" label="类型" width="80" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag :type="articleType(scope.row.type).tagType">
             {{ articleType(scope.row.type).name }}
           </el-tag>
@@ -218,14 +218,14 @@
         width="130"
         align="center"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | date }}
+          {{ date(scope.row.createTime) }}
         </template>
       </el-table-column>
       <!-- 文章置顶 -->
       <el-table-column prop="isTop" label="置顶" width="80" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-switch
             v-model="scope.row.isTop"
             active-color="#13ce66"
@@ -239,7 +239,7 @@
       </el-table-column>
       <!-- 列操作 -->
       <el-table-column label="操作" align="center" width="150">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             type="primary"
             size="mini"
@@ -254,18 +254,18 @@
             @confirm="updateArticleDelete(scope.row.id)"
             v-if="scope.row.isDelete == 0"
           >
-            <el-button size="mini" type="danger" slot="reference">
+            <template #reference><el-button size="mini" type="danger">
               删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
           <el-popconfirm
             title="确定恢复吗？"
             v-if="scope.row.isDelete == 1"
             @confirm="updateArticleDelete(scope.row.id)"
           >
-            <el-button size="mini" type="success" slot="reference">
+            <template #reference><el-button size="mini" type="success">
               恢复
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
           <el-popconfirm
             style="margin-left:10px"
@@ -273,9 +273,9 @@
             title="确定彻底删除吗？"
             @confirm="deleteArticles(scope.row.id)"
           >
-            <el-button size="mini" type="danger" slot="reference">
+            <template #reference><el-button size="mini" type="danger">
               删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
@@ -293,30 +293,30 @@
       layout="total, sizes, prev, pager, next, jumper"
     />
     <!-- 批量逻辑删除对话框 -->
-    <el-dialog :visible.sync="updateIsDelete" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="updateIsDelete" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否删除选中项？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="updateIsDelete = false">取 消</el-button>
         <el-button type="primary" @click="updateArticleDelete(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- 批量彻底删除对话框 -->
-    <el-dialog :visible.sync="remove" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="remove" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否彻底删除选中项？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="remove = false">取 消</el-button>
         <el-button type="primary" @click="deleteArticles(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

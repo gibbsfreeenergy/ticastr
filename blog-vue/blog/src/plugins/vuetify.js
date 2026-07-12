@@ -1,6 +1,16 @@
-import Vue from "vue";
-import Vuetify from "vuetify/lib";
+import "@mdi/font/css/materialdesignicons.css";
+import "vuetify/styles";
+import { createVuetify } from "vuetify";
+import * as components from "vuetify/components";
+import * as directives from "vuetify/directives";
 
-Vue.use(Vuetify);
-
-export default new Vuetify({});
+export default createVuetify({
+  components,
+  directives,
+  icons: {
+    defaultSet: "mdi"
+  },
+  theme: {
+    defaultTheme: "light"
+  }
+});

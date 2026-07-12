@@ -3,7 +3,7 @@ package com.wzh.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.MenuDao;
 import com.wzh.blog.dao.RoleMenuDao;
 import com.wzh.blog.dto.MenuDTO;
@@ -40,6 +40,9 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
     @Autowired
     private RoleMenuDao roleMenuDao;
 
+
+
+
     @Override
     public List<MenuDTO> listMenus(ConditionVO conditionVO) {
         // 查询菜单数据
@@ -74,16 +77,20 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveOrUpdateMenu(MenuVO menuVO) {
         Menu menu = BeanCopyUtils.copyObject(menuVO, Menu.class);
         this.saveOrUpdate(menu);
     }
 
+
+
     @Override
     public void deleteMenu(Integer menuId) {
         // 查询是否有角色关联
-        Integer count = roleMenuDao.selectCount(new LambdaQueryWrapper<RoleMenu>()
+        Long count = roleMenuDao.selectCount(new LambdaQueryWrapper<RoleMenu>()
                 .eq(RoleMenu::getMenuId, menuId));
         if (count > 0) {
             throw new BizException("菜单下有角色关联");
@@ -98,6 +105,8 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
         menuIdList.add(menuId);
         menuDao.deleteBatchIds(menuIdList);
     }
+
+
 
     @Override
     public List<LabelOptionDTO> listMenuOptions() {
@@ -129,6 +138,8 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
                     .build();
         }).collect(Collectors.toList());
     }
+
+
 
     @Override
     public List<UserMenuDTO> listUserMenus() {

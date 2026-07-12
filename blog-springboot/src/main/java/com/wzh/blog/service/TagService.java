@@ -4,7 +4,7 @@ import com.wzh.blog.dto.TagBackDTO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.TagDTO;
 import com.wzh.blog.entity.Tag;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.ConditionVO;
 import com.wzh.blog.vo.TagVO;
 

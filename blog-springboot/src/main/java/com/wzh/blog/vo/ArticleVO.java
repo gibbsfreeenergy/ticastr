@@ -1,11 +1,10 @@
 package com.wzh.blog.vo;
 
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 
@@ -19,69 +18,69 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "文章")
+@Schema(description = "文章")
 public class ArticleVO {
 
     /**
      * 文章id
      */
-    @ApiModelProperty(name = "id", value = "文章id", dataType = "Integer")
+    @Schema(description = "文章id")
     private Integer id;
 
     /**
      * 标题
      */
     @NotBlank(message = "文章标题不能为空")
-    @ApiModelProperty(name = "articleTitle", value = "文章标题", required = true, dataType = "String")
+    @Schema(description = "文章标题")
     private String articleTitle;
 
     /**
      * 内容
      */
     @NotBlank(message = "文章内容不能为空")
-    @ApiModelProperty(name = "articleContent", value = "文章内容", required = true, dataType = "String")
+    @Schema(description = "文章内容")
     private String articleContent;
 
     /**
      * 文章封面
      */
-    @ApiModelProperty(name = "articleCover", value = "文章缩略图", dataType = "String")
+    @Schema(description = "文章缩略图")
     private String articleCover;
 
     /**
      * 文章分类
      */
-    @ApiModelProperty(name = "category", value = "文章分类", dataType = "Integer")
+    @Schema(description = "文章分类")
     private String categoryName;
 
     /**
      * 文章标签
      */
-    @ApiModelProperty(name = "tagNameList", value = "文章标签", dataType = "List<Integer>")
+    @Schema(description = "文章标签")
     private List<String> tagNameList;
 
     /**
      * 文章类型
      */
-    @ApiModelProperty(name = "type", value = "文章类型", dataType = "Integer")
+    @Schema(description = "文章类型")
     private Integer type;
 
     /**
      * 原文链接
      */
-    @ApiModelProperty(name = "originalUrl", value = "原文链接", dataType = "String")
+    @Schema(description = "原文链接")
     private String originalUrl;
 
     /**
      * 是否置顶
      */
-    @ApiModelProperty(name = "isTop", value = "是否置顶", dataType = "Integer")
+    @Schema(description = "是否置顶")
     private Integer isTop;
 
     /**
      * 文章状态 1.公开 2.私密 3.评论可见
      */
-    @ApiModelProperty(name = "status", value = "文章状态", dataType = "String")
+    @Schema(description = "文章状态")
     private Integer status;
 
 }

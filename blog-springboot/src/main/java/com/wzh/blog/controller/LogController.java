@@ -5,8 +5,8 @@ import com.wzh.blog.vo.ConditionVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.service.OperationLogService;
 import com.wzh.blog.vo.Result;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +21,7 @@ import java.util.List;
  * @author yezhiqiu
  * @date 2021/07/27
  */
-@Api(tags = "日志模块")
+@Tag(name = "日志模块")
 @RestController
 public class LogController {
     @Autowired
@@ -33,7 +33,7 @@ public class LogController {
      * @param conditionVO 条件
      * @return {@link Result<OperationLogDTO>} 日志列表
      */
-    @ApiOperation(value = "查看操作日志")
+    @Operation(summary = "查看操作日志")
     @GetMapping("/admin/operation/logs")
     public Result<PageResult<OperationLogDTO>> listOperationLogs(ConditionVO conditionVO) {
         return Result.ok(operationLogService.listOperationLogs(conditionVO));
@@ -45,7 +45,7 @@ public class LogController {
      * @param logIdList 日志id列表
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "删除操作日志")
+    @Operation(summary = "删除操作日志")
     @DeleteMapping("/admin/operation/logs")
     public Result<?> deleteOperationLogs(@RequestBody List<Integer> logIdList) {
         operationLogService.removeByIds(logIdList);

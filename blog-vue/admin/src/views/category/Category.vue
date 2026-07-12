@@ -27,7 +27,7 @@
           size="small"
           placeholder="请输入分类名"
           style="width:200px"
-          @keyup.enter.native="searchCategories"
+          @keyup.enter="searchCategories"
         />
         <el-button
           type="primary"
@@ -55,14 +55,14 @@
       <el-table-column prop="articleCount" label="文章量" align="center" />
       <!-- 分类创建时间 -->
       <el-table-column prop="createTime" label="创建时间" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | date }}
+          {{ date(scope.row.createTime) }}
         </template>
       </el-table-column>
       <!-- 列操作 -->
       <el-table-column label="操作" width="160" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button type="primary" size="mini" @click="openModel(scope.row)">
             编辑
           </el-button>
@@ -71,9 +71,9 @@
             style="margin-left:1rem"
             @confirm="deleteCategory(scope.row.id)"
           >
-            <el-button size="mini" type="danger" slot="reference">
+            <template #reference><el-button size="mini" type="danger">
               删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
@@ -91,32 +91,32 @@
       layout="total, sizes, prev, pager, next, jumper"
     />
     <!-- 批量删除对话框 -->
-    <el-dialog :visible.sync="isDelete" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="isDelete" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否删除选中项？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="isDelete = false">取 消</el-button>
         <el-button type="primary" @click="deleteCategory(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
     <!-- 添加编辑对话框 -->
-    <el-dialog :visible.sync="addOrEdit" width="30%">
-      <div class="dialog-title-container" slot="title" ref="categoryTitle" />
+    <el-dialog v-model="addOrEdit" width="30%">
+      <template #header><div class="dialog-title-container" ref="categoryTitle" /></template>
       <el-form label-width="80px" size="medium" :model="categoryForm">
         <el-form-item label="分类名">
           <el-input v-model="categoryForm.categoryName" style="width:220px" />
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="addOrEdit = false">取 消</el-button>
         <el-button type="primary" @click="addOrEditCategory">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

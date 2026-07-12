@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -19,7 +19,7 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.UserAuthService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.strategy.context.SocialLoginStrategyContext;
 import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
@@ -67,6 +67,9 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     @Autowired
     private SocialLoginStrategyContext socialLoginStrategyContext;
 
+
+
+
     @Override
     public void sendCode(String username) {
         // 校验账号是否合法
@@ -85,6 +88,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         // 将验证码存入redis，设置过期时间为15分钟
         redisService.set(USER_CODE_KEY + username, code, CODE_EXPIRE_TIME);
     }
+
+
 
     @Override
     public List<UserAreaDTO> listUserAreas(ConditionVO conditionVO) {
@@ -116,6 +121,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void register(UserVO user) {
         // 校验账号是否合法
@@ -145,6 +152,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         userAuthDao.insert(userAuth);
     }
 
+
+
     @Override
     public void updatePassword(UserVO user) {
         // 校验账号是否合法
@@ -156,6 +165,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
                 .set(UserAuth::getPassword, BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()))
                 .eq(UserAuth::getUsername, user.getUsername()));
     }
+
+
 
     @Override
     public void updateAdminPassword(PasswordVO passwordVO) {
@@ -174,6 +185,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         }
     }
 
+
+
     @Override
     public PageResult<UserBackDTO> listUserBackDTO(ConditionVO condition) {
         // 获取后台用户数量
@@ -187,12 +200,16 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public UserInfoDTO qqLogin(QQLoginVO qqLoginVO) {
         return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(qqLoginVO), LoginTypeEnum.QQ);
     }
 
     @Transactional(rollbackFor = BizException.class)
+
+
     @Override
     public UserInfoDTO weiboLogin(WeiboLoginVO weiboLoginVO) {
         return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(weiboLoginVO), LoginTypeEnum.WEIBO);

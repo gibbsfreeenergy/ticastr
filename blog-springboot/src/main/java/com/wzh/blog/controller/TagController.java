@@ -7,12 +7,12 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.TagDTO;
 import com.wzh.blog.service.TagService;
 import com.wzh.blog.vo.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.wzh.blog.constant.OptTypeConst.REMOVE;
@@ -25,7 +25,7 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
  * @author yezhiqiu
  * @date 2021/07/29
  */
-@Api(tags = "标签模块")
+@Tag(name = "标签模块")
 @RestController
 public class TagController {
     @Autowired
@@ -36,7 +36,7 @@ public class TagController {
      *
      * @return {@link Result<TagDTO>} 标签列表
      */
-    @ApiOperation(value = "查询标签列表")
+    @Operation(summary = "查询标签列表")
     @GetMapping("/tags")
     public Result<PageResult<TagDTO>> listTags() {
         return Result.ok(tagService.listTags());
@@ -48,7 +48,7 @@ public class TagController {
      * @param condition 条件
      * @return {@link Result<TagBackDTO>} 标签列表
      */
-    @ApiOperation(value = "查询后台标签列表")
+    @Operation(summary = "查询后台标签列表")
     @GetMapping("/admin/tags")
     public Result<PageResult<TagBackDTO>> listTagBackDTO(ConditionVO condition) {
         return Result.ok(tagService.listTagBackDTO(condition));
@@ -60,7 +60,7 @@ public class TagController {
      * @param condition 条件
      * @return {@link Result<String>} 标签列表
      */
-    @ApiOperation(value = "搜索文章标签")
+    @Operation(summary = "搜索文章标签")
     @GetMapping("/admin/tags/search")
     public Result<List<TagDTO>> listTagsBySearch(ConditionVO condition) {
         return Result.ok(tagService.listTagsBySearch(condition));
@@ -73,7 +73,7 @@ public class TagController {
      * @return {@link Result<>}
      */
     @OptLog(optType = SAVE_OR_UPDATE)
-    @ApiOperation(value = "添加或修改标签")
+    @Operation(summary = "添加或修改标签")
     @PostMapping("/admin/tags")
     public Result<?> saveOrUpdateTag(@Valid @RequestBody TagVO tagVO) {
         tagService.saveOrUpdateTag(tagVO);
@@ -87,7 +87,7 @@ public class TagController {
      * @return {@link Result<>}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "删除标签")
+    @Operation(summary = "删除标签")
     @DeleteMapping("/admin/tags")
     public Result<?> deleteTag(@RequestBody List<Integer> tagIdList) {
         tagService.deleteTag(tagIdList);

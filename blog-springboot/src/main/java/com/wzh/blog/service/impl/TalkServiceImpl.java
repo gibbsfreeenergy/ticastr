@@ -1,8 +1,8 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.CommentDao;
 import com.wzh.blog.dto.CommentCountDTO;
 import com.wzh.blog.dto.TalkBackDTO;
@@ -42,6 +42,9 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
     @Autowired
     private RedisService redisService;
 
+
+
+
     @Override
     public List<String> listHomeTalks() {
         // 查询最新10条说说
@@ -55,10 +58,12 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
                 .collect(Collectors.toList());
     }
 
+
+
     @Override
     public PageResult<TalkDTO> listTalks() {
         // 查询说说总量
-        Integer count = talkDao.selectCount((new LambdaQueryWrapper<Talk>()
+        Long count = talkDao.selectCount((new LambdaQueryWrapper<Talk>()
                 .eq(Talk::getStatus, PUBLIC.getStatus())));
         if (count == 0) {
             return new PageResult<>();
@@ -85,6 +90,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         return new PageResult<>(talkDTOList, count);
     }
 
+
+
     @Override
     public TalkDTO getTalkById(Integer talkId) {
         // 查询说说信息
@@ -100,6 +107,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         }
         return talkDTO;
     }
+
+
 
     @Override
     public void saveTalkLike(Integer talkId) {
@@ -118,6 +127,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         }
     }
 
+
+
     @Override
     public void saveOrUpdateTalk(TalkVO talkVO) {
         Talk talk = BeanCopyUtils.copyObject(talkVO, Talk.class);
@@ -125,15 +136,19 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         this.saveOrUpdate(talk);
     }
 
+
+
     @Override
     public void deleteTalks(List<Integer> talkIdList) {
         talkDao.deleteBatchIds(talkIdList);
     }
 
+
+
     @Override
     public PageResult<TalkBackDTO> listBackTalks(ConditionVO conditionVO) {
         // 查询说说总量
-        Integer count = talkDao.selectCount(new LambdaQueryWrapper<Talk>()
+        Long count = talkDao.selectCount(new LambdaQueryWrapper<Talk>()
                 .eq(Objects.nonNull(conditionVO.getStatus()), Talk::getStatus, conditionVO.getStatus()));
         if (count == 0) {
             return new PageResult<>();
@@ -148,6 +163,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         });
         return new PageResult<>(talkDTOList, count);
     }
+
+
 
     @Override
     public TalkBackDTO getBackTalkById(Integer talkId) {

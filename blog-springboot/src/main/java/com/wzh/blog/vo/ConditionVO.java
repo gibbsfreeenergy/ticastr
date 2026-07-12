@@ -1,7 +1,6 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,85 +19,85 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "查询条件")
+@Schema(description = "查询条件")
 public class ConditionVO {
 
     /**
      * 页码
      */
-    @ApiModelProperty(name = "current", value = "页码", dataType = "Long")
+    @Schema(description = "页码")
     private Long current;
 
     /**
      * 条数
      */
-    @ApiModelProperty(name = "size", value = "条数", dataType = "Long")
+    @Schema(description = "条数")
     private Long size;
 
     /**
      * 搜索内容
      */
-    @ApiModelProperty(name = "keywords", value = "搜索内容", dataType = "String")
+    @Schema(description = "搜索内容")
     private String keywords;
 
     /**
      * 分类id
      */
-    @ApiModelProperty(name = "categoryId", value = "分类id", dataType = "Integer")
+    @Schema(description = "分类id")
     private Integer categoryId;
 
     /**
      * 标签id
      */
-    @ApiModelProperty(name = "tagId", value = "标签id", dataType = "Integer")
+    @Schema(description = "标签id")
     private Integer tagId;
 
     /**
      * 相册id
      */
-    @ApiModelProperty(name = "albumId", value = "相册id", dataType = "Integer")
+    @Schema(description = "相册id")
     private Integer albumId;
 
     /**
      * 登录类型
      */
-    @ApiModelProperty(name = "type", value = "登录类型", dataType = "Integer")
+    @Schema(description = "登录类型")
     private Integer loginType;
 
     /**
      * 类型
      */
-    @ApiModelProperty(name = "type", value = "类型", dataType = "Integer")
+    @Schema(description = "类型")
     private Integer type;
 
     /**
      * 状态
      */
-    @ApiModelProperty(name = "status", value = "状态", dataType = "Integer")
+    @Schema(description = "状态")
     private Integer status;
 
     /**
      * 开始时间
      */
-    @ApiModelProperty(name = "startTime", value = "开始时间", dataType = "LocalDateTime")
+    @Schema(description = "开始时间")
     private LocalDateTime startTime;
 
     /**
      * 结束时间
      */
-    @ApiModelProperty(name = "endTime", value = "结束时间", dataType = "LocalDateTime")
+    @Schema(description = "结束时间")
     private LocalDateTime endTime;
 
     /**
      * 是否删除
      */
-    @ApiModelProperty(name = "isDelete", value = "是否删除", dataType = "Integer")
+    @Schema(description = "是否删除")
     private Integer isDelete;
 
     /**
      * 是否审核
      */
-    @ApiModelProperty(name = "isReview", value = "是否审核", dataType = "Integer")
+    @Schema(description = "是否审核")
     private Integer isReview;
 
 }

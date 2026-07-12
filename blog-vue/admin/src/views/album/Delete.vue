@@ -68,17 +68,17 @@
       layout="prev, pager, next"
     />
     <!-- 批量删除对话框 -->
-    <el-dialog :visible.sync="batchDeletePhoto" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="batchDeletePhoto" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否删除选中照片？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="batchDeletePhoto = false">取 消</el-button>
         <el-button type="primary" @click="deletePhotos">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

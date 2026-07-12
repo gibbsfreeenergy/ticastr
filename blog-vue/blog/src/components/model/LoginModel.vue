@@ -20,7 +20,7 @@
           label="密码"
           placeholder="请输入您的密码"
           @keyup.enter="login"
-          :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+          :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
           :type="show ? 'text' : 'password'"
           @click:append="show = !show"
         />

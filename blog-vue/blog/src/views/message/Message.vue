@@ -23,27 +23,17 @@
       </div>
       <!-- 弹幕列表 -->
       <div class="barrage-container">
-        <vue-baberrage :barrageList="barrageList">
-          <template v-slot:default="slotProps">
-            <span class="barrage-items">
-              <img
-                :src="slotProps.item.avatar"
-                width="30"
-                height="30"
-                style="border-radius:50%"
-              />
-              <span class="ml-2">{{ slotProps.item.nickname }} :</span>
-              <span class="ml-2">{{ slotProps.item.messageContent }}</span>
-            </span>
-          </template>
-        </vue-baberrage>
+        <BarrageList :messages="barrageList" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import BarrageList from "@/components/BarrageList.vue";
+
 export default {
+  components: { BarrageList },
   mounted() {
     this.listMessage();
   },
@@ -162,13 +152,5 @@ export default {
   bottom: 0;
   height: calc(100% - 50px);
   width: 100%;
-}
-.barrage-items {
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 100px;
-  color: #fff;
-  padding: 5px 10px 5px 5px;
-  align-items: center;
-  display: flex;
 }
 </style>

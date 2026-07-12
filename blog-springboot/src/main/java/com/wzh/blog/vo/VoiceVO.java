@@ -1,7 +1,6 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,61 +19,61 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "音频")
+@Schema(description = "音频")
 public class VoiceVO {
 
     /**
      * 消息类型
      */
-    @ApiModelProperty(name = "type", value = "消息类型", required = true, dataType = "Integer")
+    @Schema(description = "消息类型")
     private Integer type;
 
     /**
      * 文件
      */
-    @ApiModelProperty(name = "file", value = "文件", required = true, dataType = "MultipartFile")
+    @Schema(description = "文件")
     private MultipartFile file;
 
     /**
      * 用户id
      */
-    @ApiModelProperty(name = "userId", value = "用户id", required = true, dataType = "Integer")
+    @Schema(description = "用户id")
     private Integer userId;
 
     /**
      * 用户昵称
      */
-    @ApiModelProperty(name = "nickname", value = "用户昵称", required = true, dataType = "String")
+    @Schema(description = "用户昵称")
     private String nickname;
 
     /**
      * 用户头像
      */
-    @ApiModelProperty(name = "avatar", value = "用户头像", required = true, dataType = "String")
+    @Schema(description = "用户头像")
     private String avatar;
 
     /**
      * 聊天内容
      */
-    @ApiModelProperty(name = "content", value = "聊天内容", required = true, dataType = "String")
+    @Schema(description = "聊天内容")
     private String content;
 
     /**
      * 创建时间
      */
-    @ApiModelProperty(name = "createTime", value = "创建时间", required = true, dataType = "Date")
+    @Schema(description = "创建时间")
     private Date createTime;
 
     /**
      * 用户登录ip
      */
-    @ApiModelProperty(name = "ipAddress", value = "用户登录ip", required = true, dataType = "String")
+    @Schema(description = "用户登录ip")
     private String ipAddress;
 
     /**
      * ip来源
      */
-    @ApiModelProperty(name = "ipSource", value = "ip来源", required = true, dataType = "String")
+    @Schema(description = "ip来源")
     private String ipSource;
 
 }

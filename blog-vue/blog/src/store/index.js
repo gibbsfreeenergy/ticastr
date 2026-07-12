@@ -1,10 +1,7 @@
-import Vue from "vue";
-import Vuex from "vuex";
+import { createStore } from "vuex";
 import createPersistedState from "vuex-persistedstate";
 
-Vue.use(Vuex);
-
-export default new Vuex.Store({
+export default createStore({
   state: {
     searchFlag: false,
     loginFlag: false,
@@ -23,7 +20,13 @@ export default new Vuex.Store({
     articleLikeSet: [],
     commentLikeSet: [],
     talkLikeSet: [],
-    blogInfo: {}
+    blogInfo: {
+      websiteConfig: {
+        socialLoginList: [],
+        socialUrlList: []
+      },
+      pageList: []
+    }
   },
   mutations: {
     login(state, user) {

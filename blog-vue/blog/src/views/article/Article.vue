@@ -10,7 +10,7 @@
             <!-- 发表时间 -->
             <span>
               <i class="iconfont iconrili" />
-              发表于 {{ article.createTime | date }}
+              发表于 {{ date(article.createTime) }}
             </span>
             <span class="separator">|</span>
             <!-- 发表时间 -->
@@ -18,10 +18,10 @@
               <i class="iconfont icongengxinshijian" />
               更新于
               <template v-if="article.updateTime">
-                {{ article.updateTime | date }}
+                {{ date(article.updateTime) }}
               </template>
               <template v-else>
-                {{ article.createTime | date }}
+                {{ date(article.createTime) }}
               </template>
             </span>
             <span class="separator">|</span>
@@ -37,7 +37,7 @@
             <!-- 字数统计 -->
             <span>
               <i class="iconfont iconzishu" />
-              字数统计: {{ wordNum | num }}
+              字数统计: {{ num(wordNum) }}
             </span>
             <span class="separator">|</span>
             <!-- 阅读时长 -->
@@ -105,7 +105,7 @@
                 {{ item.tagName }}
               </router-link>
             </div>
-            <share style="margin-left:auto" :config="config" />
+            <v-btn style="margin-left:auto" variant="text" icon="mdi-share-variant" @click="shareArticle" />
           </div>
           <!-- 点赞打赏等 -->
           <div class="article-reward">
@@ -197,7 +197,7 @@
                   <div class="recommend-info">
                     <div class="recommend-date">
                       <i class="iconfont iconrili" />
-                      {{ item.createTime | date }}
+                      {{ date(item.createTime) }}
                     </div>
                     <div>{{ item.articleTitle }}</div>
                   </div>
@@ -243,7 +243,7 @@
                       {{ item.articleTitle }}
                     </router-link>
                   </div>
-                  <div class="content-time">{{ item.createTime | date }}</div>
+                  <div class="content-time">{{ date(item.createTime) }}</div>
                 </div>
               </div>
             </div>
@@ -265,15 +265,12 @@ export default {
   created() {
     this.getArticle();
   },
-  destroyed() {
+  unmounted() {
     this.clipboard.destroy();
     tocbot.destroy();
   },
   data: function() {
     return {
-      config: {
-        sites: ["qzone", "wechat", "weibo", "qq"]
-      },
       imgList: [],
       article: {
         nextArticle: {
@@ -296,6 +293,15 @@ export default {
     };
   },
   methods: {
+    async shareArticle() {
+      const shareData = { title: this.article.articleTitle, url: this.articleHref };
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(this.articleHref);
+      this.$toast({ type: "success", message: "链接已复制" });
+    },
     getArticle() {
       const that = this;
       //查询文章

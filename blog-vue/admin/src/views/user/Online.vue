@@ -11,7 +11,7 @@
           size="small"
           placeholder="请输入用户昵称"
           style="width:200px"
-          @keyup.enter.native="listOnlineUsers"
+          @keyup.enter="listOnlineUsers"
         />
         <el-button
           type="primary"
@@ -28,7 +28,7 @@
     <el-table v-loading="loading" :data="userList">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column prop="avatar" label="头像" align="center" width="100">
-        <template slot-scope="scope">
+        <template #default="scope">
           <img :src="scope.row.avatar" width="40" height="40" />
         </template>
       </el-table-column>
@@ -53,21 +53,21 @@
         align="center"
         width="200"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.lastLoginTime | dateTime }}
+          {{ dateTime(scope.row.lastLoginTime) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="150">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-popconfirm
             title="确定下线吗？"
             style="margin-left:10px"
             @confirm="removeOnlineUser(scope.row)"
           >
-            <el-button size="mini" type="text" slot="reference">
+            <template #reference><el-button size="mini" type="text">
               <i class="el-icon-delete" /> 下线
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>

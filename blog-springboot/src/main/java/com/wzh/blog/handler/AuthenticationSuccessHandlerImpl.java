@@ -1,6 +1,6 @@
 package com.wzh.blog.handler;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.dao.UserAuthDao;
 import com.wzh.blog.dto.UserInfoDTO;
 import com.wzh.blog.entity.UserAuth;
@@ -13,8 +13,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static com.wzh.blog.constant.CommonConst.APPLICATION_JSON;

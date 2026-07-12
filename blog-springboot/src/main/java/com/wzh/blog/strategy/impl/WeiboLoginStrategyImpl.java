@@ -1,6 +1,6 @@
 package com.wzh.blog.strategy.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.config.WeiboConfigProperties;
 import com.wzh.blog.dto.SocialUserInfoDTO;
 import com.wzh.blog.dto.SocialTokenDTO;
@@ -80,7 +80,7 @@ public class WeiboLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
         weiboData.add(GRANT_TYPE, weiboConfigProperties.getGrantType());
         weiboData.add(REDIRECT_URI, weiboConfigProperties.getRedirectUrl());
         weiboData.add(CODE, weiBoLoginVO.getCode());
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(weiboData, null);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(weiboData);
         try {
             return restTemplate.exchange(weiboConfigProperties.getAccessTokenUrl(), HttpMethod.POST, requestEntity, WeiboTokenDTO.class).getBody();
         } catch (Exception e) {

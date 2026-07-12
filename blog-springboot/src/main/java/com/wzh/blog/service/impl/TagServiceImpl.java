@@ -13,7 +13,7 @@ import com.wzh.blog.entity.Tag;
 import com.wzh.blog.dao.TagDao;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.TagService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.TagVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +36,9 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
     @Autowired
     private ArticleTagDao articleTagDao;
 
+
+
+
     @Override
     public PageResult<TagDTO> listTags() {
         // 查询标签列表
@@ -43,14 +46,16 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
         // 转换DTO
         List<TagDTO> tagDTOList = BeanCopyUtils.copyList(tagList, TagDTO.class);
         // 查询标签数量
-        Integer count = tagDao.selectCount(null);
+        Long count = tagDao.selectCount(null);
         return new PageResult<>(tagDTOList, count);
     }
+
+
 
     @Override
     public PageResult<TagBackDTO> listTagBackDTO(ConditionVO condition) {
         // 查询标签数量
-        Integer count = tagDao.selectCount(new LambdaQueryWrapper<Tag>()
+        Long count = tagDao.selectCount(new LambdaQueryWrapper<Tag>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Tag::getTagName, condition.getKeywords()));
         if (count == 0) {
             return new PageResult<>();
@@ -59,6 +64,8 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
         List<TagBackDTO> tagList = tagDao.listTagBackDTO(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
         return new PageResult<>(tagList, count);
     }
+
+
 
     @Override
     public List<TagDTO> listTagsBySearch(ConditionVO condition) {
@@ -69,10 +76,12 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
         return BeanCopyUtils.copyList(tagList, TagDTO.class);
     }
 
+
+
     @Override
     public void deleteTag(List<Integer> tagIdList) {
         // 查询标签下是否有文章
-        Integer count = articleTagDao.selectCount(new LambdaQueryWrapper<ArticleTag>()
+        Long count = articleTagDao.selectCount(new LambdaQueryWrapper<ArticleTag>()
                 .in(ArticleTag::getTagId, tagIdList));
         if (count > 0) {
             throw new BizException("删除失败，该标签下存在文章");
@@ -81,6 +90,8 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveOrUpdateTag(TagVO tagVO) {
         // 查询标签名是否存在

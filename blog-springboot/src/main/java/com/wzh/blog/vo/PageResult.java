@@ -1,7 +1,6 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,19 +18,23 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ApiModel(description = "分页对象")
+@Schema(description = "分页对象")
 public class PageResult<T> {
 
     /**
      * 分页列表
      */
-    @ApiModelProperty(name = "recordList", value = "分页列表", required = true, dataType = "List<T>")
+    @Schema(description = "分页列表")
     private List<T> recordList;
 
     /**
      * 总数
      */
-    @ApiModelProperty(name = "count", value = "总数", required = true, dataType = "Integer")
-    private Integer count;
+    @Schema(description = "总数")
+    private Long count;
+
+    public PageResult(List<T> recordList, Integer count) {
+        this(recordList, count == null ? null : count.longValue());
+    }
 
 }

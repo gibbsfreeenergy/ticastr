@@ -21,7 +21,7 @@
               v-model="commentContent"
               placeholder="留下点什么吧..."
               auto-grow
-              dense
+              density="compact"
             />
           </div>
           <!-- 操作按钮 -->
@@ -74,7 +74,7 @@
             <!-- 楼层 -->
             <span style="margin-right:10px">{{ count - index }}楼</span>
             <!-- 发表时间 -->
-            <span style="margin-right:10px">{{ item.createTime | date }}</span>
+            <span style="margin-right:10px">{{ date(item.createTime) }}</span>
             <!-- 点赞 -->
             <span
               :class="isLike(item.id) + ' iconfont icondianzan'"
@@ -111,7 +111,7 @@
               <div class="comment-info">
                 <!-- 发表时间 -->
                 <span style="margin-right:10px">
-                  {{ reply.createTime | date }}
+                  {{ date(reply.createTime) }}
                 </span>
                 <!-- 点赞 -->
                 <span
@@ -185,7 +185,7 @@
       </div>
       <!-- 加载按钮 -->
       <div class="load-wrapper">
-        <v-btn outlined v-if="count > commentList.length" @click="listComments">
+        <v-btn variant="outlined" v-if="count > commentList.length" @click="listComments">
           加载更多...
         </v-btn>
       </div>

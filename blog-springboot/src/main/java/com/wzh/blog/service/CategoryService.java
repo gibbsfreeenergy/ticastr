@@ -5,7 +5,7 @@ import com.wzh.blog.dto.CategoryDTO;
 import com.wzh.blog.dto.CategoryOptionDTO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.Category;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.CategoryVO;
 import com.wzh.blog.vo.ConditionVO;
 

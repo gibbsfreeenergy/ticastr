@@ -8,12 +8,12 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.*;
 import com.wzh.blog.dto.MessageDTO;
 import com.wzh.blog.service.MessageService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.wzh.blog.constant.OptTypeConst.REMOVE;
@@ -25,7 +25,7 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
  * @author xiaojie
  * @date 2021/07/29
  */
-@Api(tags = "留言模块")
+@Tag(name = "留言模块")
 @RestController
 public class MessageController {
     @Autowired
@@ -38,7 +38,7 @@ public class MessageController {
      * @return {@link Result<>}
      */
     @AccessLimit(seconds = 60, maxCount = 1)
-    @ApiOperation(value = "添加留言")
+    @Operation(summary = "添加留言")
     @PostMapping("/messages")
     public Result<?> saveMessage(@Valid @RequestBody MessageVO messageVO) {
         messageService.saveMessage(messageVO);
@@ -50,7 +50,7 @@ public class MessageController {
      *
      * @return {@link Result<MessageDTO>} 留言列表
      */
-    @ApiOperation(value = "查看留言列表")
+    @Operation(summary = "查看留言列表")
     @GetMapping("/messages")
     public Result<List<MessageDTO>> listMessages() {
         return Result.ok(messageService.listMessages());
@@ -62,7 +62,7 @@ public class MessageController {
      * @param condition 条件
      * @return {@link Result<MessageBackDTO>} 留言列表
      */
-    @ApiOperation(value = "查看后台留言列表")
+    @Operation(summary = "查看后台留言列表")
     @GetMapping("/admin/messages")
     public Result<PageResult<MessageBackDTO>> listMessageBackDTO(ConditionVO condition) {
         return Result.ok(messageService.listMessageBackDTO(condition));
@@ -75,7 +75,7 @@ public class MessageController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "审核留言")
+    @Operation(summary = "审核留言")
     @PutMapping("/admin/messages/review")
     public Result<?> updateMessagesReview(@Valid @RequestBody ReviewVO reviewVO) {
         messageService.updateMessagesReview(reviewVO);
@@ -89,7 +89,7 @@ public class MessageController {
      * @return {@link Result<>}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "删除留言")
+    @Operation(summary = "删除留言")
     @DeleteMapping("/admin/messages")
     public Result<?> deleteMessages(@RequestBody List<Integer> messageIdList) {
         messageService.removeByIds(messageIdList);

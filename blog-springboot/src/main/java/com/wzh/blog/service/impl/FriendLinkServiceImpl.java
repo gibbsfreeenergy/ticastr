@@ -11,7 +11,7 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.FriendLink;
 import com.wzh.blog.dao.FriendLinkDao;
 import com.wzh.blog.service.FriendLinkService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.FriendLinkVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +31,17 @@ public class FriendLinkServiceImpl extends ServiceImpl<FriendLinkDao, FriendLink
     @Autowired
     private FriendLinkDao friendLinkDao;
 
+
+
+
     @Override
     public List<FriendLinkDTO> listFriendLinks() {
         // 查询友链列表
         List<FriendLink> friendLinkList = friendLinkDao.selectList(null);
         return BeanCopyUtils.copyList(friendLinkList, FriendLinkDTO.class);
     }
+
+
 
     @Override
     public PageResult<FriendLinkBackDTO> listFriendLinkDTO(ConditionVO condition) {
@@ -50,6 +55,8 @@ public class FriendLinkServiceImpl extends ServiceImpl<FriendLinkDao, FriendLink
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveOrUpdateFriendLink(FriendLinkVO friendLinkVO) {
         FriendLink friendLink = BeanCopyUtils.copyObject(friendLinkVO, FriendLink.class);

@@ -3,7 +3,7 @@ package com.wzh.blog.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.OperationLogDao;
 import com.wzh.blog.dto.OperationLogDTO;
 import com.wzh.blog.util.PageUtils;
@@ -24,6 +24,9 @@ import java.util.List;
  */
 @Service
 public class OperationLogServiceImpl extends ServiceImpl<OperationLogDao, OperationLog> implements OperationLogService {
+
+
+
 
     @Override
     public PageResult<OperationLogDTO> listOperationLogs(ConditionVO conditionVO) {

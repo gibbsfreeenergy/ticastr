@@ -115,7 +115,10 @@
 
 <script>
 import "../../assets/js/china";
+import CalendarHeatmap from "../../components/CalendarHeatmap.vue";
+import TagCloud from "../../components/TagCloud.vue";
 export default {
+  components: { CalendarHeatmap, TagCloud },
   created() {
     this.listUserArea();
     this.getData();

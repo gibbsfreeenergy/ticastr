@@ -28,7 +28,7 @@ export default {
   created() {
     this.getAboutContent();
   },
-  destroyed() {
+  unmounted() {
     this.clipboard.destroy();
   },
   data: function() {

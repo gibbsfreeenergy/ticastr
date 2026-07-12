@@ -30,7 +30,7 @@
               <div style="margin-top:0.375rem">
                 <!-- 发表时间 -->
                 <v-icon size="20">mdi-clock-outline</v-icon>
-                {{ item.createTime | date }}
+                {{ date(item.createTime) }}
                 <!-- 文章分类 -->
                 <router-link
                   :to="'/categories/' + item.categoryId"
@@ -58,8 +58,7 @@
       </v-row>
       <!-- 无限加载 -->
       <infinite-loading @infinite="infiniteHandler">
-        <div slot="no-results" />
-        <div slot="no-more" />
+        <template #complete><div /></template>
       </infinite-loading>
     </div>
   </div>

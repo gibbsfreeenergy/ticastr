@@ -6,15 +6,15 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.UserOnlineDTO;
 import com.wzh.blog.service.UserInfoService;
 import com.wzh.blog.vo.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 
 import static com.wzh.blog.constant.OptTypeConst.UPDATE;
@@ -25,7 +25,7 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
  * @author yezhiqiu
  * @date 2021/07/29
  */
-@Api(tags = "用户信息模块")
+@Tag(name = "用户信息模块")
 @RestController
 public class UserInfoController {
     @Autowired
@@ -37,7 +37,7 @@ public class UserInfoController {
      * @param userInfoVO 用户信息
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "更新用户信息")
+    @Operation(summary = "更新用户信息")
     @PutMapping("/users/info")
     public Result<?> updateUserInfo(@Valid @RequestBody UserInfoVO userInfoVO) {
         userInfoService.updateUserInfo(userInfoVO);
@@ -50,8 +50,8 @@ public class UserInfoController {
      * @param file 文件
      * @return {@link Result<String>} 头像地址
      */
-    @ApiOperation(value = "更新用户头像")
-    @ApiImplicitParam(name = "file", value = "用户头像", required = true, dataType = "MultipartFile")
+    @Operation(summary = "更新用户头像")
+    @Parameter(name = "file", description = "用户头像", required = true)
     @PostMapping("/users/avatar")
     public Result<String> updateUserAvatar(MultipartFile file) {
         return Result.ok(userInfoService.updateUserAvatar(file));
@@ -63,7 +63,7 @@ public class UserInfoController {
      * @param emailVO 邮箱信息
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "绑定用户邮箱")
+    @Operation(summary = "绑定用户邮箱")
     @PostMapping("/users/email")
     public Result<?> saveUserEmail(@Valid @RequestBody EmailVO emailVO) {
         userInfoService.saveUserEmail(emailVO);
@@ -77,7 +77,7 @@ public class UserInfoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "修改用户角色")
+    @Operation(summary = "修改用户角色")
     @PutMapping("/admin/users/role")
     public Result<?> updateUserRole(@Valid @RequestBody UserRoleVO userRoleVO) {
         userInfoService.updateUserRole(userRoleVO);
@@ -91,7 +91,7 @@ public class UserInfoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "修改用户禁用状态")
+    @Operation(summary = "修改用户禁用状态")
     @PutMapping("/admin/users/disable")
     public Result<?> updateUserDisable(@Valid @RequestBody UserDisableVO userDisableVO) {
         userInfoService.updateUserDisable(userDisableVO);
@@ -104,7 +104,7 @@ public class UserInfoController {
      * @param conditionVO 条件
      * @return {@link Result<UserOnlineDTO>} 在线用户列表
      */
-    @ApiOperation(value = "查看在线用户")
+    @Operation(summary = "查看在线用户")
     @GetMapping("/admin/users/online")
     public Result<PageResult<UserOnlineDTO>> listOnlineUsers(ConditionVO conditionVO) {
         return Result.ok(userInfoService.listOnlineUsers(conditionVO));
@@ -116,7 +116,7 @@ public class UserInfoController {
      * @param userInfoId 用户信息
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "下线用户")
+    @Operation(summary = "下线用户")
     @DeleteMapping("/admin/users/{userInfoId}/online")
     public Result<?> removeOnlineUser(@PathVariable("userInfoId") Integer userInfoId) {
         userInfoService.removeOnlineUser(userInfoId);

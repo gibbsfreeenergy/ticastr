@@ -10,14 +10,14 @@ import com.wzh.blog.vo.ConditionVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
 import com.wzh.blog.vo.Result;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.wzh.blog.constant.OptTypeConst.REMOVE;
@@ -29,7 +29,7 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
  * @author yezhiqiu
  * @date 2021/08/04
  */
-@Api(tags = "相册模块")
+@Tag(name = "相册模块")
 @RestController
 public class PhotoAlbumController {
     @Autowired
@@ -43,8 +43,8 @@ public class PhotoAlbumController {
      * @param file 文件
      * @return {@link Result<String>} 相册封面地址
      */
-    @ApiOperation(value = "上传相册封面")
-    @ApiImplicitParam(name = "file", value = "相册封面", required = true, dataType = "MultipartFile")
+    @Operation(summary = "上传相册封面")
+    @Parameter(name = "file", description = "相册封面", required = true)
     @PostMapping("/admin/photos/albums/cover")
     public Result<String> savePhotoAlbumCover(MultipartFile file) {
         return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.PHOTO.getPath()));
@@ -57,7 +57,7 @@ public class PhotoAlbumController {
      * @return {@link Result<>}
      */
     @OptLog(optType = SAVE_OR_UPDATE)
-    @ApiOperation(value = "保存或更新相册")
+    @Operation(summary = "保存或更新相册")
     @PostMapping("/admin/photos/albums")
     public Result<?> saveOrUpdatePhotoAlbum(@Valid @RequestBody PhotoAlbumVO photoAlbumVO) {
         photoAlbumService.saveOrUpdatePhotoAlbum(photoAlbumVO);
@@ -70,7 +70,7 @@ public class PhotoAlbumController {
      * @param condition 条件
      * @return {@link Result<PhotoAlbumBackDTO>} 相册列表
      */
-    @ApiOperation(value = "查看后台相册列表")
+    @Operation(summary = "查看后台相册列表")
     @GetMapping("/admin/photos/albums")
     public Result<PageResult<PhotoAlbumBackDTO>> listPhotoAlbumBacks(ConditionVO condition) {
         return Result.ok(photoAlbumService.listPhotoAlbumBacks(condition));
@@ -81,7 +81,7 @@ public class PhotoAlbumController {
      *
      * @return {@link Result<PhotoAlbumDTO>} 相册列表信息
      */
-    @ApiOperation(value = "获取后台相册列表信息")
+    @Operation(summary = "获取后台相册列表信息")
     @GetMapping("/admin/photos/albums/info")
     public Result<List<PhotoAlbumDTO>> listPhotoAlbumBackInfos() {
         return Result.ok(photoAlbumService.listPhotoAlbumBackInfos());
@@ -93,8 +93,8 @@ public class PhotoAlbumController {
      * @param albumId 相册id
      * @return {@link Result}相册信息
      */
-    @ApiOperation(value = "根据id获取后台相册信息")
-    @ApiImplicitParam(name = "albumId", value = "相册id", required = true, dataType = "Integer")
+    @Operation(summary = "根据id获取后台相册信息")
+    @Parameter(name = "albumId", description = "相册id", required = true)
     @GetMapping("/admin/photos/albums/{albumId}/info")
     public Result<PhotoAlbumBackDTO> getPhotoAlbumBackById(@PathVariable("albumId") Integer albumId) {
         return Result.ok(photoAlbumService.getPhotoAlbumBackById(albumId));
@@ -107,8 +107,8 @@ public class PhotoAlbumController {
      * @return {@link Result}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "根据id删除相册")
-    @ApiImplicitParam(name = "albumId", value = "相册id", required = true, dataType = "Integer")
+    @Operation(summary = "根据id删除相册")
+    @Parameter(name = "albumId", description = "相册id", required = true)
     @DeleteMapping("/admin/photos/albums/{albumId}")
     public Result<?> deletePhotoAlbumById(@PathVariable("albumId") Integer albumId) {
         photoAlbumService.deletePhotoAlbumById(albumId);
@@ -120,7 +120,7 @@ public class PhotoAlbumController {
      *
      * @return {@link Result<PhotoAlbumDTO>} 相册列表
      */
-    @ApiOperation(value = "获取相册列表")
+    @Operation(summary = "获取相册列表")
     @GetMapping("/photos/albums")
     public Result<List<PhotoAlbumDTO>> listPhotoAlbums() {
         return Result.ok(photoAlbumService.listPhotoAlbums());

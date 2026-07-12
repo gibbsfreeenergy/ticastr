@@ -3,7 +3,7 @@ package com.wzh.blog.service;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.UserOnlineDTO;
 import com.wzh.blog.entity.UserInfo;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
 import org.springframework.web.multipart.MultipartFile;
 

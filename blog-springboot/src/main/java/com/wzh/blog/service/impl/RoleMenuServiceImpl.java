@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.RoleMenuDao;
 import com.wzh.blog.entity.RoleMenu;
 import com.wzh.blog.service.RoleMenuService;
@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class RoleMenuServiceImpl extends ServiceImpl<RoleMenuDao, RoleMenu> implements RoleMenuService {
+
+
 
 
 }

@@ -6,12 +6,12 @@ import com.wzh.blog.service.ResourceService;
 import com.wzh.blog.vo.ConditionVO;
 import com.wzh.blog.vo.ResourceVO;
 import com.wzh.blog.vo.Result;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ import java.util.List;
  * @author yezhiqiu
  * @date 2021/07/27
  */
-@Api(tags = "资源模块")
+@Tag(name = "资源模块")
 @RestController
 public class ResourceController {
     @Autowired
@@ -31,7 +31,7 @@ public class ResourceController {
      *
      * @return {@link Result<ResourceDTO>} 资源列表
      */
-    @ApiOperation(value = "查看资源列表")
+    @Operation(summary = "查看资源列表")
     @GetMapping("/admin/resources")
     public Result<List<ResourceDTO>> listResources(ConditionVO conditionVO) {
         return Result.ok(resourceService.listResources(conditionVO));
@@ -43,7 +43,7 @@ public class ResourceController {
      * @param resourceId 资源id
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "删除资源")
+    @Operation(summary = "删除资源")
     @DeleteMapping("/admin/resources/{resourceId}")
     public Result<?> deleteResource(@PathVariable("resourceId") Integer resourceId) {
         resourceService.deleteResource(resourceId);
@@ -56,7 +56,7 @@ public class ResourceController {
      * @param resourceVO 资源信息
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "新增或修改资源")
+    @Operation(summary = "新增或修改资源")
     @PostMapping("/admin/resources")
     public Result<?> saveOrUpdateResource(@RequestBody @Valid ResourceVO resourceVO) {
         resourceService.saveOrUpdateResource(resourceVO);
@@ -68,7 +68,7 @@ public class ResourceController {
      *
      * @return {@link Result<LabelOptionDTO>} 角色资源选项
      */
-    @ApiOperation(value = "查看角色资源选项")
+    @Operation(summary = "查看角色资源选项")
     @GetMapping("/admin/role/resources")
     public Result<List<LabelOptionDTO>> listResourceOption() {
         return Result.ok(resourceService.listResourceOption());

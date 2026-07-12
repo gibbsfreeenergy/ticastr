@@ -4,7 +4,7 @@
       class="comment-textarea"
       :placeholder="'回复 @' + nickname + '：'"
       auto-grow
-      dense
+      density="compact"
       v-model="commentContent"
     />
     <div class="emoji-container">

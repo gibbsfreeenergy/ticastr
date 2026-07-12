@@ -43,7 +43,7 @@
           <div>
             <div class="nickname" v-if="!isSelf(item)">
               {{ item.nickname }}
-              <span style="margin-left:12px">{{ item.createTime | hour }}</span>
+              <span style="margin-left:12px">{{ hour(item.createTime) }}</span>
             </div>
             <!-- 内容 -->
             <div
@@ -164,7 +164,7 @@ export default {
     var ele = document.getElementById("message");
     ele.scrollTop = ele.scrollHeight;
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearInterval(this.heartBeat);
   },
   data: function() {

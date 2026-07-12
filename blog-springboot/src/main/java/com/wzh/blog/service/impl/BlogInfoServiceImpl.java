@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -24,8 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -66,13 +66,13 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     @Override
     public BlogHomeInfoDTO getBlogHomeInfo() {
         // 查询文章数量
-        Integer articleCount = articleDao.selectCount(new LambdaQueryWrapper<Article>()
+        Long articleCount = articleDao.selectCount(new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, PUBLIC.getStatus())
                 .eq(Article::getIsDelete, FALSE));
         // 查询分类数量
-        Integer categoryCount = categoryDao.selectCount(null);
+        Long categoryCount = categoryDao.selectCount(null);
         // 查询标签数量
-        Integer tagCount = tagDao.selectCount(null);
+        Long tagCount = tagDao.selectCount(null);
         // 查询访问量
         Object count = redisService.get(BLOG_VIEWS_COUNT);
         String viewsCount = Optional.ofNullable(count).orElse(0).toString();
@@ -97,11 +97,11 @@ public class BlogInfoServiceImpl implements BlogInfoService {
         Object count = redisService.get(BLOG_VIEWS_COUNT);
         Integer viewsCount = Integer.parseInt(Optional.ofNullable(count).orElse(0).toString());
         // 查询留言量
-        Integer messageCount = messageDao.selectCount(null);
+        Long messageCount = messageDao.selectCount(null);
         // 查询用户量
-        Integer userCount = userInfoDao.selectCount(null);
+        Long userCount = userInfoDao.selectCount(null);
         // 查询文章量
-        Integer articleCount = articleDao.selectCount(new LambdaQueryWrapper<Article>()
+        Long articleCount = articleDao.selectCount(new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsDelete, FALSE));
         // 查询一周用户量
         List<UniqueViewDTO> uniqueViewList = uniqueViewService.listUniqueViews();

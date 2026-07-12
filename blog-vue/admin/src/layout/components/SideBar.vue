@@ -14,7 +14,7 @@
         <template v-if="route.name && route.children && !route.hidden">
           <el-submenu :key="route.path" :index="route.path">
             <!-- 二级菜单标题 -->
-            <template slot="title">
+            <template #title>
               <i :class="route.icon" />
               <span>{{ route.name }}</span>
             </template>
@@ -22,7 +22,7 @@
             <template v-for="(item, index) of route.children">
               <el-menu-item v-if="!item.hidden" :key="index" :index="item.path">
                 <i :class="item.icon" />
-                <span slot="title">{{ item.name }}</span>
+                <span>{{ item.name }}</span>
               </el-menu-item>
             </template>
           </el-submenu>
@@ -31,7 +31,7 @@
         <template v-else-if="!route.hidden">
           <el-menu-item :index="route.path" :key="route.path">
             <i :class="route.children[0].icon" />
-            <span slot="title">{{ route.children[0].name }}</span>
+            <span>{{ route.children[0].name }}</span>
           </el-menu-item>
         </template>
       </template>

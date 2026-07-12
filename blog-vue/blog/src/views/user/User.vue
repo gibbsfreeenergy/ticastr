@@ -9,14 +9,14 @@
       </div>
       <v-row class="info-wrapper">
         <v-col md="3" cols="12">
-          <button id="pick-avatar">
+          <button @click="showCropper = true">
             <v-avatar size="140">
               <img :src="this.$store.state.avatar" />
             </v-avatar>
           </button>
           <avatar-cropper
+            v-model="showCropper"
             @uploaded="uploadAvatar"
-            trigger="#pick-avatar"
             upload-url="/api/users/avatar"
           />
         </v-col>
@@ -45,14 +45,14 @@
               label="邮箱号"
               placeholder="请绑定邮箱"
             />
-            <v-btn v-if="email" text small @click="openEmailModel">
+            <v-btn v-if="email" variant="text" size="small" @click="openEmailModel">
               修改绑定
             </v-btn>
-            <v-btn v-else text small @click="openEmailModel">
+            <v-btn v-else variant="text" size="small" @click="openEmailModel">
               绑定邮箱
             </v-btn>
           </div>
-          <v-btn @click="updataUserInfo" outlined class="mt-5">修改</v-btn>
+          <v-btn @click="updataUserInfo" variant="outlined" class="mt-5">修改</v-btn>
         </v-col>
       </v-row>
     </v-card>
@@ -65,6 +65,7 @@ export default {
   components: { AvatarCropper },
   data: function() {
     return {
+      showCropper: false,
       userInfo: {
         nickname: this.$store.state.nickname,
         intro: this.$store.state.intro,
@@ -84,7 +85,8 @@ export default {
         }
       });
     },
-    uploadAvatar(data) {
+    async uploadAvatar({ response }) {
+      const data = await response.json();
       if (data.flag) {
         this.$store.commit("updateAvatar", data.data);
         this.$toast({ type: "success", message: "上传成功" });

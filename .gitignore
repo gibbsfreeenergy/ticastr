@@ -1,9 +1,12 @@
 .DS_Store
 node_modules
 /dist
+dist/
 **/target/
 uploads/
 blog-springboot/src/main/resources/application-local.yml
+/.tools
+/.build
 
 # local env files
 .env.local

@@ -6,11 +6,11 @@
     </div>
     <!-- 归档列表 -->
     <v-card class="blog-container">
-      <timeline>
-        <timeline-title> 目前共计{{ count }}篇文章，继续加油 </timeline-title>
-        <timeline-item v-for="item of archiveList" :key="item.id">
+      <section class="archive-timeline" aria-label="文章归档">
+        <h2 class="archive-timeline__title">目前共计{{ count }}篇文章，继续加油</h2>
+        <article class="archive-timeline__item" v-for="item of archiveList" :key="item.id">
           <!-- 日期 -->
-          <span class="time">{{ item.createTime | date }}</span>
+          <span class="time">{{ date(item.createTime) }}</span>
           <!-- 文章标题 -->
           <router-link
             :to="'/articles/' + item.id"
@@ -18,8 +18,8 @@
           >
             {{ item.articleTitle }}
           </router-link>
-        </timeline-item>
-      </timeline>
+        </article>
+      </section>
       <!-- 分页按钮 -->
       <v-pagination
         color="#00C4B6"
@@ -32,15 +32,9 @@
 </template>
 
 <script>
-import { Timeline, TimelineItem, TimelineTitle } from "vue-cute-timeline";
 export default {
   created() {
     this.listArchives();
-  },
-  components: {
-    Timeline,
-    TimelineItem,
-    TimelineTitle
   },
   data: function() {
     return {
@@ -92,5 +86,32 @@ export default {
   font-size: 0.75rem;
   color: #555;
   margin-right: 1rem;
+}
+
+.archive-timeline {
+  border-left: 2px solid rgb(var(--v-theme-primary));
+  margin: 1rem 0 2rem;
+  padding-left: 1.5rem;
+}
+
+.archive-timeline__title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+}
+
+.archive-timeline__item {
+  margin: 0.75rem 0;
+  position: relative;
+}
+
+.archive-timeline__item::before {
+  background: rgb(var(--v-theme-primary));
+  border-radius: 50%;
+  content: "";
+  height: 0.625rem;
+  left: -1.875rem;
+  position: absolute;
+  top: 0.35rem;
+  width: 0.625rem;
 }
 </style>

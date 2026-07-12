@@ -20,7 +20,7 @@
               </v-icon>
             </div>
             <!-- 发表时间 -->
-            <div class="time">{{ talkInfo.createTime | time }}</div>
+            <div class="time">{{ time(talkInfo.createTime) }}</div>
             <!-- 说说信息 -->
             <div class="talk-content" v-html="talkInfo.content" />
             <!-- 图片列表 -->

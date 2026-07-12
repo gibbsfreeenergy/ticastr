@@ -5,12 +5,12 @@ import com.wzh.blog.dto.PhotoBackDTO;
 import com.wzh.blog.dto.PhotoDTO;
 import com.wzh.blog.service.PhotoService;
 import com.wzh.blog.vo.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 import static com.wzh.blog.constant.OptTypeConst.*;
@@ -21,7 +21,7 @@ import static com.wzh.blog.constant.OptTypeConst.*;
  * @author yezhiqiu
  * @date 2021/08/05
  */
-@Api(tags = "照片模块")
+@Tag(name = "照片模块")
 @RestController
 public class PhotoController {
     @Autowired
@@ -33,7 +33,7 @@ public class PhotoController {
      * @param condition 条件
      * @return {@link Result<PhotoBackDTO>} 照片列表
      */
-    @ApiOperation(value = "根据相册id获取照片列表")
+    @Operation(summary = "根据相册id获取照片列表")
     @GetMapping("/admin/photos")
     public Result<PageResult<PhotoBackDTO>> listPhotos(ConditionVO condition) {
         return Result.ok(photoService.listPhotos(condition));
@@ -46,7 +46,7 @@ public class PhotoController {
      * @return {@link Result}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "更新照片信息")
+    @Operation(summary = "更新照片信息")
     @PutMapping("/admin/photos")
     public Result<?> updatePhoto(@Valid @RequestBody PhotoInfoVO photoInfoVO) {
         photoService.updatePhoto(photoInfoVO);
@@ -60,7 +60,7 @@ public class PhotoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = SAVE)
-    @ApiOperation(value = "保存照片")
+    @Operation(summary = "保存照片")
     @PostMapping("/admin/photos")
     public Result<?> savePhotos(@Valid @RequestBody PhotoVO photoVO) {
         photoService.savePhotos(photoVO);
@@ -74,7 +74,7 @@ public class PhotoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "移动照片相册")
+    @Operation(summary = "移动照片相册")
     @PutMapping("/admin/photos/album")
     public Result<?> updatePhotosAlbum(@Valid @RequestBody PhotoVO photoVO) {
         photoService.updatePhotosAlbum(photoVO);
@@ -88,7 +88,7 @@ public class PhotoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "更新照片删除状态")
+    @Operation(summary = "更新照片删除状态")
     @PutMapping("/admin/photos/delete")
     public Result<?> updatePhotoDelete(@Valid @RequestBody DeleteVO deleteVO) {
         photoService.updatePhotoDelete(deleteVO);
@@ -102,7 +102,7 @@ public class PhotoController {
      * @return {@link Result<>}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "删除照片")
+    @Operation(summary = "删除照片")
     @DeleteMapping("/admin/photos")
     public Result<?> deletePhotos(@RequestBody List<Integer> photoIdList) {
         photoService.deletePhotos(photoIdList);
@@ -115,7 +115,7 @@ public class PhotoController {
      * @param albumId 相册id
      * @return {@link Result<PhotoDTO>} 照片列表
      */
-    @ApiOperation(value = "根据相册id查看照片列表")
+    @Operation(summary = "根据相册id查看照片列表")
     @GetMapping("/albums/{albumId}/photos")
     public Result<PhotoDTO> listPhotosByAlbumId(@PathVariable("albumId") Integer albumId) {
         return Result.ok(photoService.listPhotosByAlbumId(albumId));

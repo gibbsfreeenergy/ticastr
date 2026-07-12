@@ -16,7 +16,7 @@
             v-model="loginForm.username"
             prefix-icon="el-icon-user-solid"
             placeholder="用户名"
-            @keyup.enter.native="login"
+            @keyup.enter="login"
           />
         </el-form-item>
         <!-- 密码输入框 -->
@@ -26,7 +26,7 @@
             prefix-icon="iconfont el-icon-mymima"
             show-password
             placeholder="密码"
-            @keyup.enter.native="login"
+            @keyup.enter="login"
           />
         </el-form-item>
       </el-form>

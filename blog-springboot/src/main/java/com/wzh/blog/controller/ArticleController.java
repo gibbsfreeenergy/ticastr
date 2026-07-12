@@ -7,15 +7,15 @@ import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.ArticleService;
 import com.wzh.blog.strategy.context.UploadStrategyContext;
 import com.wzh.blog.vo.*;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.*;
 
 import static com.wzh.blog.constant.OptTypeConst.*;
@@ -26,7 +26,7 @@ import static com.wzh.blog.constant.OptTypeConst.*;
  * @author yezhiqiu
  * @date 2021/07/28
  */
-@Api(tags = "文章模块")
+@Tag(name = "文章模块")
 @RestController
 public class ArticleController {
     @Autowired
@@ -39,7 +39,7 @@ public class ArticleController {
      *
      * @return {@link Result<ArchiveDTO>} 文章归档列表
      */
-    @ApiOperation(value = "查看文章归档")
+    @Operation(summary = "查看文章归档")
     @GetMapping("/articles/archives")
     public Result<PageResult<ArchiveDTO>> listArchives() {
         return Result.ok(articleService.listArchives());
@@ -50,7 +50,7 @@ public class ArticleController {
      *
      * @return {@link Result<ArticleHomeDTO>} 首页文章列表
      */
-    @ApiOperation(value = "查看首页文章")
+    @Operation(summary = "查看首页文章")
     @GetMapping("/articles")
     public Result<List<ArticleHomeDTO>> listArticles() {
         return Result.ok(articleService.listArticles());
@@ -62,7 +62,7 @@ public class ArticleController {
      * @param conditionVO 条件
      * @return {@link Result<ArticleBackDTO>} 后台文章列表
      */
-    @ApiOperation(value = "查看后台文章")
+    @Operation(summary = "查看后台文章")
     @GetMapping("/admin/articles")
     public Result<PageResult<ArticleBackDTO>> listArticleBacks(ConditionVO conditionVO) {
         return Result.ok(articleService.listArticleBacks(conditionVO));
@@ -75,7 +75,7 @@ public class ArticleController {
      * @return {@link Result<>}
      */
     @OptLog(optType = SAVE_OR_UPDATE)
-    @ApiOperation(value = "添加或修改文章")
+    @Operation(summary = "添加或修改文章")
     @PostMapping("/admin/articles")
     public Result<?> saveOrUpdateArticle(@Valid @RequestBody ArticleVO articleVO) {
         articleService.saveOrUpdateArticle(articleVO);
@@ -89,7 +89,7 @@ public class ArticleController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "修改文章置顶")
+    @Operation(summary = "修改文章置顶")
     @PutMapping("/admin/articles/top")
     public Result<?> updateArticleTop(@Valid @RequestBody ArticleTopVO articleTopVO) {
         articleService.updateArticleTop(articleTopVO);
@@ -103,7 +103,7 @@ public class ArticleController {
      * @return {@link Result<>}
      */
     @OptLog(optType = UPDATE)
-    @ApiOperation(value = "恢复或删除文章")
+    @Operation(summary = "恢复或删除文章")
     @PutMapping("/admin/articles")
     public Result<?> updateArticleDelete(@Valid @RequestBody DeleteVO deleteVO) {
         articleService.updateArticleDelete(deleteVO);
@@ -116,8 +116,8 @@ public class ArticleController {
      * @param file 文件
      * @return {@link Result<String>} 文章图片地址
      */
-    @ApiOperation(value = "上传文章图片")
-    @ApiImplicitParam(name = "file", value = "文章图片", required = true, dataType = "MultipartFile")
+    @Operation(summary = "上传文章图片")
+    @Parameter(name = "file", description = "文章图片", required = true)
     @PostMapping("/admin/articles/images")
     public Result<String> saveArticleImages(MultipartFile file) {
         return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.ARTICLE.getPath()));
@@ -130,7 +130,7 @@ public class ArticleController {
      * @return {@link Result<>}
      */
     @OptLog(optType = REMOVE)
-    @ApiOperation(value = "物理删除文章")
+    @Operation(summary = "物理删除文章")
     @DeleteMapping("/admin/articles")
     public Result<?> deleteArticles(@RequestBody List<Integer> articleIdList) {
         articleService.deleteArticles(articleIdList);
@@ -143,8 +143,8 @@ public class ArticleController {
      * @param articleId 文章id
      * @return {@link Result<ArticleVO>} 后台文章
      */
-    @ApiOperation(value = "根据id查看后台文章")
-    @ApiImplicitParam(name = "articleId", value = "文章id", required = true, dataType = "Integer")
+    @Operation(summary = "根据id查看后台文章")
+    @Parameter(name = "articleId", description = "文章id", required = true)
     @GetMapping("/admin/articles/{articleId}")
     public Result<ArticleVO> getArticleBackById(@PathVariable("articleId") Integer articleId) {
         return Result.ok(articleService.getArticleBackById(articleId));
@@ -156,8 +156,8 @@ public class ArticleController {
      * @param articleId 文章id
      * @return {@link Result<ArticleDTO>} 文章信息
      */
-    @ApiOperation(value = "根据id查看文章")
-    @ApiImplicitParam(name = "articleId", value = "文章id", required = true, dataType = "Integer")
+    @Operation(summary = "根据id查看文章")
+    @Parameter(name = "articleId", description = "文章id", required = true)
     @GetMapping("/articles/{articleId}")
     public Result<ArticleDTO> getArticleById(@PathVariable("articleId") Integer articleId) {
         return Result.ok(articleService.getArticleById(articleId));
@@ -169,7 +169,7 @@ public class ArticleController {
      * @param condition 条件
      * @return {@link Result<ArticlePreviewListDTO>} 文章列表
      */
-    @ApiOperation(value = "根据条件查询文章")
+    @Operation(summary = "根据条件查询文章")
     @GetMapping("/articles/condition")
     public Result<ArticlePreviewListDTO> listArticlesByCondition(ConditionVO condition) {
         return Result.ok(articleService.listArticlesByCondition(condition));
@@ -181,7 +181,7 @@ public class ArticleController {
      * @param condition 条件
      * @return {@link Result<ArticleSearchDTO>} 文章列表
      */
-    @ApiOperation(value = "搜索文章")
+    @Operation(summary = "搜索文章")
     @GetMapping("/articles/search")
     public Result<List<ArticleSearchDTO>> listArticlesBySearch(ConditionVO condition) {
         return Result.ok(articleService.listArticlesBySearch(condition));
@@ -193,8 +193,8 @@ public class ArticleController {
      * @param articleId 文章id
      * @return {@link Result<>}
      */
-    @ApiOperation(value = "点赞文章")
-    @ApiImplicitParam(name = "articleId", value = "文章id", required = true, dataType = "Integer")
+    @Operation(summary = "点赞文章")
+    @Parameter(name = "articleId", description = "文章id", required = true)
     @PostMapping("/articles/{articleId}/like")
     public Result<?> saveArticleLike(@PathVariable("articleId") Integer articleId) {
         articleService.saveArticleLike(articleId);

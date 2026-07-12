@@ -20,7 +20,7 @@
           size="small"
           placeholder="请输入模块名或描述"
           style="width:200px"
-          @keyup.enter.native="searchLogs"
+          @keyup.enter="searchLogs"
         />
         <el-button
           type="primary"
@@ -64,7 +64,7 @@
         align="center"
         width="100"
       >
-        <template slot-scope="scope" v-if="scope.row.requestMethod">
+        <template #default="scope" v-if="scope.row.requestMethod">
           <el-tag :type="tagType(scope.row.requestMethod)">
             {{ scope.row.requestMethod }}
           </el-tag>
@@ -89,17 +89,16 @@
         align="center"
         width="190"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | dateTime }}
+          {{ dateTime(scope.row.createTime) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="150">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             size="mini"
             type="text"
-            slot="reference"
             @click="check(scope.row)"
           >
             <i class="el-icon-view" /> 查看
@@ -109,9 +108,9 @@
             style="margin-left:10px"
             @confirm="deleteLog(scope.row.id)"
           >
-            <el-button size="mini" type="text" slot="reference">
+            <template #reference><el-button size="mini" type="text">
               <i class="el-icon-delete" /> 删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
@@ -129,10 +128,10 @@
       layout="total, sizes, prev, pager, next, jumper"
     />
     <!-- 查看模态框 -->
-    <el-dialog :visible.sync="isCheck" width="40%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="isCheck" width="40%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-more" />详细信息
-      </div>
+      </div></template>
 
       <el-form ref="form" :model="optLog" label-width="100px" size="mini">
         <el-form-item label="操作模块：">
@@ -161,17 +160,17 @@
       </el-form>
     </el-dialog>
     <!-- 批量删除对话框 -->
-    <el-dialog :visible.sync="isDelete" width="30%">
-      <div class="dialog-title-container" slot="title">
+    <el-dialog v-model="isDelete" width="30%">
+      <template #header><div class="dialog-title-container">
         <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div>
+      </div></template>
       <div style="font-size:1rem">是否删除选中项？</div>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="isDelete = false">取 消</el-button>
         <el-button type="primary" @click="deleteLog(null)">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

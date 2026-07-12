@@ -17,8 +17,7 @@
       </div>
       <!-- 无限加载 -->
       <infinite-loading @infinite="infiniteHandler">
-        <div slot="no-more" />
-        <div slot="no-results" />
+        <template #complete><div /></template>
       </infinite-loading>
     </v-card>
   </div>

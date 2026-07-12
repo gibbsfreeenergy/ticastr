@@ -9,7 +9,7 @@ import com.wzh.blog.entity.UniqueView;
 import com.wzh.blog.dao.UniqueViewDao;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.UniqueViewService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -38,6 +38,9 @@ public class UniqueViewServiceImpl extends ServiceImpl<UniqueViewDao, UniqueView
     private RedisService redisService;
     @Autowired
     private UniqueViewDao uniqueViewDao;
+
+
+
 
     @Override
     public List<UniqueViewDTO> listUniqueViews() {

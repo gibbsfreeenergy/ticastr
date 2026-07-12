@@ -19,7 +19,7 @@
           size="small"
           placeholder="请输入菜单名"
           style="width:200px"
-          @keyup.enter.native="listMenus"
+          @keyup.enter="listMenus"
         />
         <el-button
           type="primary"
@@ -43,7 +43,7 @@
       <el-table-column prop="name" label="菜单名称" width="140" />
       <!-- 菜单icon -->
       <el-table-column prop="icon" align="center" label="图标" width="100">
-        <template slot-scope="scope">
+        <template #default="scope">
           <i :class="'iconfont ' + scope.row.icon" />
         </template>
       </el-table-column>
@@ -60,7 +60,7 @@
       <el-table-column prop="component" label="组件路径" />
       <!-- 是否隐藏 -->
       <el-table-column prop="isHidden" label="隐藏" align="center" width="80">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-switch
             v-model="scope.row.isHidden"
             active-color="#13ce66"
@@ -78,14 +78,14 @@
         align="center"
         width="150"
       >
-        <template slot-scope="scope">
+        <template #default="scope">
           <i class="el-icon-time" style="margin-right:5px" />
-          {{ scope.row.createTime | date }}
+          {{ date(scope.row.createTime) }}
         </template>
       </el-table-column>
       <!-- 操作 -->
       <el-table-column label="操作" align="center" width="200">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             type="text"
             size="mini"
@@ -102,16 +102,16 @@
             style="margin-left:10px"
             @confirm="deleteMenu(scope.row.id)"
           >
-            <el-button size="mini" type="text" slot="reference">
+            <template #reference><el-button size="mini" type="text">
               <i class="el-icon-delete" /> 删除
-            </el-button>
+            </el-button></template>
           </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
     <!-- 新增模态框 -->
-    <el-dialog :visible.sync="addMenu" width="30%" top="12vh">
-      <div class="dialog-title-container" slot="title" ref="menuTitle" />
+    <el-dialog v-model="addMenu" width="30%" top="12vh">
+      <template #header><div class="dialog-title-container" ref="menuTitle" /></template>
       <el-form label-width="80px" size="medium" :model="menuForm">
         <!-- 菜单类型 -->
         <el-form-item label="菜单类型" v-if="show">
@@ -139,12 +139,13 @@
                 </div>
               </el-col>
             </el-row>
-            <el-input
-              :prefix-icon="'iconfont ' + menuForm.icon"
-              slot="reference"
-              v-model="menuForm.icon"
-              style="width:220px"
-            />
+            <template #reference>
+              <el-input
+                :prefix-icon="'iconfont ' + menuForm.icon"
+                v-model="menuForm.icon"
+                style="width:220px"
+              />
+            </template>
           </el-popover>
         </el-form-item>
         <!-- 组件路径 -->
@@ -172,12 +173,12 @@
           </el-radio-group>
         </el-form-item>
       </el-form>
-      <div slot="footer">
+      <template #footer><div>
         <el-button @click="addMenu = false">取 消</el-button>
         <el-button type="primary" @click="saveOrUpdateMenu">
           确 定
         </el-button>
-      </div>
+      </div></template>
     </el-dialog>
   </el-card>
 </template>

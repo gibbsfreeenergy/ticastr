@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.strategy.context.UploadStrategyContext;
@@ -14,7 +14,7 @@ import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.UserInfoService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.UserRoleService;
 
 import com.wzh.blog.util.UserUtils;
@@ -57,6 +57,9 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
 
     @Transactional(rollbackFor = Exception.class)
+
+
+
     @Override
     public void updateUserInfo(UserInfoVO userInfoVO) {
         // 封装用户信息
@@ -70,6 +73,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public String updateUserAvatar(MultipartFile file) {
         // 头像上传
@@ -84,6 +89,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveUserEmail(EmailVO emailVO) {
         if (!emailVO.getCode().equals(redisService.get(USER_CODE_KEY + emailVO.getEmail()).toString())) {
@@ -97,6 +104,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updateUserRole(UserRoleVO userRoleVO) {
         // 更新用户角色和昵称
@@ -118,6 +127,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void updateUserDisable(UserDisableVO userDisableVO) {
         // 更新用户禁用状态
@@ -127,6 +138,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
                 .build();
         userInfoDao.updateById(userInfo);
     }
+
+
 
     @Override
     public PageResult<UserOnlineDTO> listOnlineUsers(ConditionVO conditionVO) {
@@ -144,6 +157,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
         List<UserOnlineDTO> userOnlineList = userOnlineDTOList.subList(fromIndex, toIndex);
         return new PageResult<>(userOnlineList, userOnlineDTOList.size());
     }
+
+
 
     @Override
     public void removeOnlineUser(Integer userInfoId) {

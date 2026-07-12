@@ -28,10 +28,9 @@
                 height="24"
               />
             </span>
-            <i
-              class="iconfont el-icon-mybiaoqing operation-btn"
-              slot="reference"
-            />
+            <template #reference>
+              <i class="iconfont el-icon-mybiaoqing operation-btn" />
+            </template>
           </el-popover>
           <!-- 图片上传 -->
           <el-upload
@@ -62,7 +61,7 @@
             <span class="talk-status">
               {{ dropdownTitle }}<i class="el-icon-arrow-down el-icon--right" />
             </span>
-            <el-dropdown-menu slot="dropdown">
+            <template #dropdown><el-dropdown-menu>
               <el-dropdown-item
                 v-for="(item, index) of statusList"
                 :key="index"
@@ -70,7 +69,7 @@
               >
                 {{ item.desc }}
               </el-dropdown-item>
-            </el-dropdown-menu>
+            </el-dropdown-menu></template>
           </el-dropdown>
           <el-button
             type="primary"

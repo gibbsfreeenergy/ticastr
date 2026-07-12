@@ -1,12 +1,12 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * 微博登录
@@ -25,7 +25,7 @@ public class WeiboLoginVO {
      * code
      */
     @NotBlank(message = "code不能为空")
-    @ApiModelProperty(name = "openId", value = "qq openId", required = true, dataType = "String")
+    @Schema(description = "qq openId")
     private String code;
 
 }

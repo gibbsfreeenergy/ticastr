@@ -11,7 +11,7 @@ import com.wzh.blog.entity.Category;
 import com.wzh.blog.entity.Tag;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.ArticleService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.ArticleTagService;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.TagService;
@@ -25,7 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -64,6 +64,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
     @Autowired
     private ArticleTagService articleTagService;
 
+
+
+
     @Override
     public PageResult<ArchiveDTO> listArchives() {
         Page<Article> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
@@ -76,6 +79,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         List<ArchiveDTO> archiveDTOList = BeanCopyUtils.copyList(articlePage.getRecords(), ArchiveDTO.class);
         return new PageResult<>(archiveDTOList, (int) articlePage.getTotal());
     }
+
+
 
     @Override
     public PageResult<ArticleBackDTO> listArticleBacks(ConditionVO condition) {
@@ -100,10 +105,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         return new PageResult<>(articleBackDTOList, count);
     }
 
+
+
     @Override
     public List<ArticleHomeDTO> listArticles() {
         return articleDao.listArticles(PageUtils.getLimitCurrent(), PageUtils.getSize());
     }
+
+
 
     @Override
     public ArticlePreviewListDTO listArticlesByCondition(ConditionVO condition) {
@@ -127,6 +136,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
                 .name(name)
                 .build();
     }
+
+
 
     @Override
     public ArticleDTO getArticleById(Integer articleId) {
@@ -185,6 +196,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
     }
 
 
+
+
     @Override
     public void saveArticleLike(Integer articleId) {
         // 判断是否点赞
@@ -203,6 +216,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void saveOrUpdateArticle(ArticleVO articleVO) {
         // 保存文章分类
@@ -237,6 +252,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         return category;
     }
 
+
+
     @Override
     public void updateArticleTop(ArticleTopVO articleTopVO) {
         // 修改文章置顶状态
@@ -246,6 +263,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
                 .build();
         articleDao.updateById(article);
     }
+
+
 
     @Override
     public void updateArticleDelete(DeleteVO deleteVO) {
@@ -261,6 +280,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
     }
 
     @Transactional(rollbackFor = Exception.class)
+
+
     @Override
     public void deleteArticles(List<Integer> articleIdList) {
         // 删除文章标签关联
@@ -270,10 +291,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         articleDao.deleteBatchIds(articleIdList);
     }
 
+
+
     @Override
     public List<ArticleSearchDTO> listArticlesBySearch(ConditionVO condition) {
         return searchStrategyContext.executeSearchStrategy(condition.getKeywords());
     }
+
+
 
     @Override
     public ArticleVO getArticleBackById(Integer articleId) {

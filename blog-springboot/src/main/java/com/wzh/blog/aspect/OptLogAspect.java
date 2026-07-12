@@ -1,13 +1,13 @@
 package com.wzh.blog.aspect;
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.annotation.OptLog;
 import com.wzh.blog.dao.OperationLogDao;
 import com.wzh.blog.entity.OperationLog;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.util.UserUtils;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
@@ -61,15 +61,16 @@ public class OptLogAspect {
         // 获取切入点所在的方法
         Method method = signature.getMethod();
         // 获取操作
-        Api api = (Api) signature.getDeclaringType().getAnnotation(Api.class);
-        ApiOperation apiOperation = method.getAnnotation(ApiOperation.class);
+        Class<?> declaringType = signature.getDeclaringType();
+        Tag tag = declaringType.getAnnotation(Tag.class);
+        Operation operation = method.getAnnotation(Operation.class);
         OptLog optLog = method.getAnnotation(OptLog.class);
         // 操作模块
-        operationLog.setOptModule(api.tags()[0]);
+        operationLog.setOptModule(tag == null ? signature.getDeclaringType().getSimpleName() : tag.name());
         // 操作类型
         operationLog.setOptType(optLog.optType());
         // 操作描述
-        operationLog.setOptDesc(apiOperation.value());
+        operationLog.setOptDesc(operation == null ? method.getName() : operation.summary());
         // 获取请求的类名
         String className = joinPoint.getTarget().getClass().getName();
         // 获取请求的方法名

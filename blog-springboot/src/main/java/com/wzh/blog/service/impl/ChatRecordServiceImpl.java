@@ -1,6 +1,6 @@
 package com.wzh.blog.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.ChatRecordDao;
 import com.wzh.blog.entity.ChatRecord;
 import com.wzh.blog.service.ChatRecordService;
@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class ChatRecordServiceImpl extends ServiceImpl<ChatRecordDao, ChatRecord> implements ChatRecordService {
+
+
 
 
 

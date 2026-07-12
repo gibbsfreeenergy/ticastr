@@ -1,13 +1,12 @@
 package com.wzh.blog.vo;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 
 /**
@@ -20,20 +19,20 @@ import javax.validation.constraints.NotBlank;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@ApiModel(description = "分类")
+@Schema(description = "分类")
 public class CategoryVO {
 
     /**
      * id
      */
-    @ApiModelProperty(name = "id", value = "分类id", dataType = "Integer")
+    @Schema(description = "分类id")
     private Integer id;
 
     /**
      * 分类名
      */
     @NotBlank(message = "分类名不能为空")
-    @ApiModelProperty(name = "categoryName", value = "分类名", required = true, dataType = "String")
+    @Schema(description = "分类名")
     private String categoryName;
 
 }
