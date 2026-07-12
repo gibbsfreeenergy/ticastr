@@ -9,6 +9,7 @@ blog-springboot/src/main/resources/application-local.yml
 /.build
 
 # local env files
+.env
 .env.local
 .env.*.local
 

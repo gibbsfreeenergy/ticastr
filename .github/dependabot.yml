@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /blog-springboot
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /blog-vue/blog
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /blog-vue/admin
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

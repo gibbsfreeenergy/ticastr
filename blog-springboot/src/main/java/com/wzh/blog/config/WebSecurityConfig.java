@@ -68,7 +68,7 @@ public class WebSecurityConfig {
                         .logoutSuccessHandler(logoutSuccessHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/login", "/actuator/health").permitAll()
+                        .requestMatchers("/login", "/actuator/health/**").permitAll()
                         .anyRequest().access(dynamicAuthorizationManager))
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf

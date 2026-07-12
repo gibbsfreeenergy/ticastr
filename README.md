@@ -30,7 +30,7 @@ The repository pins its runtime expectations in [`.java-version`](.java-version)
    mysql -u <user> -p <database> < blog-mysql8.sql
    ```
 
-2. Configure local service endpoints in `blog-springboot/src/main/resources/application.yml`. Keep real passwords, tokens, and private keys out of Git.
+2. Configure local services with environment variables or an ignored `application-local.yml`. Start from [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml); the committed `application.yml` intentionally contains no credentials.
 
 3. Start the API:
 
@@ -62,12 +62,23 @@ mvn package
 npm run build
 ```
 
-There are no backend test sources at present. A production database import and all external services are required for a complete end-to-end runtime check.
+## Containers
+
+For a complete local stack, copy [`.env.example`](.env.example) to `.env`, replace every placeholder, then run:
+
+```bash
+docker compose up --build
+```
+
+This starts MySQL, Redis, RabbitMQ, the API, the public site on `http://localhost:8080`, and the console on `http://localhost:8081`. The SQL initialization script runs only when the named MySQL volume is first created; it drops and recreates its tables, so never reuse a production data volume.
+
+The API exposes unauthenticated liveness/readiness checks at `/actuator/health` and `/actuator/health/**`; detailed health information remains private.
 
 ## Development notes
 
 - Keep frontend API calls relative (`/api/...`); do not hardcode `localhost:8090` in components.
 - Backend follows `controller -> service -> dao`; update the corresponding mapper XML when adding persistence queries.
+- Runtime configuration, CORS origins, and all service credentials are supplied through environment variables. Do not restore secrets to `application.yml`.
 - See [AGENTS.md](AGENTS.md) for full collaboration, configuration, and commit rules.
 
 ## License

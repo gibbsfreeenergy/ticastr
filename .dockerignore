@@ -1,0 +1,10 @@
+.git
+.github
+.build
+.tools
+**/node_modules
+**/dist
+**/target
+uploads
+*.log
+.env
