@@ -3,6 +3,7 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import ElementPlus from "element-plus";
+import { ElMessage } from "element-plus";
 import "element-plus/dist/index.css";
 import "./assets/css/index.css";
 import "./assets/css/iconfont.css";
@@ -22,6 +23,11 @@ import dayjs from "dayjs";
 use([SVGRenderer, LineChart, PieChart, BarChart, TooltipComponent, LegendComponent, TitleComponent, GridComponent]);
 
 const app = createApp(App);
+axios.defaults.timeout = 15000;
+axios.defaults.withCredentials = true;
+axios.defaults.xsrfCookieName = "XSRF-TOKEN";
+axios.defaults.xsrfHeaderName = "X-XSRF-TOKEN";
+axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 app.config.globalProperties.config = config;
 app.config.globalProperties.axios = axios;
 app.config.globalProperties.$moment = dayjs;
@@ -41,14 +47,33 @@ router.afterEach(() => NProgress.done());
 axios.interceptors.response.use(
   response => {
     if (response.data.code === 40001) {
-      app.config.globalProperties.$message.error(response.data.message);
+      ElMessage.error(response.data.message);
       router.push({ path: "/login" });
     } else if (response.data.code === 50000) {
-      app.config.globalProperties.$message.error(response.data.message);
+      ElMessage.error(response.data.message);
     }
     return response;
   },
-  error => Promise.reject(error)
+  error => {
+    const status = error.response?.status;
+    const message = status === 401
+      ? "登录已过期，请重新登录"
+      : status === 403
+        ? "没有执行此操作的权限"
+        : status === 429
+          ? "操作过于频繁，请稍后重试"
+          : status === 503
+            ? "服务暂时不可用，请稍后重试"
+            : error.code === "ECONNABORTED"
+              ? "请求超时，请检查网络后重试"
+              : "网络请求失败，请稍后重试";
+    ElMessage.error(message);
+    if (status === 401) {
+      store.commit("logout");
+      router.push({ path: "/login" });
+    }
+    return Promise.reject(error);
+  }
 );
 
 app.mount("#app");

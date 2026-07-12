@@ -18,6 +18,11 @@ import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 
 const app = createApp(App);
+axios.defaults.timeout = 15000;
+axios.defaults.withCredentials = true;
+axios.defaults.xsrfCookieName = "XSRF-TOKEN";
+axios.defaults.xsrfHeaderName = "X-XSRF-TOKEN";
+axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 app.config.globalProperties.config = config;
 app.config.globalProperties.axios = axios;
 app.config.globalProperties.date = value => dayjs(value).format("YYYY-MM-DD");
@@ -42,9 +47,31 @@ router.afterEach(() => {
 });
 axios.interceptors.response.use(
   response => {
-    if (response.data.code === 50000) app.config.globalProperties.$toast({ type: "error", message: "系统异常" });
+    if (response.data.code === 40001) {
+      app.config.globalProperties.$toast({ type: "error", message: response.data.message });
+      app.config.globalProperties.$store?.commit("logout");
+    } else if (response.data.code === 40300) {
+      app.config.globalProperties.$toast({ type: "error", message: response.data.message });
+    } else if (response.data.code === 50000) {
+      app.config.globalProperties.$toast({ type: "error", message: "系统异常，请稍后重试" });
+    }
     return response;
   },
-  error => Promise.reject(error)
+  error => {
+    const status = error.response?.status;
+    const message = status === 401
+      ? "登录已过期，请重新登录"
+      : status === 403
+        ? "没有执行此操作的权限"
+        : status === 429
+          ? "操作过于频繁，请稍后重试"
+          : status === 503
+            ? "服务暂时不可用，请稍后重试"
+            : error.code === "ECONNABORTED"
+              ? "请求超时，请检查网络后重试"
+              : "网络请求失败，请稍后重试";
+    app.config.globalProperties.$toast({ type: "error", message });
+    return Promise.reject(error);
+  }
 );
 app.mount("#app");

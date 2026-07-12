@@ -12,5 +12,20 @@ export default defineConfig({
       "/api": { target: "http://localhost:8090", changeOrigin: true, rewrite: path => path.replace(/^\/api/, ""), ws: true }
     }
   },
-  build: { sourcemap: false }
+  build: {
+    sourcemap: false,
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("node_modules/vue") || id.includes("node_modules/@vue") || id.includes("node_modules/vuex") || id.includes("node_modules/vuetify")) {
+            return "vue-vendor";
+          }
+          if (id.includes("node_modules/markdown-it") || id.includes("node_modules/highlight.js") || id.includes("node_modules/tocbot")) {
+            return "content-vendor";
+          }
+        }
+      }
+    }
+  }
 });
