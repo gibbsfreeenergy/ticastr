@@ -30,7 +30,7 @@ The repository pins its runtime expectations in [`.java-version`](.java-version)
    mysql -u <user> -p <database> < blog-mysql8.sql
    ```
 
-2. Configure local services with environment variables or an ignored `application-local.yml`. Start from [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml); the committed `application.yml` intentionally contains no credentials.
+2. Configure local services with environment variables or an ignored `application-local.yml`. Start from [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml); the committed `application.yml` intentionally contains no credentials. For local OAuth and captcha site keys, copy the relevant frontend `.env.example` file to `.env.local`.
 
 3. Start the API:
 

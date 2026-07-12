@@ -1,4 +1,4 @@
 export default {
-  TENCENT_CAPTCHA: "2088053498",
-  UPLOAD_SIZE: 200 // 压缩文件大小
+  TENCENT_CAPTCHA: import.meta.env.VITE_TENCENT_CAPTCHA_ID || "",
+  UPLOAD_SIZE: Number(import.meta.env.VITE_UPLOAD_SIZE_KB || 200)
 };

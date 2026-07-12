@@ -29,7 +29,7 @@ import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +66,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     private RabbitTemplate rabbitTemplate;
     @Autowired
     private SocialLoginStrategyContext socialLoginStrategyContext;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
 
 
@@ -146,7 +148,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         UserAuth userAuth = UserAuth.builder()
                 .userInfoId(userInfo.getId())
                 .username(user.getUsername())
-                .password(BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()))
+                .password(passwordEncoder.encode(user.getPassword()))
                 .loginType(LoginTypeEnum.EMAIL.getType())
                 .build();
         userAuthDao.insert(userAuth);
@@ -162,7 +164,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         }
         // 根据用户名修改密码
         userAuthDao.update(new UserAuth(), new LambdaUpdateWrapper<UserAuth>()
-                .set(UserAuth::getPassword, BCrypt.hashpw(user.getPassword(), BCrypt.gensalt()))
+                .set(UserAuth::getPassword, passwordEncoder.encode(user.getPassword()))
                 .eq(UserAuth::getUsername, user.getUsername()));
     }
 
@@ -174,10 +176,10 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         UserAuth user = userAuthDao.selectOne(new LambdaQueryWrapper<UserAuth>()
                 .eq(UserAuth::getId, UserUtils.getLoginUser().getId()));
         // 正确则修改密码，错误则提示不正确
-        if (Objects.nonNull(user) && BCrypt.checkpw(passwordVO.getOldPassword(), user.getPassword())) {
+        if (Objects.nonNull(user) && passwordEncoder.matches(passwordVO.getOldPassword(), user.getPassword())) {
             UserAuth userAuth = UserAuth.builder()
                     .id(UserUtils.getLoginUser().getId())
-                    .password(BCrypt.hashpw(passwordVO.getNewPassword(), BCrypt.gensalt()))
+                    .password(passwordEncoder.encode(passwordVO.getNewPassword()))
                     .build();
             userAuthDao.updateById(userAuth);
         } else {

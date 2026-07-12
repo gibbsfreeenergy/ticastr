@@ -38,7 +38,7 @@ Use JDK 21 and Node 24.18.0 / npm 11.16.0, as pinned by `.java-version` and `.nv
 
 ## Configuration and data safety
 
-- `application.yml` contains only environment-variable placeholders and safe defaults. Put local overrides in the ignored `application-local.yml` or environment variables; start from `application-local.example.yml`.
+- `application.yml` contains only environment-variable placeholders and safe defaults. Put local overrides in the ignored `application-local.yml` or environment variables; start from `application-local.example.yml`. Frontend public OAuth/captcha values use `VITE_*` variables and the frontend `.env.example` files.
 - Never commit passwords, tokens, private keys, OAuth secrets, or production endpoints. Rotate any secret that was committed previously.
 - `blog-mysql8.sql` drops and recreates tables. Import it only into a dedicated local database or a newly initialized Docker volume.
 - `compose.yaml` is for local integration environments. Copy `.env.example` to `.env` and set non-placeholder values before using it.

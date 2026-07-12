@@ -22,6 +22,7 @@ import com.wzh.blog.util.HTMLUtils;
 import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
  * @date 2021/08/10
  */
 @Service
+@Log4j2
 public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> implements ArticleService {
     @Autowired
     private ArticleDao articleDao;
@@ -191,7 +193,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
             article.setRecommendArticleList(recommendArticleList.get());
             article.setNewestArticleList(newestArticleList.get());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Unable to load article recommendations for article {}", articleId, e);
         }
         return article;
     }

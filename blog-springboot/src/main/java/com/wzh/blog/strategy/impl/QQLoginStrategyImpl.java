@@ -11,6 +11,7 @@ import com.wzh.blog.enums.LoginTypeEnum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.util.CommonUtils;
 import com.wzh.blog.vo.QQLoginVO;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -29,6 +30,7 @@ import static com.wzh.blog.enums.StatusCodeEnum.QQ_LOGIN_ERROR;
  * @date 2021/07/28
  */
 @Service("qqLoginStrategyImpl")
+@Log4j2
 public class QQLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
     @Autowired
     private QQConfigProperties qqConfigProperties;
@@ -81,7 +83,7 @@ public class QQLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
                 throw new BizException(QQ_LOGIN_ERROR);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Unable to validate QQ OAuth token", e);
             throw new BizException(QQ_LOGIN_ERROR);
         }
     }

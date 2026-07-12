@@ -11,7 +11,10 @@ import java.util.List;
  * @author yezhiqiu
  * @date 2021/08/10
  */
-public class BeanCopyUtils {
+public final class BeanCopyUtils {
+
+    private BeanCopyUtils() {
+    }
 
     /**
      * 复制对象
@@ -21,16 +24,15 @@ public class BeanCopyUtils {
      * @return {@link T}
      */
     public static <T> T copyObject(Object source, Class<T> target) {
-        T temp = null;
         try {
-            temp = target.newInstance();
+            T temp = target.getDeclaredConstructor().newInstance();
             if (null != source) {
                 org.springframework.beans.BeanUtils.copyProperties(source, temp);
             }
+            return temp;
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to copy object to " + target.getName(), e);
         }
-        return temp;
     }
 
     /**

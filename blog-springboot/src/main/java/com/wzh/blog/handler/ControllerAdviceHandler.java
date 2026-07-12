@@ -3,11 +3,12 @@ package com.wzh.blog.handler;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.vo.Result;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.util.Objects;
 
 import static com.wzh.blog.enums.StatusCodeEnum.SYSTEM_ERROR;
 import static com.wzh.blog.enums.StatusCodeEnum.VALID_ERROR;
@@ -30,8 +31,8 @@ public class ControllerAdviceHandler {
      * @return 接口异常信息
      */
     @ExceptionHandler(value = BizException.class)
-    public Result<?> errorHandler(BizException e) {
-        return Result.fail(e.getCode(), e.getMessage());
+    public ResponseEntity<Result<?>> errorHandler(BizException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(e.getCode(), e.getMessage()));
     }
 
     /**
@@ -41,8 +42,18 @@ public class ControllerAdviceHandler {
      * @return 接口异常信息
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<?> errorHandler(MethodArgumentNotValidException e) {
-        return Result.fail(VALID_ERROR.getCode(), Objects.requireNonNull(e.getBindingResult().getFieldError()).getDefaultMessage());
+    public ResponseEntity<Result<?>> errorHandler(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse(VALID_ERROR.getDesc());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(VALID_ERROR.getCode(), message));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Result<?>> errorHandler(HttpMessageNotReadableException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Result.fail(VALID_ERROR.getCode(), VALID_ERROR.getDesc()));
     }
 
     /**
@@ -52,9 +63,10 @@ public class ControllerAdviceHandler {
      * @return 接口异常信息
      */
     @ExceptionHandler(value = Exception.class)
-    public Result<?> errorHandler(Exception e) {
-        e.printStackTrace();
-        return Result.fail(SYSTEM_ERROR.getCode(), SYSTEM_ERROR.getDesc());
+    public ResponseEntity<Result<?>> errorHandler(Exception e) {
+        log.error("Unhandled API exception", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Result.fail(SYSTEM_ERROR.getCode(), SYSTEM_ERROR.getDesc()));
     }
 
 }

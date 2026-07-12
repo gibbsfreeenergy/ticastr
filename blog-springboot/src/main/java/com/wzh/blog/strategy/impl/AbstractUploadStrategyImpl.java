@@ -3,6 +3,7 @@ package com.wzh.blog.strategy.impl;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.strategy.UploadStrategy;
 import com.wzh.blog.util.FileUtils;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,7 @@ import java.io.*;
  * @date 2021/07/28
  */
 @Service
+@Log4j2
 public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
 
     @Override
@@ -34,7 +36,7 @@ public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
             // 返回文件访问路径
             return getFileAccessUrl(path + fileName);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Upload failed for path {}", path, e);
             throw new BizException("文件上传失败");
         }
     }

@@ -13,6 +13,7 @@ import com.wzh.blog.strategy.context.UploadStrategyContext;
 import com.wzh.blog.util.*;
 import com.wzh.blog.vo.VoiceVO;
 import lombok.Data;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ import static com.wzh.blog.enums.ChatTypeEnum.*;
  */
 @Data
 @Service
+@Log4j2
 @ServerEndpoint(value = "/websocket", configurator = WebSocketServiceImpl.ChatConfigurator.class)
 public class WebSocketServiceImpl {
 
@@ -206,7 +208,7 @@ public class WebSocketServiceImpl {
         try {
             broadcastMessage(messageDTO);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("Unable to broadcast voice message", e);
         }
     }
 

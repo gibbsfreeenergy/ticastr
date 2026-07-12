@@ -64,14 +64,24 @@ services:
       - uploads:/data/uploads
 
   blog:
-    build: ./blog-vue/blog
+    build:
+      context: ./blog-vue/blog
+      args:
+        VITE_QQ_APP_ID: ${VITE_QQ_APP_ID:-}
+        VITE_QQ_REDIRECT_URI: ${VITE_QQ_REDIRECT_URI:-http://localhost:8080/oauth/login/qq}
+        VITE_WEIBO_APP_ID: ${VITE_WEIBO_APP_ID:-}
+        VITE_WEIBO_REDIRECT_URI: ${VITE_WEIBO_REDIRECT_URI:-http://localhost:8080/oauth/login/weibo}
+        VITE_TENCENT_CAPTCHA_ID: ${VITE_TENCENT_CAPTCHA_ID:-}
     ports:
       - "8080:80"
     depends_on:
       - api
 
   admin:
-    build: ./blog-vue/admin
+    build:
+      context: ./blog-vue/admin
+      args:
+        VITE_TENCENT_CAPTCHA_ID: ${VITE_TENCENT_CAPTCHA_ID:-}
     ports:
       - "8081:80"
     depends_on:
