@@ -78,7 +78,7 @@ docker compose up --build
 
 This starts MySQL, Redis, RabbitMQ, the API, the public site on `http://localhost:8080`, and the console on `http://localhost:8081`. The SQL initialization script runs only when the named MySQL volume is first created; it drops and recreates its tables, so never reuse a production data volume.
 
-For a resource-bounded remote API host, use `deploy/backend/compose.yaml` with an untracked `deploy/backend/.env` copied from its example. It runs only MySQL, Redis, RabbitMQ, and the API, applies explicit memory limits, and exposes only the API on port `8090`.
+For a resource-bounded remote API host, package the API with `mvn package`, copy the resulting JAR to the ignored path `deploy/backend/app.jar`, and use `deploy/backend/compose.yaml` with an untracked `deploy/backend/.env` copied from its example. It runs only MySQL, Redis, RabbitMQ, and the API, applies explicit memory limits, and exposes only the API on port `8090`.
 
 Uploads are persisted in the `uploads` volume and served through `/uploads/` on both frontend hosts. Redis state is persisted in the `redis-data` volume; use a managed Redis backup strategy in production.
 

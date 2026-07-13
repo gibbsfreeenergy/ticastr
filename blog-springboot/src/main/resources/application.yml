@@ -10,8 +10,10 @@ server:
 
 spring:
   session:
-    redis:
-      namespace: ${SESSION_REDIS_NAMESPACE:ticastr:session}
+    data:
+      redis:
+        namespace: ${SESSION_REDIS_NAMESPACE:ticastr:session}
+        repository-type: indexed
   flyway:
     enabled: true
     baseline-on-migrate: true
