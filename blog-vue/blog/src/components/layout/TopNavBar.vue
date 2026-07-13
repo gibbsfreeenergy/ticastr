@@ -123,26 +123,24 @@
 <script>
 export default {
   mounted() {
-    window.addEventListener("scroll", this.scroll);
+    this.updateNavigation();
+    window.addEventListener("scroll", this.updateNavigation, { passive: true });
+  },
+  beforeUnmount() {
+    window.removeEventListener("scroll", this.updateNavigation);
   },
   data: function() {
     return {
-      navClass: ""
+      navClass: "nav"
     };
   },
   methods: {
-    scroll() {
-      const that = this;
-      let scrollTop =
+    updateNavigation() {
+      const scrollTop =
         window.pageYOffset ||
         document.documentElement.scrollTop ||
         document.body.scrollTop;
-      that.scrollTop = scrollTop;
-      if (that.scrollTop > 60) {
-        that.navClass = "nav-fixed";
-      } else {
-        that.navClass = "nav";
-      }
+      this.navClass = scrollTop > 60 ? "nav-fixed" : "nav";
     },
     openSearch() {
       this.$store.state.searchFlag = true;
@@ -198,7 +196,7 @@ ul {
 .nav .blog-title a {
   text-shadow: 0.1rem 0.1rem 0.2rem rgba(0, 0, 0, 0.15);
 }
-.theme--light.nav-fixed {
+.v-theme--light.nav-fixed {
   background: rgba(255, 255, 255, 0.8) !important;
   box-shadow: 0 5px 6px -5px rgba(133, 133, 133, 0.6);
 }
@@ -208,7 +206,7 @@ ul {
 .v-theme--dark.nav-fixed a {
   color: rgba(255, 255, 255, 0.8) !important;
 }
-.theme--light.nav-fixed a {
+.v-theme--light.nav-fixed a {
   color: #4c4948 !important;
 }
 .nav-fixed .menus-item a,
@@ -224,6 +222,22 @@ ul {
   width: 100%;
   display: flex;
   align-items: center;
+}
+@media (min-width: 960px) {
+  .nav-mobile-container {
+    display: none !important;
+  }
+  .nav-container {
+    display: block !important;
+  }
+}
+@media (max-width: 959.98px) {
+  .nav-mobile-container {
+    display: flex !important;
+  }
+  .nav-container {
+    display: none !important;
+  }
 }
 .blog-title,
 .nav-title {

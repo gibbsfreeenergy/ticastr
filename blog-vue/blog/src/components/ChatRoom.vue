@@ -9,11 +9,9 @@
     >
       <!-- 标题 -->
       <div class="header">
-        <img
-          width="32"
-          height="32"
-          src="https://img.51miz.com/preview/element/00/01/04/46/E-1044689-C1B529F6.jpg"
-        />
+        <div class="chat-logo">
+          <v-icon color="#fff" size="20">$mdi-chat</v-icon>
+        </div>
         <div style="margin-left:12px">
           <div>聊天室</div>
           <div style="font-size:12px">当前{{ count }}人在线</div>
@@ -143,11 +141,7 @@
     <!-- 未读数量 -->
     <div class="chat-btn" @click="open">
       <span class="unread" v-if="unreadCount > 0">{{ unreadCount }}</span>
-      <img
-        width="100%"
-        height="100%"
-        src="https://img.51miz.com/preview/element/00/01/04/46/E-1044689-C1B529F6.jpg"
-      />
+      <v-icon color="#fff" size="30">$mdi-chat-outline</v-icon>
     </div>
   </div>
 </template>
@@ -520,8 +514,12 @@ export default {
   z-index: 1200;
 }
 .chat-btn {
-  background: #1f93ff;
+  align-items: center;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
   border-radius: 100px !important;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+  display: flex;
+  justify-content: center;
   position: fixed;
   bottom: 15px;
   right: 5px;
@@ -531,6 +529,15 @@ export default {
   width: 60px !important;
   z-index: 1000 !important;
   user-select: none;
+}
+.chat-logo {
+  align-items: center;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  border-radius: 10px;
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
 }
 .header {
   display: flex;

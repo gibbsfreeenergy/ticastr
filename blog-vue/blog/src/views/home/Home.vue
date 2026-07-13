@@ -110,10 +110,16 @@
             </div>
           </div>
         </v-card>
-        <!-- 无限加载 -->
-        <infinite-loading @infinite="infiniteHandler">
-          <template #complete><div /></template>
-        </infinite-loading>
+        <div class="load-more-wrapper" v-if="!articlesComplete">
+          <v-btn
+            color="primary"
+            variant="tonal"
+            :loading="loadingArticles"
+            @click="loadMoreArticles"
+          >
+            加载更多
+          </v-btn>
+        </div>
       </v-col>
       <!-- 博主信息 -->
       <v-col md="3" cols="12" class="d-md-block d-none">
@@ -125,6 +131,7 @@
                 <img
                   class="author-avatar"
                   :src="blogInfo.websiteConfig.websiteAvatar"
+                  @error="hideBrokenImage"
                 />
               </v-avatar>
               <div style="font-size: 1.375rem;margin-top:0.625rem">
@@ -230,6 +237,9 @@
 <script>
 import Swiper from "../../components/Swiper.vue";
 import EasyTyper from "easy-typer-js";
+import MarkdownIt from "markdown-it";
+
+const markdown = new MarkdownIt();
 export default {
   components: {
     Swiper
@@ -237,6 +247,7 @@ export default {
   created() {
     this.init();
     this.listHomeTalks();
+    this.loadMoreArticles();
     this.timer = setInterval(this.runTime, 1000);
   },
   data: function() {
@@ -255,10 +266,15 @@ export default {
       },
       articleList: [],
       talkList: [],
-      current: 1
+      current: 1,
+      loadingArticles: false,
+      articlesComplete: false
     };
   },
   methods: {
+    hideBrokenImage(event) {
+      event.currentTarget.style.display = "none";
+    },
     // 初始化
     init() {
       document.title = this.blogInfo.websiteConfig.websiteName;
@@ -301,31 +317,32 @@ export default {
       str += day.getSeconds() + "秒";
       this.time = str;
     },
-    infiniteHandler($state) {
-      let md = require("markdown-it")();
-      this.$http
+    async loadMoreArticles() {
+      if (this.loadingArticles || this.articlesComplete) return;
+      this.loadingArticles = true;
+      try {
+        const { data } = await this.$http
         .get("/api/articles", {
           params: {
             current: this.current
           }
-        })
-        .then(({ data }) => {
-          if (data.data.length) {
-            // 去除markdown标签
-            data.data.forEach(item => {
-              item.articleContent = md
-                .render(item.articleContent)
-                .replace(/<\/?[^>]*>/g, "")
-                .replace(/[|]*\n/, "")
-                .replace(/&npsp;/gi, "");
-            });
-            this.articleList.push(...data.data);
-            this.current++;
-            $state.loaded();
-          } else {
-            $state.complete();
-          }
         });
+        if (!data.data.length) {
+          this.articlesComplete = true;
+          return;
+        }
+        data.data.forEach(item => {
+          item.articleContent = markdown
+            .render(item.articleContent)
+            .replace(/<\/?[^>]*>/g, "")
+            .replace(/[|]*\n/, "")
+            .replace(/&npsp;/gi, "");
+        });
+        this.articleList.push(...data.data);
+        this.current++;
+      } finally {
+        this.loadingArticles = false;
+      }
     }
   },
   computed: {
@@ -398,6 +415,11 @@ export default {
 }
 .card-info-social a {
   font-size: 1.5rem;
+}
+.load-more-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
 }
 .left-radius {
   border-radius: 8px 0 0 8px !important;
