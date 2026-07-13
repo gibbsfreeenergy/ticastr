@@ -33,4 +33,9 @@
             article_id = #{articleId}
     </select>
 
+    <insert id="insertIgnoreByName">
+        INSERT IGNORE INTO tb_tag (tag_name, create_time)
+        VALUES (#{tagName}, NOW())
+    </insert>
+
 </mapper>

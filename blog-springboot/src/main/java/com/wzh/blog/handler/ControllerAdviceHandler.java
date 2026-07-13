@@ -1,17 +1,22 @@
 package com.wzh.blog.handler;
 
 import com.wzh.blog.exception.BizException;
+import com.wzh.blog.exception.ConflictException;
+import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.vo.Result;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import static com.wzh.blog.enums.StatusCodeEnum.SYSTEM_ERROR;
 import static com.wzh.blog.enums.StatusCodeEnum.VALID_ERROR;
+import static com.wzh.blog.enums.StatusCodeEnum.NOT_FOUND;
+import static com.wzh.blog.enums.StatusCodeEnum.CONFLICT;
 
 
 /**
@@ -48,6 +53,25 @@ public class ControllerAdviceHandler {
                 .map(error -> error.getDefaultMessage())
                 .orElse(VALID_ERROR.getDesc());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(VALID_ERROR.getCode(), message));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Result<?>> errorHandler(NotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Result.fail(NOT_FOUND.getCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Result<?>> errorHandler(ConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Result.fail(CONFLICT.getCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Result<?>> errorHandler(DataIntegrityViolationException exception) {
+        log.warn("Database constraint rejected an API operation", exception);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Result.fail(CONFLICT.getCode(), "数据已存在或仍被其他数据引用"));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

@@ -36,4 +36,9 @@
         LIMIT #{current},#{size}
 	</select>
 
+	<insert id="insertIgnoreByName">
+		INSERT IGNORE INTO tb_category (category_name, create_time)
+		VALUES (#{categoryName}, NOW())
+	</insert>
+
 </mapper>

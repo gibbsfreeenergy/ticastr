@@ -36,6 +36,8 @@ public enum StatusCodeEnum {
      * 参数校验失败
      */
     VALID_ERROR(52000, "参数格式不正确"),
+    NOT_FOUND(54004, "资源不存在"),
+    CONFLICT(54009, "数据冲突"),
     /**
      * 用户名已存在
      */

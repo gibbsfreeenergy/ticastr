@@ -1,9 +1,9 @@
 package com.wzh.blog.aspect;
 
-import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.annotation.OptLog;
-import com.wzh.blog.dao.OperationLogDao;
 import com.wzh.blog.entity.OperationLog;
+import com.wzh.blog.service.AuditLogService;
+import com.wzh.blog.util.AuditLogSanitizer;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.util.UserUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,6 +14,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -30,10 +32,17 @@ import java.util.Objects;
  */
 @Aspect
 @Component
+@Log4j2
 public class OptLogAspect {
 
     @Autowired
-    private OperationLogDao operationLogDao;
+    private AuditLogService auditLogService;
+
+    private final AuditLogSanitizer sanitizer;
+
+    public OptLogAspect(@Value("${app.audit.max-payload-length:8000}") int maxPayloadLength) {
+        this.sanitizer = new AuditLogSanitizer(maxPayloadLength);
+    }
 
     /**
      * 设置操作日志切入点 记录操作日志 在注解的位置切入代码
@@ -81,9 +90,9 @@ public class OptLogAspect {
         // 请求方法
         operationLog.setOptMethod(methodName);
         // 请求参数
-        operationLog.setRequestParam(JSON.toJSONString(joinPoint.getArgs()));
+        operationLog.setRequestParam(sanitizer.sanitize(joinPoint.getArgs()));
         // 返回结果
-        operationLog.setResponseData(JSON.toJSONString(keys));
+        operationLog.setResponseData(sanitizer.sanitize(keys));
         // 请求用户ID
         operationLog.setUserId(UserUtils.getLoginUser().getId());
         // 请求用户
@@ -94,7 +103,11 @@ public class OptLogAspect {
         operationLog.setIpSource(IpUtils.getIpSource(ipAddress));
         // 请求URL
         operationLog.setOptUrl(request.getRequestURI());
-        operationLogDao.insert(operationLog);
+        try {
+            auditLogService.persist(operationLog);
+        } catch (RuntimeException exception) {
+            log.warn("Unable to schedule operation audit log", exception);
+        }
     }
 
 }

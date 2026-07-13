@@ -37,4 +37,6 @@ public interface CategoryDao extends BaseMapper<Category> {
      */
     List<CategoryBackDTO> listCategoryBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
 
+    int insertIgnoreByName(String categoryName);
+
 }

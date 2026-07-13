@@ -15,6 +15,7 @@ import com.wzh.blog.entity.UserRole;
 import com.wzh.blog.enums.RoleEnum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.impl.UserDetailsServiceImpl;
+import com.wzh.blog.service.RoleLookupService;
 import com.wzh.blog.strategy.SocialLoginStrategy;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.IpUtils;
@@ -49,6 +50,8 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
     private UserRoleDao userRoleDao;
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
+    @Autowired
+    private RoleLookupService roleLookupService;
     @Resource
     private HttpServletRequest request;
 
@@ -158,7 +161,7 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
         // 绑定角色
         UserRole userRole = UserRole.builder()
                 .userId(userInfo.getId())
-                .roleId(RoleEnum.USER.getRoleId())
+                .roleId(roleLookupService.requireRoleId(RoleEnum.USER))
                 .build();
         userRoleDao.insert(userRole);
         return userDetailsService.convertUserDetail(userAuth, request);

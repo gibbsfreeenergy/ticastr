@@ -14,4 +14,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ArticleTagDao extends BaseMapper<ArticleTag> {
 
+    int insertIgnore(ArticleTag articleTag);
+
 }

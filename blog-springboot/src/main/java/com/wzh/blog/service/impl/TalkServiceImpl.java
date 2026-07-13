@@ -9,7 +9,9 @@ import com.wzh.blog.dto.TalkBackDTO;
 import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.entity.Talk;
 import com.wzh.blog.exception.BizException;
+import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.RedisService;
+import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.TalkService;
 import com.wzh.blog.dao.TalkDao;
 import com.wzh.blog.util.*;
@@ -41,6 +43,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
     private CommentDao commentDao;
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private EngagementService engagementService;
 
 
 
@@ -97,7 +101,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
         // 查询说说信息
         TalkDTO talkDTO = talkDao.getTalkById(talkId);
         if (Objects.isNull(talkDTO)) {
-            throw new BizException("说说不存在");
+            throw new NotFoundException("说说不存在");
         }
         // 查询说说点赞量
         talkDTO.setLikeCount((Integer) redisService.hGet(TALK_LIKE_COUNT, talkId.toString()));
@@ -112,8 +116,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
     @Override
     public void saveTalkLike(Integer talkId) {
-        String talkLikeKey = TALK_USER_LIKE + UserUtils.getLoginUser().getUserInfoId();
-        redisService.toggleMemberAndCount(talkLikeKey, talkId, TALK_LIKE_COUNT);
+        engagementService.toggleTalkLike(UserUtils.getLoginUser().getUserInfoId(), talkId);
     }
 
 

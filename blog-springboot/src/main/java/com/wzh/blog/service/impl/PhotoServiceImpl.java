@@ -11,6 +11,7 @@ import com.wzh.blog.dto.PhotoDTO;
 import com.wzh.blog.entity.Photo;
 import com.wzh.blog.entity.PhotoAlbum;
 import com.wzh.blog.exception.BizException;
+import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.PhotoAlbumService;
 import com.wzh.blog.service.PhotoService;
 import com.wzh.blog.util.BeanCopyUtils;
@@ -138,7 +139,7 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
                 .eq(PhotoAlbum::getIsDelete, FALSE)
                 .eq(PhotoAlbum::getStatus, PUBLIC.getStatus()));
         if (Objects.isNull(photoAlbum)) {
-            throw new BizException("相册不存在");
+            throw new NotFoundException("相册不存在");
         }
         // 查询照片列表
         Page<Photo> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());

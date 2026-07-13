@@ -9,6 +9,7 @@ import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Article;
 import com.wzh.blog.entity.About;
 import com.wzh.blog.entity.WebsiteConfig;
+import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.PageService;
 import com.wzh.blog.service.RedisService;
@@ -156,7 +157,11 @@ public class BlogInfoServiceImpl implements BlogInfoService {
             websiteConfigVO = JSON.parseObject(websiteConfig.toString(), WebsiteConfigVO.class);
         } else {
             // 从数据库中加载
-            String config = websiteConfigDao.selectById(DEFAULT_CONFIG_ID).getConfig();
+            WebsiteConfig storedConfig = websiteConfigDao.selectById(DEFAULT_CONFIG_ID);
+            if (storedConfig == null || storedConfig.getConfig() == null) {
+                throw new NotFoundException("网站配置不存在");
+            }
+            String config = storedConfig.getConfig();
             websiteConfigVO = JSON.parseObject(config, WebsiteConfigVO.class);
             redisService.set(WEBSITE_CONFIG, config);
         }

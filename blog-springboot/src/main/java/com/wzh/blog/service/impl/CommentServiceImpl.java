@@ -1,36 +1,31 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.wzh.blog.dao.ArticleDao;
-import com.wzh.blog.dao.TalkDao;
-import com.wzh.blog.dao.UserInfoDao;
+import com.wzh.blog.event.CommentNotificationEvent;
 import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Comment;
 import com.wzh.blog.dao.CommentDao;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.CommentService;
+import com.wzh.blog.service.CommentValidationService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.util.HTMLUtils;
 import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.*;
-import static com.wzh.blog.constant.MQPrefixConst.EMAIL_EXCHANGE;
 import static com.wzh.blog.constant.RedisPrefixConst.COMMENT_LIKE_COUNT;
 import static com.wzh.blog.constant.RedisPrefixConst.COMMENT_USER_LIKE;
 import static com.wzh.blog.enums.CommentTypeEnum.*;
@@ -47,23 +42,15 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
     @Autowired
     private CommentDao commentDao;
     @Autowired
-    private ArticleDao articleDao;
-    @Autowired
-    private TalkDao talkDao;
-    @Autowired
     private RedisService redisService;
     @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private EngagementService engagementService;
     @Autowired
     private BlogInfoService blogInfoService;
-
-    /**
-     * 网站网址
-     */
-    @Value("${website.url}")
-    private String websiteUrl;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private CommentValidationService commentValidationService;
 
 
 
@@ -125,7 +112,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveComment(CommentVO commentVO) {
+        commentValidationService.validate(commentVO);
         // 判断是否需要审核
         WebsiteConfigVO websiteConfig = blogInfoService.getWebsiteConfig();
         Integer isReview = websiteConfig.getIsCommentReview();
@@ -143,7 +132,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         commentDao.insert(comment);
         // 判断是否开启邮箱通知,通知用户
         if (websiteConfig.getIsEmailNotice().equals(TRUE)) {
-            CompletableFuture.runAsync(() -> notice(comment));
+            eventPublisher.publishEvent(new CommentNotificationEvent(comment));
         }
     }
 
@@ -151,8 +140,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
     @Override
     public void saveCommentLike(Integer commentId) {
-        String commentLikeKey = COMMENT_USER_LIKE + UserUtils.getLoginUser().getUserInfoId();
-        redisService.toggleMemberAndCount(commentLikeKey, commentId, COMMENT_LIKE_COUNT);
+        engagementService.toggleCommentLike(UserUtils.getLoginUser().getUserInfoId(), commentId);
     }
 
 
@@ -180,51 +168,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         // 查询后台评论集合
         List<CommentBackDTO> commentBackDTOList = commentDao.listCommentBackDTO(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
         return new PageResult<>(commentBackDTOList, count);
-    }
-
-    /**
-     * 通知评论用户
-     *
-     * @param comment 评论信息
-     */
-    public void notice(Comment comment) {
-        // 查询回复用户邮箱号
-        Integer userId = BLOGGER_ID;
-        String id = Objects.nonNull(comment.getTopicId()) ? comment.getTopicId().toString() : "";
-        if (Objects.nonNull(comment.getReplyUserId())) {
-            userId = comment.getReplyUserId();
-        } else {
-            switch (Objects.requireNonNull(getCommentEnum(comment.getType()))) {
-                case ARTICLE:
-                    userId = articleDao.selectById(comment.getTopicId()).getUserId();
-                    break;
-                case TALK:
-                    userId = talkDao.selectById(comment.getTopicId()).getUserId();
-                    break;
-                default:
-                    break;
-            }
-        }
-        String email = userInfoDao.selectById(userId).getEmail();
-        if (StringUtils.isNotBlank(email)) {
-            // 发送消息
-            EmailDTO emailDTO = new EmailDTO();
-            if (comment.getIsReview().equals(TRUE)) {
-                // 评论提醒
-                emailDTO.setEmail(email);
-                emailDTO.setSubject("评论提醒");
-                // 获取评论路径
-                String url = websiteUrl + getCommentPath(comment.getType()) + id;
-                emailDTO.setContent("您收到了一条新的回复，请前往" + url + "\n页面查看");
-            } else {
-                // 管理员审核提醒
-                String adminEmail = userInfoDao.selectById(BLOGGER_ID).getEmail();
-                emailDTO.setEmail(adminEmail);
-                emailDTO.setSubject("审核提醒");
-                emailDTO.setContent("您收到了一条新的回复，请前往后台管理页面审核");
-            }
-            rabbitTemplate.convertAndSend(EMAIL_EXCHANGE, "*", new Message(JSON.toJSONBytes(emailDTO), new MessageProperties()));
-        }
     }
 
 }

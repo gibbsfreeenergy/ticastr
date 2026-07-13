@@ -37,4 +37,6 @@ public interface TagDao extends BaseMapper<Tag> {
      */
     List<String> listTagNameByArticleId(Integer articleId);
 
+    int insertIgnoreByName(String tagName);
+
 }

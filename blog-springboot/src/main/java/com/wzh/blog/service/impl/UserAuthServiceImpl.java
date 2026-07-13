@@ -18,6 +18,7 @@ import com.wzh.blog.enums.RoleEnum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.RedisService;
+import com.wzh.blog.service.RoleLookupService;
 import com.wzh.blog.service.UserAuthService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.strategy.context.SocialLoginStrategyContext;
@@ -68,6 +69,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     private SocialLoginStrategyContext socialLoginStrategyContext;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private RoleLookupService roleLookupService;
 
 
 
@@ -145,7 +148,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
         // 绑定用户角色
         UserRole userRole = UserRole.builder()
                 .userId(userInfo.getId())
-                .roleId(RoleEnum.USER.getRoleId())
+                .roleId(roleLookupService.requireRoleId(RoleEnum.USER))
                 .build();
         userRoleDao.insert(userRole);
         // 新增用户账号
