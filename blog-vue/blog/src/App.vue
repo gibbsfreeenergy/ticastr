@@ -74,7 +74,7 @@ export default {
       for (const delay of retryDelays) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         try {
-          const { data } = await this.$http.get("/api/", {
+          const { data } = await this.$http.get("/api", {
             suppressErrorToast: true,
             timeout: 5000
           });
