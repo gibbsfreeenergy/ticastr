@@ -3,7 +3,7 @@ package com.wzh.blog.dao;
 import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Article;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.ArticleQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -44,7 +44,7 @@ public interface ArticleDao extends BaseMapper<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    List<ArticlePreviewDTO> listArticlesByCondition(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<ArticlePreviewDTO> listArticlesByCondition(@Param("current") Long current, @Param("size") Long size, @Param("condition") ArticleQueryVO condition);
 
     /**
      * 查询后台文章
@@ -54,7 +54,7 @@ public interface ArticleDao extends BaseMapper<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    List<ArticleBackDTO> listArticleBacks(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<ArticleBackDTO> listArticleBacks(@Param("current") Long current, @Param("size") Long size, @Param("condition") ArticleQueryVO condition);
 
     /**
      * 查询后台文章总量
@@ -62,7 +62,7 @@ public interface ArticleDao extends BaseMapper<Article> {
      * @param condition 条件
      * @return 文章总量
      */
-    Integer countArticleBacks(@Param("condition") ConditionVO condition);
+    Integer countArticleBacks(@Param("condition") ArticleQueryVO condition);
 
     /**
      * 查看文章的推荐文章

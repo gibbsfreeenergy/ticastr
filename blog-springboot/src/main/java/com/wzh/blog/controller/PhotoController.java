@@ -35,7 +35,7 @@ public class PhotoController {
      */
     @Operation(summary = "根据相册id获取照片列表")
     @GetMapping("/admin/photos")
-    public Result<PageResult<PhotoBackDTO>> listPhotos(ConditionVO condition) {
+    public Result<PageResult<PhotoBackDTO>> listPhotos(PhotoQueryVO condition) {
         return Result.ok(photoService.listPhotos(condition));
     }
 

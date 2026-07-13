@@ -49,7 +49,7 @@ public class FriendLinkController {
      */
     @Operation(summary = "查看后台友链列表")
     @GetMapping("/admin/links")
-    public Result<PageResult<FriendLinkBackDTO>> listFriendLinkDTO(ConditionVO condition) {
+    public Result<PageResult<FriendLinkBackDTO>> listFriendLinkDTO(SearchQueryVO condition) {
         return Result.ok(friendLinkService.listFriendLinkDTO(condition));
     }
 

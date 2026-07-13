@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.dto.OperationLogDTO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.OperationLog;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 
 /**
  * 操作日志服务
@@ -20,6 +20,6 @@ public interface OperationLogService extends IService<OperationLog> {
      * @param conditionVO 条件
      * @return 日志列表
      */
-    PageResult<OperationLogDTO> listOperationLogs(ConditionVO conditionVO);
+    PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO);
 
 }

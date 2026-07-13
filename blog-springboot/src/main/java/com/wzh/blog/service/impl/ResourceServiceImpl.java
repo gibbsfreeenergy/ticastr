@@ -14,7 +14,7 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.AuthorizationCacheService;
 import com.wzh.blog.service.ResourceService;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.ResourceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -77,7 +77,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
 
 
     @Override
-    public List<ResourceDTO> listResources(ConditionVO conditionVO) {
+    public List<ResourceDTO> listResources(SearchQueryVO conditionVO) {
         // 查询资源列表
         List<Resource> resourceList = resourceDao.selectList(new LambdaQueryWrapper<Resource>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), Resource::getResourceName, conditionVO.getKeywords()));

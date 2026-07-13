@@ -4,7 +4,7 @@ import com.wzh.blog.dto.TalkBackDTO;
 import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.entity.Talk;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.StatusQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -35,7 +35,7 @@ public interface TalkDao extends BaseMapper<Talk> {
      * @param size    大小
      * @return {@link List<TalkBackDTO>}
      */
-    List<TalkBackDTO> listBackTalks(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<TalkBackDTO> listBackTalks(@Param("current") Long current, @Param("size") Long size, @Param("condition") StatusQueryVO condition);
 
 
     /**

@@ -7,7 +7,7 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.Category;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.CategoryVO;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 
 import java.util.List;
 
@@ -34,7 +34,7 @@ public interface CategoryService extends IService<Category> {
      * @param conditionVO 条件
      * @return {@link PageResult<CategoryBackDTO>} 后台分类
      */
-    PageResult<CategoryBackDTO> listBackCategories(ConditionVO conditionVO);
+    PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO conditionVO);
 
     /**
      * 搜索文章分类
@@ -42,7 +42,7 @@ public interface CategoryService extends IService<Category> {
      * @param condition 条件
      * @return {@link List<CategoryOptionDTO>} 分类列表
      */
-    List<CategoryOptionDTO> listCategoriesBySearch(ConditionVO condition);
+    List<CategoryOptionDTO> listCategoriesBySearch(SearchQueryVO condition);
 
     /**
      * 删除分类

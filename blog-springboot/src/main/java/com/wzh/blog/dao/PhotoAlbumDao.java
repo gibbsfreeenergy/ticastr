@@ -3,7 +3,7 @@ package com.wzh.blog.dao;
 import com.wzh.blog.dto.PhotoAlbumBackDTO;
 import com.wzh.blog.entity.PhotoAlbum;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -27,7 +27,7 @@ public interface PhotoAlbumDao extends BaseMapper<PhotoAlbum> {
      * @param condition 条件
      * @return {@link List < PhotoAlbumBackDTO >} 相册列表
      */
-    List<PhotoAlbumBackDTO> listPhotoAlbumBacks(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<PhotoAlbumBackDTO> listPhotoAlbumBacks(@Param("current") Long current, @Param("size") Long size, @Param("condition") SearchQueryVO condition);
 
 }
 

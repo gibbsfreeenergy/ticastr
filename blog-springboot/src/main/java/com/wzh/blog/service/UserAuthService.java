@@ -31,7 +31,7 @@ public interface UserAuthService extends IService<UserAuth> {
      * @param conditionVO 条件签证官
      * @return {@link List<UserAreaDTO>} 用户区域分布
      */
-    List<UserAreaDTO> listUserAreas(ConditionVO conditionVO);
+    List<UserAreaDTO> listUserAreas(UserQueryVO conditionVO);
 
     /**
      * 用户注册
@@ -76,6 +76,6 @@ public interface UserAuthService extends IService<UserAuth> {
      * @param condition 条件
      * @return 用户列表
      */
-    PageResult<UserBackDTO> listUserBackDTO(ConditionVO condition);
+    PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition);
 
 }

@@ -2,7 +2,7 @@ package com.wzh.blog.service;
 
 import com.wzh.blog.dto.FriendLinkBackDTO;
 import com.wzh.blog.dto.FriendLinkDTO;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.FriendLink;
 import com.baomidou.mybatisplus.spring.service.IService;
@@ -31,7 +31,7 @@ public interface FriendLinkService extends IService<FriendLink> {
      * @param condition 条件
      * @return 友链列表
      */
-    PageResult<FriendLinkBackDTO> listFriendLinkDTO(ConditionVO condition);
+    PageResult<FriendLinkBackDTO> listFriendLinkDTO(SearchQueryVO condition);
 
     /**
      * 保存或更新友链

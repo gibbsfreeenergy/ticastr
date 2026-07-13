@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -22,7 +24,6 @@ import com.wzh.blog.strategy.context.SearchStrategyContext;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.CommonUtils;
 import com.wzh.blog.util.HTMLUtils;
-import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
 import lombok.extern.log4j.Log4j2;
@@ -54,6 +55,9 @@ import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
 @Service
 @Log4j2
 public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> implements ArticleService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private ArticleDao articleDao;
     @Autowired
@@ -79,7 +83,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public PageResult<ArchiveDTO> listArchives() {
-        Page<Article> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
+        Page<Article> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
         // 获取分页数据
         Page<Article> articlePage = articleDao.selectPage(page, new LambdaQueryWrapper<Article>()
                 .select(Article::getId, Article::getArticleTitle, Article::getCreateTime)
@@ -93,14 +97,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
 
     @Override
-    public PageResult<ArticleBackDTO> listArticleBacks(ConditionVO condition) {
+    public PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition) {
         // 查询文章总量
         Integer count = articleDao.countArticleBacks(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 查询后台文章
-        List<ArticleBackDTO> articleBackDTOList = articleDao.listArticleBacks(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<ArticleBackDTO> articleBackDTOList = articleDao.listArticleBacks(paginationContext.getOffset(), paginationContext.getSize(), condition);
         // 查询文章点赞量和浏览量
         Map<Object, Double> viewsCountMap = redisService.zAllScore(ARTICLE_VIEWS_COUNT);
         Map<String, Object> likeCountMap = redisService.hGetAll(ARTICLE_LIKE_COUNT);
@@ -119,15 +123,15 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public List<ArticleHomeDTO> listArticles() {
-        return articleDao.listArticles(PageUtils.getLimitCurrent(), PageUtils.getSize());
+        return articleDao.listArticles(paginationContext.getOffset(), paginationContext.getSize());
     }
 
 
 
     @Override
-    public ArticlePreviewListDTO listArticlesByCondition(ConditionVO condition) {
+    public ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition) {
         // 查询文章
-        List<ArticlePreviewDTO> articlePreviewDTOList = articleDao.listArticlesByCondition(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<ArticlePreviewDTO> articlePreviewDTOList = articleDao.listArticlesByCondition(paginationContext.getOffset(), paginationContext.getSize(), condition);
         // 搜索条件对应名(标签或分类名)
         String name;
         if (Objects.nonNull(condition.getCategoryId())) {
@@ -287,7 +291,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
 
     @Override
-    public List<ArticleSearchDTO> listArticlesBySearch(ConditionVO condition) {
+    public List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition) {
         return searchStrategyContext.executeSearchStrategy(condition.getKeywords());
     }
 

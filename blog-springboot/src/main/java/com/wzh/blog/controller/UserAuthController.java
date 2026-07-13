@@ -52,7 +52,7 @@ public class UserAuthController {
      */
     @Operation(summary = "获取用户区域分布")
     @GetMapping("/admin/users/area")
-    public Result<List<UserAreaDTO>> listUserAreas(ConditionVO conditionVO) {
+    public Result<List<UserAreaDTO>> listUserAreas(UserQueryVO conditionVO) {
         return Result.ok(userAuthService.listUserAreas(conditionVO));
     }
 
@@ -64,7 +64,7 @@ public class UserAuthController {
      */
     @Operation(summary = "查询后台用户列表")
     @GetMapping("/admin/users")
-    public Result<PageResult<UserBackDTO>> listUsers(ConditionVO condition) {
+    public Result<PageResult<UserBackDTO>> listUsers(UserQueryVO condition) {
         return Result.ok(userAuthService.listUserBackDTO(condition));
     }
 

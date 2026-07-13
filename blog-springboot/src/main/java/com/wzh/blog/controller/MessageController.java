@@ -64,7 +64,7 @@ public class MessageController {
      */
     @Operation(summary = "查看后台留言列表")
     @GetMapping("/admin/messages")
-    public Result<PageResult<MessageBackDTO>> listMessageBackDTO(ConditionVO condition) {
+    public Result<PageResult<MessageBackDTO>> listMessageBackDTO(ModerationQueryVO condition) {
         return Result.ok(messageService.listMessageBackDTO(condition));
     }
 

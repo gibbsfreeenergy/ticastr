@@ -1,8 +1,7 @@
 package com.wzh.blog.handler;
 
 import com.wzh.blog.exception.BizException;
-import com.wzh.blog.util.PageUtils;
-import org.junit.jupiter.api.AfterEach;
+import com.wzh.blog.web.PaginationContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -12,12 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PageableHandlerInterceptorTest {
 
-    private final PageableHandlerInterceptor interceptor = new PageableHandlerInterceptor();
-
-    @AfterEach
-    void clearPageContext() {
-        PageUtils.remove();
-    }
+    private final PaginationContext paginationContext = new PaginationContext();
+    private final PageableHandlerInterceptor interceptor = new PageableHandlerInterceptor(paginationContext);
 
     @Test
     void acceptsBoundedPagination() {
@@ -27,9 +22,9 @@ class PageableHandlerInterceptorTest {
 
         interceptor.preHandle(request, new MockHttpServletResponse(), new Object());
 
-        assertThat(PageUtils.getCurrent()).isEqualTo(3);
-        assertThat(PageUtils.getSize()).isEqualTo(25);
-        assertThat(PageUtils.getLimitCurrent()).isEqualTo(50);
+        assertThat(paginationContext.getCurrent()).isEqualTo(3);
+        assertThat(paginationContext.getSize()).isEqualTo(25);
+        assertThat(paginationContext.getOffset()).isEqualTo(50);
     }
 
     @Test
@@ -39,8 +34,8 @@ class PageableHandlerInterceptorTest {
 
         interceptor.preHandle(request, new MockHttpServletResponse(), new Object());
 
-        assertThat(PageUtils.getCurrent()).isEqualTo(1);
-        assertThat(PageUtils.getSize()).isEqualTo(20);
+        assertThat(paginationContext.getCurrent()).isEqualTo(1);
+        assertThat(paginationContext.getSize()).isEqualTo(20);
     }
 
     @Test

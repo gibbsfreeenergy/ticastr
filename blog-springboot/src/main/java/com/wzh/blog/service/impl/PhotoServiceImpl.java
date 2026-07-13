@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -15,7 +17,6 @@ import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.PhotoAlbumService;
 import com.wzh.blog.service.PhotoService;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,9 @@ import static com.wzh.blog.enums.PhotoAlbumStatusEnum.PUBLIC;
  */
 @Service
 public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements PhotoService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private PhotoDao photoDao;
     @Autowired
@@ -45,9 +49,9 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
 
 
     @Override
-    public PageResult<PhotoBackDTO> listPhotos(ConditionVO condition) {
+    public PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition) {
         // 查询照片列表
-        Page<Photo> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
+        Page<Photo> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
         Page<Photo> photoPage = photoDao.selectPage(page, new LambdaQueryWrapper<Photo>()
                 .eq(Objects.nonNull(condition.getAlbumId()), Photo::getAlbumId, condition.getAlbumId())
                 .eq(Photo::getIsDelete, condition.getIsDelete())
@@ -142,7 +146,7 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
             throw new NotFoundException("相册不存在");
         }
         // 查询照片列表
-        Page<Photo> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
+        Page<Photo> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
         List<String> photoList = photoDao.selectPage(page, new LambdaQueryWrapper<Photo>()
                         .select(Photo::getPhotoSrc)
                         .eq(Photo::getAlbumId, albumId)

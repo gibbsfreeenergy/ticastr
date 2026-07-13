@@ -117,7 +117,7 @@ public class CommentController {
      */
     @Operation(summary = "查询后台评论")
     @GetMapping("/admin/comments")
-    public Result<PageResult<CommentBackDTO>> listCommentBackDTO(ConditionVO condition) {
+    public Result<PageResult<CommentBackDTO>> listCommentBackDTO(CommentQueryVO condition) {
         return Result.ok(commentService.listCommentBackDTO(condition));
     }
 

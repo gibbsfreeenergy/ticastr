@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -15,7 +17,7 @@ import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.TalkService;
 import com.wzh.blog.dao.TalkDao;
 import com.wzh.blog.util.*;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.StatusQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.TalkVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,9 @@ import static com.wzh.blog.enums.TalkStatusEnum.PUBLIC;
  */
 @Service
 public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private TalkDao talkDao;
     @Autowired
@@ -73,7 +78,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
             return new PageResult<>();
         }
         // 分页查询说说
-        List<TalkDTO> talkDTOList = talkDao.listTalks(PageUtils.getLimitCurrent(), PageUtils.getSize());
+        List<TalkDTO> talkDTOList = talkDao.listTalks(paginationContext.getOffset(), paginationContext.getSize());
         // 查询说说评论量
         List<Integer> talkIdList = talkDTOList.stream()
                 .map(TalkDTO::getId)
@@ -139,7 +144,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
 
     @Override
-    public PageResult<TalkBackDTO> listBackTalks(ConditionVO conditionVO) {
+    public PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO) {
         // 查询说说总量
         Long count = talkDao.selectCount(new LambdaQueryWrapper<Talk>()
                 .eq(Objects.nonNull(conditionVO.getStatus()), Talk::getStatus, conditionVO.getStatus()));
@@ -147,7 +152,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
             return new PageResult<>();
         }
         // 分页查询说说
-        List<TalkBackDTO> talkDTOList = talkDao.listBackTalks(PageUtils.getLimitCurrent(), PageUtils.getSize(), conditionVO);
+        List<TalkBackDTO> talkDTOList = talkDao.listBackTalks(paginationContext.getOffset(), paginationContext.getSize(), conditionVO);
         talkDTOList.forEach(item -> {
             // 转换图片格式
             if (Objects.nonNull(item.getImages())) {

@@ -64,7 +64,7 @@ public class ArticleController {
      */
     @Operation(summary = "查看后台文章")
     @GetMapping("/admin/articles")
-    public Result<PageResult<ArticleBackDTO>> listArticleBacks(ConditionVO conditionVO) {
+    public Result<PageResult<ArticleBackDTO>> listArticleBacks(ArticleQueryVO conditionVO) {
         return Result.ok(articleService.listArticleBacks(conditionVO));
     }
 
@@ -171,7 +171,7 @@ public class ArticleController {
      */
     @Operation(summary = "根据条件查询文章")
     @GetMapping("/articles/condition")
-    public Result<ArticlePreviewListDTO> listArticlesByCondition(ConditionVO condition) {
+    public Result<ArticlePreviewListDTO> listArticlesByCondition(ArticleQueryVO condition) {
         return Result.ok(articleService.listArticlesByCondition(condition));
     }
 
@@ -183,7 +183,7 @@ public class ArticleController {
      */
     @Operation(summary = "搜索文章")
     @GetMapping("/articles/search")
-    public Result<List<ArticleSearchDTO>> listArticlesBySearch(ConditionVO condition) {
+    public Result<List<ArticleSearchDTO>> listArticlesBySearch(ArticleQueryVO condition) {
         return Result.ok(articleService.listArticlesBySearch(condition));
     }
 

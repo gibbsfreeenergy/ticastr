@@ -3,7 +3,7 @@ package com.wzh.blog.dao;
 import com.wzh.blog.dto.TagBackDTO;
 import com.wzh.blog.entity.Tag;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -27,7 +27,7 @@ public interface TagDao extends BaseMapper<Tag> {
      * @param condition 条件
      * @return {@link List<TagBackDTO>} 标签列表
      */
-    List<TagBackDTO> listTagBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<TagBackDTO> listTagBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") SearchQueryVO condition);
 
     /**
      * 根据文章id查询标签名

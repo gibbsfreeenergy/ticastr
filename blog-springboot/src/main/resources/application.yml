@@ -114,6 +114,11 @@ weibo:
 
 app:
   owner-user-id: ${OWNER_USER_ID:1}
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    username: ${BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    nickname: ${BOOTSTRAP_ADMIN_NICKNAME:Administrator}
   async:
     core-pool-size: ${ASYNC_CORE_POOL_SIZE:4}
     max-pool-size: ${ASYNC_MAX_POOL_SIZE:8}

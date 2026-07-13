@@ -1,11 +1,12 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dao.ArticleTagDao;
 import com.wzh.blog.dto.TagBackDTO;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.TagDTO;
 import com.wzh.blog.entity.ArticleTag;
@@ -31,6 +32,9 @@ import java.util.Objects;
  */
 @Service
 public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private TagDao tagDao;
     @Autowired
@@ -53,7 +57,7 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
 
 
     @Override
-    public PageResult<TagBackDTO> listTagBackDTO(ConditionVO condition) {
+    public PageResult<TagBackDTO> listTagBackDTO(SearchQueryVO condition) {
         // 查询标签数量
         Long count = tagDao.selectCount(new LambdaQueryWrapper<Tag>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Tag::getTagName, condition.getKeywords()));
@@ -61,14 +65,14 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
             return new PageResult<>();
         }
         // 分页查询标签列表
-        List<TagBackDTO> tagList = tagDao.listTagBackDTO(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<TagBackDTO> tagList = tagDao.listTagBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
         return new PageResult<>(tagList, count);
     }
 
 
 
     @Override
-    public List<TagDTO> listTagsBySearch(ConditionVO condition) {
+    public List<TagDTO> listTagsBySearch(SearchQueryVO condition) {
         // 搜索标签
         List<Tag> tagList = tagDao.selectList(new LambdaQueryWrapper<Tag>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Tag::getTagName, condition.getKeywords())

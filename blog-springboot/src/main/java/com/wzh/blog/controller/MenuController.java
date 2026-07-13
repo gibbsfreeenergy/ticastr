@@ -4,7 +4,7 @@ import com.wzh.blog.dto.MenuDTO;
 import com.wzh.blog.dto.LabelOptionDTO;
 import com.wzh.blog.dto.UserMenuDTO;
 import com.wzh.blog.service.MenuService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.MenuVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,7 +35,7 @@ public class MenuController {
      */
     @Operation(summary = "查看菜单列表")
     @GetMapping("/admin/menus")
-    public Result<List<MenuDTO>> listMenus(ConditionVO conditionVO) {
+    public Result<List<MenuDTO>> listMenus(SearchQueryVO conditionVO) {
         return Result.ok(menuService.listMenus(conditionVO));
     }
 

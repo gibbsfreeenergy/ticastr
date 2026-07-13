@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -22,7 +24,6 @@ import com.wzh.blog.service.RoleLookupService;
 import com.wzh.blog.service.UserAuthService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.strategy.context.SocialLoginStrategyContext;
-import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
 import org.springframework.amqp.core.Message;
@@ -53,6 +54,9 @@ import static com.wzh.blog.util.CommonUtils.getRandomCode;
  */
 @Service
 public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> implements UserAuthService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private RedisService redisService;
     @Autowired
@@ -101,7 +105,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
 
 
     @Override
-    public List<UserAreaDTO> listUserAreas(ConditionVO conditionVO) {
+    public List<UserAreaDTO> listUserAreas(UserQueryVO conditionVO) {
         List<UserAreaDTO> userAreaDTOList = new ArrayList<>();
         switch (Objects.requireNonNull(getUserAreaType(conditionVO.getType()))) {
             case USER:
@@ -197,14 +201,14 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
 
 
     @Override
-    public PageResult<UserBackDTO> listUserBackDTO(ConditionVO condition) {
+    public PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition) {
         // 获取后台用户数量
         Integer count = userAuthDao.countUser(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 获取后台用户列表
-        List<UserBackDTO> userBackDTOList = userAuthDao.listUsers(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<UserBackDTO> userBackDTOList = userAuthDao.listUsers(paginationContext.getOffset(), paginationContext.getSize(), condition);
         return new PageResult<>(userBackDTOList, count);
     }
 

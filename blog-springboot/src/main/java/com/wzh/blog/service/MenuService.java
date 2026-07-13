@@ -5,7 +5,7 @@ import com.wzh.blog.dto.MenuDTO;
 import com.wzh.blog.dto.LabelOptionDTO;
 import com.wzh.blog.dto.UserMenuDTO;
 import com.wzh.blog.entity.Menu;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.MenuVO;
 
 import java.util.List;
@@ -24,7 +24,7 @@ public interface MenuService extends IService<Menu> {
      * @param conditionVO 条件
      * @return 菜单列表
      */
-    List<MenuDTO> listMenus(ConditionVO conditionVO);
+    List<MenuDTO> listMenus(SearchQueryVO conditionVO);
 
     /**
      * 新增或修改菜单

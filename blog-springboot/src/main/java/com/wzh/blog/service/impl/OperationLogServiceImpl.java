@@ -1,13 +1,14 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.OperationLogDao;
 import com.wzh.blog.dto.OperationLogDTO;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.OperationLog;
 import com.wzh.blog.service.OperationLogService;
@@ -25,12 +26,15 @@ import java.util.List;
 @Service
 public class OperationLogServiceImpl extends ServiceImpl<OperationLogDao, OperationLog> implements OperationLogService {
 
+    @Resource
+    private PaginationContext paginationContext;
+
 
 
 
     @Override
-    public PageResult<OperationLogDTO> listOperationLogs(ConditionVO conditionVO) {
-        Page<OperationLog> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
+    public PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO) {
+        Page<OperationLog> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
         // 查询日志列表
         Page<OperationLog> operationLogPage = this.page(page, new LambdaQueryWrapper<OperationLog>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), OperationLog::getOptModule, conditionVO.getKeywords())

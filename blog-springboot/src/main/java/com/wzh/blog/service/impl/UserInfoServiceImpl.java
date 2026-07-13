@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -18,7 +20,7 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.UserRoleService;
 
 import com.wzh.blog.util.UserUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
@@ -32,8 +34,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.RedisPrefixConst.USER_CODE_KEY;
-import static com.wzh.blog.util.PageUtils.*;
-import static com.wzh.blog.util.PageUtils.getLimitCurrent;
 
 
 /**
@@ -44,6 +44,9 @@ import static com.wzh.blog.util.PageUtils.getLimitCurrent;
  */
 @Service
 public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> implements UserInfoService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private UserInfoDao userInfoDao;
     @Autowired
@@ -143,7 +146,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
 
     @Override
-    public PageResult<UserOnlineDTO> listOnlineUsers(ConditionVO conditionVO) {
+    public PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO) {
         // 获取security在线session
         List<UserOnlineDTO> userOnlineDTOList = sessionRegistry.getAllPrincipals().stream()
                 .filter(item -> sessionRegistry.getAllSessions(item, false).size() > 0)
@@ -152,8 +155,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
                 .sorted(Comparator.comparing(UserOnlineDTO::getLastLoginTime).reversed())
                 .collect(Collectors.toList());
         // 执行分页
-        int fromIndex = getLimitCurrent().intValue();
-        int size = getSize().intValue();
+        int fromIndex = Math.min(Math.toIntExact(paginationContext.getOffset()), userOnlineDTOList.size());
+        int size = Math.toIntExact(paginationContext.getSize());
         int toIndex = userOnlineDTOList.size() - fromIndex > size ? fromIndex + size : userOnlineDTOList.size();
         List<UserOnlineDTO> userOnlineList = userOnlineDTOList.subList(fromIndex, toIndex);
         return new PageResult<>(userOnlineList, userOnlineDTOList.size());

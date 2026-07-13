@@ -22,7 +22,7 @@ public interface PhotoService extends IService<Photo> {
      * @param condition 条件
      * @return {@link PageResult<PhotoBackDTO>} 照片列表
      */
-    PageResult<PhotoBackDTO> listPhotos(ConditionVO condition);
+    PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition);
 
     /**
      * 更新照片信息

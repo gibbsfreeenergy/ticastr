@@ -58,7 +58,7 @@ public interface UserInfoService extends IService<UserInfo> {
      * @param conditionVO 条件
      * @return 在线用户列表
      */
-    PageResult<UserOnlineDTO> listOnlineUsers(ConditionVO conditionVO);
+    PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO);
 
     /**
      * 下线用户

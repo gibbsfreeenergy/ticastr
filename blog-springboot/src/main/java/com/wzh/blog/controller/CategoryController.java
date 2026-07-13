@@ -8,7 +8,7 @@ import com.wzh.blog.dto.CategoryOptionDTO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.service.CategoryService;
 import com.wzh.blog.vo.CategoryVO;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,7 +53,7 @@ public class CategoryController {
      */
     @Operation(summary = "查看后台分类列表")
     @GetMapping("/admin/categories")
-    public Result<PageResult<CategoryBackDTO>> listBackCategories(ConditionVO condition) {
+    public Result<PageResult<CategoryBackDTO>> listBackCategories(SearchQueryVO condition) {
         return Result.ok(categoryService.listBackCategories(condition));
     }
 
@@ -65,7 +65,7 @@ public class CategoryController {
      */
     @Operation(summary = "搜索文章分类")
     @GetMapping("/admin/categories/search")
-    public Result<List<CategoryOptionDTO>> listCategoriesBySearch(ConditionVO condition) {
+    public Result<List<CategoryOptionDTO>> listCategoriesBySearch(SearchQueryVO condition) {
         return Result.ok(categoryService.listCategoriesBySearch(condition));
     }
 

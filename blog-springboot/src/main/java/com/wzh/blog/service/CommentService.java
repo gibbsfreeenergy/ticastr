@@ -60,6 +60,6 @@ public interface CommentService extends IService<Comment> {
      * @param condition 条件
      * @return 评论列表
      */
-    PageResult<CommentBackDTO> listCommentBackDTO(ConditionVO condition);
+    PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition);
 
 }

@@ -4,7 +4,7 @@ import com.wzh.blog.dto.TalkBackDTO;
 import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.entity.Talk;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.StatusQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.TalkVO;
 
@@ -67,7 +67,7 @@ public interface TalkService extends IService<Talk> {
      * @param conditionVO 条件
      * @return {@link PageResult<TalkBackDTO>}
      */
-    PageResult<TalkBackDTO> listBackTalks(ConditionVO conditionVO);
+    PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO);
 
     /**
      * 根据id查看后台说说

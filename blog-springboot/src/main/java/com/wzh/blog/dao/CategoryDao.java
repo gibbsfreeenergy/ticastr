@@ -4,7 +4,7 @@ import com.wzh.blog.dto.CategoryBackDTO;
 import com.wzh.blog.dto.CategoryDTO;
 import com.wzh.blog.entity.Category;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -35,7 +35,7 @@ public interface CategoryDao extends BaseMapper<Category> {
      * @param condition 条件
      * @return {@link List<CategoryBackDTO>} 分类列表
      */
-    List<CategoryBackDTO> listCategoryBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<CategoryBackDTO> listCategoryBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") SearchQueryVO condition);
 
     int insertIgnoreByName(String categoryName);
 

@@ -43,6 +43,8 @@ The repository pins its runtime expectations in [`.java-version`](.java-version)
 
    The API listens on `http://localhost:8090` by default. Local uploads are served from `http://localhost:8090/uploads/`.
 
+   A new database contains roles and safe defaults but no hard-coded administrator credentials. To create the first administrator, set `BOOTSTRAP_ADMIN_ENABLED=true`, provide `BOOTSTRAP_ADMIN_USERNAME` and a non-placeholder `BOOTSTRAP_ADMIN_PASSWORD` of at least 12 characters, then start the API once. Disable the bootstrap flag after the account has been created; subsequent starts are idempotent for the same email address.
+
 4. Install and start either frontend:
 
    ```bash

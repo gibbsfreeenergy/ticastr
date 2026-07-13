@@ -6,7 +6,7 @@ import com.wzh.blog.dto.PhotoAlbumDTO;
 import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.PhotoAlbumService;
 import com.wzh.blog.strategy.context.UploadStrategyContext;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
 import com.wzh.blog.vo.Result;
@@ -72,7 +72,7 @@ public class PhotoAlbumController {
      */
     @Operation(summary = "查看后台相册列表")
     @GetMapping("/admin/photos/albums")
-    public Result<PageResult<PhotoAlbumBackDTO>> listPhotoAlbumBacks(ConditionVO condition) {
+    public Result<PageResult<PhotoAlbumBackDTO>> listPhotoAlbumBacks(SearchQueryVO condition) {
         return Result.ok(photoAlbumService.listPhotoAlbumBacks(condition));
     }
 

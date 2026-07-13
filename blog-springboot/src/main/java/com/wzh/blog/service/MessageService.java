@@ -2,7 +2,7 @@ package com.wzh.blog.service;
 
 import com.wzh.blog.dto.MessageBackDTO;
 import com.wzh.blog.vo.PageResult;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.ModerationQueryVO;
 import com.wzh.blog.vo.MessageVO;
 import com.wzh.blog.dto.MessageDTO;
 import com.wzh.blog.entity.Message;
@@ -46,6 +46,6 @@ public interface MessageService extends IService<Message> {
      * @param condition 条件
      * @return 留言列表
      */
-    PageResult<MessageBackDTO> listMessageBackDTO(ConditionVO condition);
+    PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition);
 
 }

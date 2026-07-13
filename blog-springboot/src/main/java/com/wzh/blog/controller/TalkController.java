@@ -5,7 +5,7 @@ import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.TalkService;
 import com.wzh.blog.strategy.context.UploadStrategyContext;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.StatusQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.TalkVO;
@@ -129,7 +129,7 @@ public class TalkController {
      */
     @Operation(summary = "查看后台说说")
     @GetMapping("/admin/talks")
-    public Result<PageResult<TalkBackDTO>> listBackTalks(ConditionVO conditionVO) {
+    public Result<PageResult<TalkBackDTO>> listBackTalks(StatusQueryVO conditionVO) {
         return Result.ok(talkService.listBackTalks(conditionVO));
     }
 

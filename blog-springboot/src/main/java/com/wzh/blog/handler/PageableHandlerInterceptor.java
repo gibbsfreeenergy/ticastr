@@ -1,8 +1,7 @@
 package com.wzh.blog.handler;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzh.blog.exception.BizException;
-import com.wzh.blog.util.PageUtils;
+import com.wzh.blog.web.PaginationContext;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +18,11 @@ import static com.wzh.blog.constant.CommonConst.*;
 public class PageableHandlerInterceptor implements HandlerInterceptor {
 
     static final long MAX_PAGE_SIZE = 100L;
+    private final PaginationContext paginationContext;
+
+    public PageableHandlerInterceptor(PaginationContext paginationContext) {
+        this.paginationContext = paginationContext;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -32,7 +36,7 @@ public class PageableHandlerInterceptor implements HandlerInterceptor {
         if (size > MAX_PAGE_SIZE) {
             throw new BizException("分页条数不能超过" + MAX_PAGE_SIZE);
         }
-        PageUtils.setCurrentPage(new Page<>(current, size));
+        paginationContext.set(current, size);
         return true;
     }
 
@@ -49,11 +53,6 @@ public class PageableHandlerInterceptor implements HandlerInterceptor {
         } catch (NumberFormatException exception) {
             throw new BizException(name + "必须是整数");
         }
-    }
-
-    @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        PageUtils.remove();
     }
 
 }

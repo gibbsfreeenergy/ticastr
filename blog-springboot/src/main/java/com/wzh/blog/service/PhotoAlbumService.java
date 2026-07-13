@@ -4,7 +4,7 @@ import com.wzh.blog.dto.PhotoAlbumBackDTO;
 import com.wzh.blog.dto.PhotoAlbumDTO;
 import com.wzh.blog.entity.PhotoAlbum;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
 
@@ -31,7 +31,7 @@ public interface PhotoAlbumService extends IService<PhotoAlbum> {
      * @param condition 条件
      * @return {@link PageResult<PhotoAlbumBackDTO>} 相册列表
      */
-    PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(ConditionVO condition);
+    PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition);
 
     /**
      * 获取后台相册列表信息

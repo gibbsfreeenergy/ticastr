@@ -1,7 +1,7 @@
 package com.wzh.blog.controller;
 
 import com.wzh.blog.dto.OperationLogDTO;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.service.OperationLogService;
 import com.wzh.blog.vo.Result;
@@ -35,7 +35,7 @@ public class LogController {
      */
     @Operation(summary = "查看操作日志")
     @GetMapping("/admin/operation/logs")
-    public Result<PageResult<OperationLogDTO>> listOperationLogs(ConditionVO conditionVO) {
+    public Result<PageResult<OperationLogDTO>> listOperationLogs(SearchQueryVO conditionVO) {
         return Result.ok(operationLogService.listOperationLogs(conditionVO));
     }
 

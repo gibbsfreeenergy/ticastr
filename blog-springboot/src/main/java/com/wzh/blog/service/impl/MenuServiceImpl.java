@@ -15,7 +15,7 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.MenuService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.UserUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.MenuVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuDao, Menu> implements MenuS
 
 
     @Override
-    public List<MenuDTO> listMenus(ConditionVO conditionVO) {
+    public List<MenuDTO> listMenus(SearchQueryVO conditionVO) {
         // 查询菜单数据
         List<Menu> menuList = menuDao.selectList(new LambdaQueryWrapper<Menu>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), Menu::getName, conditionVO.getKeywords()));

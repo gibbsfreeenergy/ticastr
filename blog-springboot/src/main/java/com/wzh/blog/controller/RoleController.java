@@ -4,7 +4,7 @@ import com.wzh.blog.annotation.OptLog;
 import com.wzh.blog.dto.RoleDTO;
 import com.wzh.blog.dto.UserRoleDTO;
 import com.wzh.blog.service.RoleService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.RoleVO;
@@ -50,7 +50,7 @@ public class RoleController {
      */
     @Operation(summary = "查询角色列表")
     @GetMapping("/admin/roles")
-    public Result<PageResult<RoleDTO>> listRoles(ConditionVO conditionVO) {
+    public Result<PageResult<RoleDTO>> listRoles(SearchQueryVO conditionVO) {
         return Result.ok(roleService.listRoles(conditionVO));
     }
 

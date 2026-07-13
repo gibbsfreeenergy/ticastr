@@ -106,7 +106,7 @@ public class UserInfoController {
      */
     @Operation(summary = "查看在线用户")
     @GetMapping("/admin/users/online")
-    public Result<PageResult<UserOnlineDTO>> listOnlineUsers(ConditionVO conditionVO) {
+    public Result<PageResult<UserOnlineDTO>> listOnlineUsers(SearchQueryVO conditionVO) {
         return Result.ok(userInfoService.listOnlineUsers(conditionVO));
     }
 

@@ -3,7 +3,7 @@ package com.wzh.blog.dao;
 import com.wzh.blog.dto.UserBackDTO;
 import com.wzh.blog.entity.UserAuth;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.UserQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -27,7 +27,7 @@ public interface UserAuthDao extends BaseMapper<UserAuth> {
      * @param condition 条件
      * @return {@link List<UserBackDTO>} 用户列表
      */
-    List<UserBackDTO> listUsers(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<UserBackDTO> listUsers(@Param("current") Long current, @Param("size") Long size, @Param("condition") UserQueryVO condition);
 
     /**
      * 查询后台用户数量
@@ -35,6 +35,6 @@ public interface UserAuthDao extends BaseMapper<UserAuth> {
      * @param condition 条件
      * @return 用户数量
      */
-    Integer countUser(@Param("condition") ConditionVO condition);
+    Integer countUser(@Param("condition") UserQueryVO condition);
 
 }

@@ -50,7 +50,7 @@ public class TagController {
      */
     @Operation(summary = "查询后台标签列表")
     @GetMapping("/admin/tags")
-    public Result<PageResult<TagBackDTO>> listTagBackDTO(ConditionVO condition) {
+    public Result<PageResult<TagBackDTO>> listTagBackDTO(SearchQueryVO condition) {
         return Result.ok(tagService.listTagBackDTO(condition));
     }
 
@@ -62,7 +62,7 @@ public class TagController {
      */
     @Operation(summary = "搜索文章标签")
     @GetMapping("/admin/tags/search")
-    public Result<List<TagDTO>> listTagsBySearch(ConditionVO condition) {
+    public Result<List<TagDTO>> listTagsBySearch(SearchQueryVO condition) {
         return Result.ok(tagService.listTagsBySearch(condition));
     }
 

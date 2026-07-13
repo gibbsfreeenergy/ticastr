@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -14,7 +16,6 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.util.HTMLUtils;
-import com.wzh.blog.util.PageUtils;
 import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ import static com.wzh.blog.enums.CommentTypeEnum.*;
  */
 @Service
 public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> implements CommentService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private CommentDao commentDao;
     @Autowired
@@ -67,7 +71,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
             return new PageResult<>();
         }
         // 分页查询评论数据
-        List<CommentDTO> commentDTOList = commentDao.listComments(PageUtils.getLimitCurrent(), PageUtils.getSize(), commentVO);
+        List<CommentDTO> commentDTOList = commentDao.listComments(paginationContext.getOffset(), paginationContext.getSize(), commentVO);
         if (CollectionUtils.isEmpty(commentDTOList)) {
             return new PageResult<>();
         }
@@ -101,7 +105,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
     @Override
     public List<ReplyDTO> listRepliesByCommentId(Integer commentId) {
         // 转换页码查询评论下的回复
-        List<ReplyDTO> replyDTOList = commentDao.listRepliesByCommentId(PageUtils.getLimitCurrent(), PageUtils.getSize(), commentId);
+        List<ReplyDTO> replyDTOList = commentDao.listRepliesByCommentId(paginationContext.getOffset(), paginationContext.getSize(), commentId);
         // 查询redis的评论点赞数据
         Map<String, Object> likeCountMap = redisService.hGetAll(COMMENT_LIKE_COUNT);
         // 封装点赞数据
@@ -159,14 +163,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
 
     @Override
-    public PageResult<CommentBackDTO> listCommentBackDTO(ConditionVO condition) {
+    public PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition) {
         // 统计后台评论量
         Integer count = commentDao.countCommentDTO(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 查询后台评论集合
-        List<CommentBackDTO> commentBackDTOList = commentDao.listCommentBackDTO(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<CommentBackDTO> commentBackDTOList = commentDao.listCommentBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
         return new PageResult<>(commentBackDTOList, count);
     }
 

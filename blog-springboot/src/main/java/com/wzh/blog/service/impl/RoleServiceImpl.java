@@ -1,13 +1,14 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.constant.CommonConst;
 import com.wzh.blog.dao.RoleDao;
 import com.wzh.blog.dao.UserRoleDao;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.RoleDTO;
 import com.wzh.blog.dto.UserRoleDTO;
@@ -38,6 +39,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private RoleDao roleDao;
     @Autowired
@@ -63,9 +67,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
 
 
     @Override
-    public PageResult<RoleDTO> listRoles(ConditionVO conditionVO) {
+    public PageResult<RoleDTO> listRoles(SearchQueryVO conditionVO) {
         // 查询角色列表
-        List<RoleDTO> roleDTOList = roleDao.listRoles(PageUtils.getLimitCurrent(), PageUtils.getSize(), conditionVO);
+        List<RoleDTO> roleDTOList = roleDao.listRoles(paginationContext.getOffset(), paginationContext.getSize(), conditionVO);
         // 查询总量
         Long count = roleDao.selectCount(new LambdaQueryWrapper<Role>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), Role::getRoleName, conditionVO.getKeywords()));

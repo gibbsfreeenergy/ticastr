@@ -3,7 +3,7 @@ package com.wzh.blog.controller;
 import com.wzh.blog.dto.ResourceDTO;
 import com.wzh.blog.dto.LabelOptionDTO;
 import com.wzh.blog.service.ResourceService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.ResourceVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +33,7 @@ public class ResourceController {
      */
     @Operation(summary = "查看资源列表")
     @GetMapping("/admin/resources")
-    public Result<List<ResourceDTO>> listResources(ConditionVO conditionVO) {
+    public Result<List<ResourceDTO>> listResources(SearchQueryVO conditionVO) {
         return Result.ok(resourceService.listResources(conditionVO));
     }
 

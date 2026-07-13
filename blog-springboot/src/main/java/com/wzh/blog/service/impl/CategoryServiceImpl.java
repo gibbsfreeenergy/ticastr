@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dao.ArticleDao;
@@ -7,8 +9,7 @@ import com.wzh.blog.dto.CategoryBackDTO;
 import com.wzh.blog.dto.CategoryDTO;
 import com.wzh.blog.dto.CategoryOptionDTO;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.Article;
 import com.wzh.blog.entity.Category;
@@ -32,6 +33,9 @@ import java.util.Objects;
  */
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> implements CategoryService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private CategoryDao categoryDao;
     @Autowired
@@ -48,7 +52,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> impl
 
 
     @Override
-    public PageResult<CategoryBackDTO> listBackCategories(ConditionVO condition) {
+    public PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO condition) {
         // 查询分类数量
         Long count = categoryDao.selectCount(new LambdaQueryWrapper<Category>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Category::getCategoryName, condition.getKeywords()));
@@ -56,14 +60,14 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> impl
             return new PageResult<>();
         }
         // 分页查询分类列表
-        List<CategoryBackDTO> categoryList = categoryDao.listCategoryBackDTO(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<CategoryBackDTO> categoryList = categoryDao.listCategoryBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
         return new PageResult<>(categoryList, count);
     }
 
 
 
     @Override
-    public List<CategoryOptionDTO> listCategoriesBySearch(ConditionVO condition) {
+    public List<CategoryOptionDTO> listCategoriesBySearch(SearchQueryVO condition) {
         // 搜索分类
         List<Category> categoryList = categoryDao.selectList(new LambdaQueryWrapper<Category>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Category::getCategoryName, condition.getKeywords())

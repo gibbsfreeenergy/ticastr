@@ -1,5 +1,6 @@
 package com.wzh.blog.service.impl;
 
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -7,8 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzh.blog.dto.MessageBackDTO;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.util.HTMLUtils;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.ModerationQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.MessageVO;
 import com.wzh.blog.dto.MessageDTO;
@@ -40,6 +40,9 @@ import static com.wzh.blog.constant.CommonConst.TRUE;
  */
 @Service
 public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> implements MessageService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private MessageDao messageDao;
     @Resource
@@ -94,9 +97,9 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
 
 
     @Override
-    public PageResult<MessageBackDTO> listMessageBackDTO(ConditionVO condition) {
+    public PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition) {
         // 分页查询留言列表
-        Page<Message> page = new Page<>(PageUtils.getCurrent(), PageUtils.getSize());
+        Page<Message> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
         LambdaQueryWrapper<Message> messageLambdaQueryWrapper = new LambdaQueryWrapper<Message>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Message::getNickname, condition.getKeywords())
                 .eq(Objects.nonNull(condition.getIsReview()), Message::getIsReview, condition.getIsReview())

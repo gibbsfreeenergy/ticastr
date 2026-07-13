@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.wzh.blog.dto.RoleDTO;
 import com.wzh.blog.dto.ResourceRoleDTO;
 import com.wzh.blog.entity.Role;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -42,6 +42,6 @@ public interface RoleDao extends BaseMapper<Role> {
      * @param conditionVO 条件
      * @return 角色列表
      */
-    List<RoleDTO> listRoles(@Param("current") Long current, @Param("size") Long size, @Param("conditionVO") ConditionVO conditionVO);
+    List<RoleDTO> listRoles(@Param("current") Long current, @Param("size") Long size, @Param("conditionVO") SearchQueryVO conditionVO);
 
 }

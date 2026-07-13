@@ -1,5 +1,7 @@
 package com.wzh.blog.service.impl;
 
+import jakarta.annotation.Resource;
+import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -13,8 +15,7 @@ import com.wzh.blog.entity.PhotoAlbum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.PhotoAlbumService;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.util.PageUtils;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ import static com.wzh.blog.enums.PhotoAlbumStatusEnum.PUBLIC;
  */
 @Service
 public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum> implements PhotoAlbumService {
+
+    @Resource
+    private PaginationContext paginationContext;
     @Autowired
     private PhotoAlbumDao photoAlbumDao;
     @Autowired
@@ -62,7 +66,7 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
 
 
     @Override
-    public PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(ConditionVO condition) {
+    public PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition) {
         // 查询相册数量
         Long count = photoAlbumDao.selectCount(new LambdaQueryWrapper<PhotoAlbum>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), PhotoAlbum::getAlbumName, condition.getKeywords())
@@ -71,7 +75,7 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
             return new PageResult<>();
         }
         // 查询相册信息
-        List<PhotoAlbumBackDTO> photoAlbumBackList = photoAlbumDao.listPhotoAlbumBacks(PageUtils.getLimitCurrent(), PageUtils.getSize(), condition);
+        List<PhotoAlbumBackDTO> photoAlbumBackList = photoAlbumDao.listPhotoAlbumBacks(paginationContext.getOffset(), paginationContext.getSize(), condition);
         return new PageResult<>(photoAlbumBackList, count);
     }
 

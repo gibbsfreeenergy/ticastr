@@ -4,7 +4,7 @@ import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Comment;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.wzh.blog.vo.CommentVO;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.CommentQueryVO;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
@@ -72,7 +72,7 @@ public interface CommentDao extends BaseMapper<Comment> {
      * @param condition 条件
      * @return 评论集合
      */
-    List<CommentBackDTO> listCommentBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") ConditionVO condition);
+    List<CommentBackDTO> listCommentBackDTO(@Param("current") Long current, @Param("size") Long size, @Param("condition") CommentQueryVO condition);
 
     /**
      * 统计后台评论数量
@@ -80,6 +80,6 @@ public interface CommentDao extends BaseMapper<Comment> {
      * @param condition 条件
      * @return 评论数量
      */
-    Integer countCommentDTO(@Param("condition") ConditionVO condition);
+    Integer countCommentDTO(@Param("condition") CommentQueryVO condition);
 
 }

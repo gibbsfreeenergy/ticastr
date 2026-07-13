@@ -5,7 +5,7 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.dto.TagDTO;
 import com.wzh.blog.entity.Tag;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.wzh.blog.vo.ConditionVO;
+import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.TagVO;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public interface TagService extends IService<Tag> {
      * @param condition 条件
      * @return {@link PageResult<TagBackDTO>} 标签列表
      */
-    PageResult<TagBackDTO> listTagBackDTO(ConditionVO condition);
+    PageResult<TagBackDTO> listTagBackDTO(SearchQueryVO condition);
 
     /**
      * 搜索文章标签
@@ -39,7 +39,7 @@ public interface TagService extends IService<Tag> {
      * @param condition 条件
      * @return {@link List<TagDTO>} 标签列表
      */
-    List<TagDTO> listTagsBySearch(ConditionVO condition);
+    List<TagDTO> listTagsBySearch(SearchQueryVO condition);
 
     /**
      * 删除标签

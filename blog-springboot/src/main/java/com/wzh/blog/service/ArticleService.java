@@ -28,7 +28,7 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    PageResult<ArticleBackDTO> listArticleBacks(ConditionVO condition);
+    PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition);
 
     /**
      * 查询首页文章
@@ -43,7 +43,7 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    ArticlePreviewListDTO listArticlesByCondition(ConditionVO condition);
+    ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition);
 
     /**
      * 搜索文章
@@ -51,7 +51,7 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    List<ArticleSearchDTO> listArticlesBySearch(ConditionVO condition);
+    List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition);
 
     /**
      * 根据id查看后台文章

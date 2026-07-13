@@ -3,6 +3,7 @@ package com.wzh.blog.config;
 
 import com.wzh.blog.handler.PageableHandlerInterceptor;
 import com.wzh.blog.handler.WebSecurityHandler;
+import com.wzh.blog.web.PaginationContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,12 @@ import java.util.Arrays;
  */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final PaginationContext paginationContext;
+
+    public WebMvcConfig(PaginationContext paginationContext) {
+        this.paginationContext = paginationContext;
+    }
 
     @Value("${app.security.cors.allowed-origins}")
     private String allowedOrigins;
@@ -48,7 +55,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new PageableHandlerInterceptor());
+        registry.addInterceptor(new PageableHandlerInterceptor(paginationContext));
         registry.addInterceptor(getWebSecurityHandler());
     }
 
