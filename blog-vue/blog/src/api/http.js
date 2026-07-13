@@ -41,7 +41,9 @@ export function installHttp(app, store) {
                   : error.code === "ECONNABORTED"
                     ? "请求超时，请检查网络后重试"
                     : "网络请求失败，请稍后重试");
-      app.config.globalProperties.$toast({ type: "error", message });
+      if (!error.config?.suppressErrorToast) {
+        app.config.globalProperties.$toast({ type: "error", message });
+      }
       return Promise.reject(error);
     }
   );

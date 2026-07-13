@@ -10,7 +10,11 @@
     <!-- 博主介绍 -->
     <div class="blogger-info">
       <v-avatar size="110" style="margin-bottom:0.5rem">
-        <img :src="this.$store.state.blogInfo.websiteConfig.websiteAvatar" />
+        <img
+          v-if="this.$store.state.blogInfo.websiteConfig.websiteAvatar"
+          :src="this.$store.state.blogInfo.websiteConfig.websiteAvatar"
+          @error="hideBrokenImage"
+        />
       </v-avatar>
     </div>
     <!-- 博客信息 -->
@@ -162,6 +166,9 @@ export default {
     }
   },
   methods: {
+    hideBrokenImage(event) {
+      event.currentTarget.style.display = "none";
+    },
     openLogin() {
       this.$store.state.loginFlag = true;
     },

@@ -22,10 +22,22 @@ export default createStore({
     talkLikeSet: [],
     blogInfo: {
       websiteConfig: {
+        websiteName: "个人博客",
+        websiteAuthor: "博客作者",
+        websiteIntro: "记录生活，分享技术",
+        websiteNotice: "欢迎来到我的博客",
+        websiteAvatar: "",
+        websiteCreateTime: "2024-01-01T00:00:00",
+        isChatRoom: 0,
+        isMusicPlayer: 0,
         socialLoginList: [],
         socialUrlList: []
       },
-      pageList: []
+      pageList: [],
+      articleCount: 0,
+      categoryCount: 0,
+      tagCount: 0,
+      viewsCount: 0
     }
   },
   mutations: {

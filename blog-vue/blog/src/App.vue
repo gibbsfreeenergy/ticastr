@@ -50,7 +50,9 @@ export default {
     // 获取博客信息
     this.getBlogInfo();
     // 上传访客信息
-    this.$http.post("/api/report");
+    this.$http
+      .post("/api/report", null, { suppressErrorToast: true })
+      .catch(() => {});
   },
   components: {
     TopNavBar,
@@ -67,10 +69,20 @@ export default {
     ImagePreview
   },
   methods: {
-    getBlogInfo() {
-      this.$http.get("/api/").then(({ data }) => {
-        this.$store.commit("checkBlogInfo", data.data);
-      });
+    async getBlogInfo() {
+      const retryDelays = [0, 800, 1600];
+      for (const delay of retryDelays) {
+        if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+        try {
+          const { data } = await this.$http.get("/api/", {
+            suppressErrorToast: true
+          });
+          if (data.data) this.$store.commit("checkBlogInfo", data.data);
+          return;
+        } catch {
+          // Keep the safe defaults while retrying a transient edge failure.
+        }
+      }
     }
   },
   computed: {

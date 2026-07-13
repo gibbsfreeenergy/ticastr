@@ -129,6 +129,7 @@
               <!-- 博主头像 -->
               <v-avatar size="110">
                 <img
+                  v-if="blogInfo.websiteConfig.websiteAvatar"
                   class="author-avatar"
                   :src="blogInfo.websiteConfig.websiteAvatar"
                   @error="hideBrokenImage"
