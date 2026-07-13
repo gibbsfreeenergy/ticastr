@@ -286,12 +286,30 @@ export default {
         })
         .then(({ hitokoto }) => {
           this.initTyped(hitokoto);
+        })
+        .catch(() => {
+          this.initTyped(this.blogInfo.websiteConfig.websiteIntro);
         });
     },
-    listHomeTalks() {
-      this.$http.get("/api/home/talks").then(({ data }) => {
-        this.talkList = data.data;
-      });
+    async requestWithRetry(url, config = {}) {
+      const retryDelays = [0, 800, 1600];
+      for (const delay of retryDelays) {
+        if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+        try {
+          return await this.$http.get(url, {
+            ...config,
+            suppressErrorToast: true,
+            timeout: 5000
+          });
+        } catch {
+          // Retry transient failures without replacing the current UI.
+        }
+      }
+      return null;
+    },
+    async listHomeTalks() {
+      const response = await this.requestWithRetry("/api/home/talks");
+      if (response?.data?.data) this.talkList = response.data.data;
     },
     initTyped(input, fn, hooks) {
       const obj = this.obj;
@@ -322,12 +340,13 @@ export default {
       if (this.loadingArticles || this.articlesComplete) return;
       this.loadingArticles = true;
       try {
-        const { data } = await this.$http
-        .get("/api/articles", {
+        const response = await this.requestWithRetry("/api/articles", {
           params: {
             current: this.current
           }
         });
+        if (!response) return;
+        const { data } = response;
         if (!data.data.length) {
           this.articlesComplete = true;
           return;

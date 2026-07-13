@@ -75,7 +75,8 @@ export default {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         try {
           const { data } = await this.$http.get("/api/", {
-            suppressErrorToast: true
+            suppressErrorToast: true,
+            timeout: 5000
           });
           if (data.data) this.$store.commit("checkBlogInfo", data.data);
           return;
