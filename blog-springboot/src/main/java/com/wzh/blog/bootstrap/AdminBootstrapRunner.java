@@ -56,8 +56,7 @@ public class AdminBootstrapRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         validateConfiguration();
         Long existing = userAuthDao.selectCount(new LambdaQueryWrapper<UserAuth>()
-                .eq(UserAuth::getUsername, username)
-                .eq(UserAuth::getLoginType, LoginTypeEnum.EMAIL.getType()));
+                .eq(UserAuth::getUsername, username));
         if (existing > 0) {
             return;
         }

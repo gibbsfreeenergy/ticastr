@@ -63,6 +63,8 @@ mvn test
 mvn package
 
 # Each frontend, from its own directory
+npm run lint
+npm run test:run
 npm run build
 ```
 
