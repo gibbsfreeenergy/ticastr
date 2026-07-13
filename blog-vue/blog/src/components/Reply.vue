@@ -90,7 +90,7 @@ export default {
           break;
       }
       this.commentContent = "";
-      this.axios.post("/api/comments", comment).then(({ data }) => {
+      this.$http.post("/api/comments", comment).then(({ data }) => {
         if (data.flag) {
           this.$emit("reloadReply", this.index);
           this.$toast({ type: "success", message: "回复成功" });

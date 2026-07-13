@@ -106,7 +106,7 @@ export default {
   },
   methods: {
     listOnlineUsers() {
-      this.axios
+      this.$http
         .get("/api/admin/users/online", {
           params: {
             current: this.current,
@@ -129,7 +129,7 @@ export default {
       this.listOnlineUsers();
     },
     removeOnlineUser(user) {
-      this.axios
+      this.$http
         .delete("/api/admin/users/" + user.userInfoId + "/online")
         .then(({ data }) => {
           if (data.flag) {

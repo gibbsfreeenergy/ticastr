@@ -1,6 +1,6 @@
 <template>
   <router-link to="/talks" class="swiper-container">
-    <v-icon size="20" color="#4c4948">mdi-chat-outline</v-icon>
+    <v-icon size="20" color="#4c4948">$mdi-chat-outline</v-icon>
     <div
       :style="{ height: height * lineNum + 'px' }"
       class="rollScreen_container"
@@ -17,7 +17,7 @@
           :key="index"
           :style="{ height: height + 'px' }"
         >
-          <span class="item" v-html="item" />
+          <span class="item" v-safe-html="item" />
         </li>
         <li
           class="rollScreen_once"
@@ -25,12 +25,12 @@
           :key="index + list.length"
           :style="{ height: height + 'px' }"
         >
-          <span class="item" v-html="item" />
+          <span class="item" v-safe-html="item" />
         </li>
       </ul>
     </div>
     <v-icon size="20" color="#4c4948" class="arrow">
-      mdi-chevron-double-right
+      $mdi-chevron-double-right
     </v-icon>
   </router-link>
 </template>

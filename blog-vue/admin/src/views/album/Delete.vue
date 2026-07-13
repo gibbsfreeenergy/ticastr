@@ -104,7 +104,7 @@ export default {
   },
   methods: {
     listPhotos() {
-      this.axios
+      this.$http
         .get("/api/admin/photos", {
           params: {
             current: this.current,
@@ -133,7 +133,7 @@ export default {
       } else {
         param = { idList: [id], isDelete: 0 };
       }
-      this.axios.put("/api/admin/photos/delete", param).then(({ data }) => {
+      this.$http.put("/api/admin/photos/delete", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -150,7 +150,7 @@ export default {
       this.batchDeletePhoto = false;
     },
     deletePhotos() {
-      this.axios
+      this.$http
         .delete("/api/admin/photos", { data: this.selectPhotoIdList })
         .then(({ data }) => {
           if (data.flag) {

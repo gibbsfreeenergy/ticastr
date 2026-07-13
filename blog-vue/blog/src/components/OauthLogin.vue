@@ -11,7 +11,7 @@
 </template>
 
 <script>
-/* eslint-disable no-undef */
+
 export default {
   created() {
     const that = this;
@@ -22,7 +22,7 @@ export default {
       // 拿到openId，accessToken传入后台
       if (QC.Login.check()) {
         QC.Login.getMe(function(openId, accessToken) {
-          that.axios
+          that.$http
             .post("/api/users/oauth/qq", {
               openId: openId,
               accessToken: accessToken
@@ -48,7 +48,7 @@ export default {
         that.$toast({ type: "error", message: data.message });
       }
     } else {
-      that.axios
+      that.$http
         .post("/api/users/oauth/weibo", { code: this.$route.query.code })
         .then(({ data }) => {
           if (data.flag) {

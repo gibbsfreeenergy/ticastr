@@ -42,7 +42,7 @@ export default {
       });
     },
     infiniteHandler($state) {
-      this.axios
+      this.$http
         .get("/api/albums/" + this.$route.params.albumId + "/photos", {
           params: {
             current: this.current,

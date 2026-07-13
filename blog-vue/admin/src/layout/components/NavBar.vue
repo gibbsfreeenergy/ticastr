@@ -60,6 +60,7 @@
 
 <script>
 import { resetRouter } from "../../router";
+import { resetMenuLoader } from "../../assets/js/menu";
 export default {
   created() {
     //替换面包屑导航
@@ -102,12 +103,13 @@ export default {
       }
       if (command == "logout") {
         // 调用注销接口
-        this.axios.post("/api/logout");
+        this.$http.post("/api/logout");
         // 清空用户信息
         this.$store.commit("logout");
         this.$store.commit("resetTab");
         // 清空用户菜单
         resetRouter();
+        resetMenuLoader();
         this.$router.push({ path: "/login" });
       }
     },

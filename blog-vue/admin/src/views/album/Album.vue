@@ -170,7 +170,6 @@ export default {
   methods: {
     openModel(item) {
       if (item) {
-        console.log(item);
         this.albumForum = JSON.parse(item);
         this.$refs.albumTitle.innerHTML = "修改相册";
       } else {
@@ -192,7 +191,7 @@ export default {
       this.$router.push({ path: "/photos/delete" });
     },
     listAlbums() {
-      this.axios
+      this.$http
         .get("/api/admin/photos/albums", {
           params: {
             current: this.current,
@@ -219,7 +218,7 @@ export default {
         this.$message.error("相册封面不能为空");
         return false;
       }
-      this.axios
+      this.$http
         .post("/api/admin/photos/albums", this.albumForum)
         .then(({ data }) => {
           if (data.flag) {
@@ -260,12 +259,11 @@ export default {
         this.albumForum.id = data;
         this.isdelete = true;
       } else {
-        console.log(data);
         this.openModel(data);
       }
     },
     deleteAlbum() {
-      this.axios
+      this.$http
         .delete("/api/admin/photos/albums/" + this.albumForum.id)
         .then(({ data }) => {
           if (data.flag) {

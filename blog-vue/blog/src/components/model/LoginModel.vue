@@ -2,7 +2,7 @@
   <v-dialog v-model="loginFlag" :fullscreen="isMobile" max-width="460">
     <v-card class="login-container" style="border-radius:4px">
       <v-icon class="float-right" @click="loginFlag = false">
-        mdi-close
+        $mdi-close
       </v-icon>
       <div class="login-wrapper">
         <!-- 用户名 -->
@@ -20,7 +20,7 @@
           label="密码"
           placeholder="请输入您的密码"
           @keyup.enter="login"
-          :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+          :append-inner-icon="show ? '$mdi-eye' : '$mdi-eye-off'"
           :type="show ? 'text' : 'password'"
           @click:append="show = !show"
         />
@@ -117,7 +117,7 @@ export default {
         return false;
       }
       const that = this;
-      // eslint-disable-next-line no-undef
+
       var captcha = new TencentCaptcha(this.config.TENCENT_CAPTCHA, function(
         res
       ) {
@@ -126,7 +126,7 @@ export default {
           let param = new URLSearchParams();
           param.append("username", that.username);
           param.append("password", that.password);
-          that.axios.post("/api/login", param).then(({ data }) => {
+          that.$http.post("/api/login", param).then(({ data }) => {
             if (data.flag) {
               that.username = "";
               that.password = "";
@@ -150,7 +150,7 @@ export default {
           /(iPhone|iPod|Android|ios|iOS|iPad|Backerry|WebOS|Symbian|Windows Phone|Phone)/i
         )
       ) {
-        // eslint-disable-next-line no-undef
+
         QC.Login.showPopup({
           appId: this.config.QQ_APP_ID,
           redirectURI: this.config.QQ_REDIRECT_URI

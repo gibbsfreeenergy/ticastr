@@ -300,12 +300,11 @@ export default {
   },
   methods: {
     getWebsiteConfig() {
-      this.axios.get("/api/admin/website/config").then(({ data }) => {
+      this.$http.get("/api/admin/website/config").then(({ data }) => {
         this.websiteConfigForm = data.data;
       });
     },
     handleClick(tab) {
-      console.log(tab);
     },
     handleWebsiteAvatarSuccess(response) {
       this.websiteConfigForm.websiteAvatar = response.data;
@@ -323,7 +322,7 @@ export default {
       this.websiteConfigForm.alipayQRCode = response.data;
     },
     updateWebsiteConfig() {
-      this.axios
+      this.$http
         .put("/api/admin/website/config", this.websiteConfigForm)
         .then(({ data }) => {
           if (data.flag) {

@@ -6,6 +6,12 @@ const routes = [
     name: "login",
     hidden: true,
     component: () => import("../views/login/Login.vue")
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    hidden: true,
+    component: () => import("../views/error/NotFound.vue")
   }
 ];
 
@@ -16,7 +22,7 @@ const router = createRouter({
 
 export function resetRouter() {
   router.getRoutes().forEach(route => {
-    if (route.name && route.name !== "login") {
+    if (route.name && !["login", "not-found"].includes(route.name)) {
       router.removeRoute(route.name);
     }
   });

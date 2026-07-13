@@ -110,7 +110,7 @@ export default {
         this.$message.error("昵称不能为空");
         return false;
       }
-      this.axios.put("/api/users/info", this.infoForm).then(({ data }) => {
+      this.$http.put("/api/users/info", this.infoForm).then(({ data }) => {
         if (data.flag) {
           this.$message.success(data.message);
           this.$store.commit("updateUserInfo", this.infoForm);
@@ -136,7 +136,7 @@ export default {
         this.$message.error("两次密码输入不一致");
         return false;
       }
-      this.axios
+      this.$http
         .put("/api/admin/users/password", this.passwordForm)
         .then(({ data }) => {
           if (data.flag) {

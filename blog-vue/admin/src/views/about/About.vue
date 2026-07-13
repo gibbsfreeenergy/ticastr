@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     getAbout() {
-      this.axios.get("/api/about").then(({ data }) => {
+      this.$http.get("/api/about").then(({ data }) => {
         this.aboutContent = data.data;
       });
     },
@@ -50,10 +50,10 @@ export default {
         uploadFile = new window.File([compressedFile], file.name, { type: file.type });
       }
       formdata.append("file", uploadFile);
-      const { data } = await this.axios.post("/api/admin/articles/images", formdata);
+      const { data } = await this.$http.post("/api/admin/articles/images", formdata);
       return data.data;
     },    updateAbout() {
-      this.axios
+      this.$http
         .put("/api/admin/about", {
           aboutContent: this.aboutContent
         })

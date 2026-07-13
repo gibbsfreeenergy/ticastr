@@ -169,7 +169,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/categories", param).then(({ data }) => {
+      this.$http.delete("/api/admin/categories", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -186,7 +186,7 @@ export default {
       });
     },
     listCategories() {
-      this.axios
+      this.$http
         .get("/api/admin/categories", {
           params: {
             current: this.current,
@@ -216,7 +216,7 @@ export default {
         this.$message.error("分类名不能为空");
         return false;
       }
-      this.axios
+      this.$http
         .post("/api/admin/categories", this.categoryForm)
         .then(({ data }) => {
           if (data.flag) {

@@ -17,7 +17,7 @@
               <div class="user-nickname">
                 {{ item.nickname }}
                 <v-icon class="user-sign" size="20" color="#ffa51e">
-                  mdi-check-decagram
+                  $mdi-check-decagram
                 </v-icon>
               </div>
               <!-- 发表时间 -->
@@ -28,7 +28,7 @@
                 </span>
               </div>
               <!-- 说说信息 -->
-              <div class="talk-content" v-html="item.content" />
+              <div class="talk-content" v-safe-html="item.content" />
               <!-- 图片列表 -->
               <v-row class="talk-images" v-if="item.imgList">
                 <v-col
@@ -55,14 +55,14 @@
                     class="like-btn"
                     @click.prevent="like(item)"
                   >
-                    mdi-thumb-up
+                    $mdi-thumb-up
                   </v-icon>
                   <div class="operation-count">
                     {{ item.likeCount == null ? 0 : item.likeCount }}
                   </div>
                 </div>
                 <div class="talk-operation-item">
-                  <v-icon size="16" color="#999">mdi-chat</v-icon>
+                  <v-icon size="16" color="#999">$mdi-chat</v-icon>
                   <div class="operation-count">
                     {{ item.commentCount == null ? 0 : item.commentCount }}
                   </div>
@@ -101,7 +101,7 @@ export default {
   },
   methods: {
     listTalks() {
-      this.axios
+      this.$http
         .get("/api/talks", {
           params: {
             current: this.current,
@@ -136,13 +136,13 @@ export default {
         return false;
       }
       // 发送请求
-      this.axios.post("/api/talks/" + talk.id + "/like").then(({ data }) => {
+      this.$http.post("/api/talks/" + talk.id + "/like").then(({ data }) => {
         if (data.flag) {
           // 判断是否点赞
           if (this.$store.state.talkLikeSet.indexOf(talk.id) != -1) {
-            this.$set(talk, "likeCount", talk.likeCount - 1);
+            talk.likeCount = talk.likeCount - 1;
           } else {
-            this.$set(talk, "likeCount", talk.likeCount + 1);
+            talk.likeCount = talk.likeCount + 1;
           }
           this.$store.commit("talkLike", talk.id);
         }

@@ -87,7 +87,7 @@
             </span>
           </div>
           <!-- 评论内容 -->
-          <p v-html="item.commentContent" class="comment-content"></p>
+          <p v-safe-html="item.commentContent" class="comment-content"></p>
           <!-- 回复人 -->
           <div
             style="display:flex"
@@ -141,7 +141,7 @@
                   </a>
                   ，
                 </template>
-                <span v-html="reply.commentContent" />
+                <span v-safe-html="reply.commentContent" />
               </p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export default {
       this.commentContent += key;
     },
     checkReplies(index, item) {
-      this.axios
+      this.$http
         .get("/api/comments/" + item.id + "/replies", {
           params: { current: 1, size: 5 }
         })
@@ -259,7 +259,7 @@ export default {
     },
     changeReplyCurrent(current, index, commentId) {
       //查看下一页回复
-      this.axios
+      this.$http
         .get("/api/comments/" + commentId + "/replies", {
           params: { current: current, size: 5 }
         })
@@ -283,7 +283,7 @@ export default {
         default:
           break;
       }
-      this.axios
+      this.$http
         .get("/api/comments", {
           params: param
         })
@@ -334,7 +334,7 @@ export default {
           break;
       }
       this.commentContent = "";
-      this.axios.post("/api/comments", comment).then(({ data }) => {
+      this.$http.post("/api/comments", comment).then(({ data }) => {
         if (data.flag) {
           // 查询最新评论
           this.current = 1;
@@ -358,22 +358,22 @@ export default {
         return false;
       }
       // 发送请求
-      this.axios
+      this.$http
         .post("/api/comments/" + comment.id + "/like")
         .then(({ data }) => {
           if (data.flag) {
             // 判断是否点赞
             if (this.$store.state.commentLikeSet.indexOf(comment.id) != -1) {
-              this.$set(comment, "likeCount", comment.likeCount - 1);
+              comment.likeCount = comment.likeCount - 1;
             } else {
-              this.$set(comment, "likeCount", comment.likeCount + 1);
+              comment.likeCount = comment.likeCount + 1;
             }
             this.$store.commit("commentLike", comment.id);
           }
         });
     },
     reloadReply(index) {
-      this.axios
+      this.$http
         .get("/api/comments/" + this.commentList[index].id + "/replies", {
           params: {
             current: this.$refs.page[index].current,

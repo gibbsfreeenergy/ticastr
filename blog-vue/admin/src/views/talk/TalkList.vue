@@ -45,7 +45,7 @@
             </span>
           </div>
           <!-- 说说信息 -->
-          <div class="talk-content" v-html="item.content" />
+          <div class="talk-content" v-safe-html="item.content" />
           <!-- 图片列表 -->
           <el-row :gutter="4" class="talk-images" v-if="item.imgList">
             <el-col
@@ -122,7 +122,7 @@ export default {
       }
     },
     listTalks() {
-      this.axios
+      this.$http
         .get("/api/admin/talks", {
           params: {
             current: this.current,
@@ -157,7 +157,7 @@ export default {
       this.listTalks();
     },
     deleteTalk() {
-      this.axios
+      this.$http
         .delete("/api/admin/talks", { data: [this.talkId] })
         .then(({ data }) => {
           if (data.flag) {

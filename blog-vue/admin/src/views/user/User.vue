@@ -235,7 +235,7 @@ export default {
       this.listUsers();
     },
     changeDisable(user) {
-      this.axios.put("/api/admin/users/disable", {
+      this.$http.put("/api/admin/users/disable", {
         id: user.userInfoId,
         isDisable: user.isDisable
       });
@@ -250,7 +250,7 @@ export default {
     },
     editUserRole() {
       this.userForm.roleIdList = this.roleIdList;
-      this.axios
+      this.$http
         .put("/api/admin/users/role", this.userForm)
         .then(({ data }) => {
           if (data.flag) {
@@ -269,7 +269,7 @@ export default {
         });
     },
     listUsers() {
-      this.axios
+      this.$http
         .get("/api/admin/users", {
           params: {
             current: this.current,
@@ -285,7 +285,7 @@ export default {
         });
     },
     listRoles() {
-      this.axios.get("/api/admin/users/role").then(({ data }) => {
+      this.$http.get("/api/admin/users/role").then(({ data }) => {
         this.userRoleList = data.data;
       });
     }

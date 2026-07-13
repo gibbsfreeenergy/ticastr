@@ -40,7 +40,7 @@
       <!-- 向下滚动 -->
       <div class="scroll-down" @click="scrollDown">
         <v-icon color="#fff" class="scroll-down-effects">
-          mdi-chevron-down
+          $mdi-chevron-down
         </v-icon>
       </div>
     </div>
@@ -84,12 +84,12 @@
                 <span class="separator">|</span>
               </span>
               <!-- 发表时间 -->
-              <v-icon size="14">mdi-calendar-month-outline</v-icon>
+              <v-icon size="14">$mdi-calendar-month-outline</v-icon>
               {{ date(item.createTime) }}
               <span class="separator">|</span>
               <!-- 文章分类 -->
               <router-link :to="'/categories/' + item.categoryId">
-                <v-icon size="14">mdi-inbox-full</v-icon>
+                <v-icon size="14">$mdi-inbox-full</v-icon>
                 {{ item.categoryName }}
               </router-link>
               <span class="separator">|</span>
@@ -101,7 +101,7 @@
                 v-for="tag of item.tagDTOList"
                 :key="tag.id"
               >
-                <v-icon size="14">mdi-tag-multiple</v-icon>{{ tag.tagName }}
+                <v-icon size="14">$mdi-tag-multiple</v-icon>{{ tag.tagName }}
               </router-link>
             </div>
             <!-- 文章内容 -->
@@ -161,7 +161,7 @@
             </div>
             <!-- 收藏按钮 -->
             <a class="collection-btn" @click="tip = true">
-              <v-icon color="#fff" size="18" class="mr-1">mdi-bookmark</v-icon>
+              <v-icon color="#fff" size="18" class="mr-1">$mdi-bookmark</v-icon>
               加入书签
             </a>
             <!-- 社交信息 -->
@@ -193,7 +193,7 @@
           <!-- 网站信息 -->
           <v-card class="blog-card animated zoomIn mt-5 big">
             <div class="web-info-title">
-              <v-icon size="18">mdi-bell</v-icon>
+              <v-icon size="18">$mdi-bell</v-icon>
               公告
             </div>
             <div style="font-size:0.875rem">
@@ -203,7 +203,7 @@
           <!-- 网站信息 -->
           <v-card class="blog-card animated zoomIn mt-5">
             <div class="web-info-title">
-              <v-icon size="18">mdi-chart-line</v-icon>
+              <v-icon size="18">$mdi-chart-line</v-icon>
               网站资讯
             </div>
             <div class="web-info">
@@ -272,13 +272,13 @@ export default {
         });
     },
     listHomeTalks() {
-      this.axios.get("/api/home/talks").then(({ data }) => {
+      this.$http.get("/api/home/talks").then(({ data }) => {
         this.talkList = data.data;
       });
     },
     initTyped(input, fn, hooks) {
       const obj = this.obj;
-      // eslint-disable-next-line no-unused-vars
+
       const typed = new EasyTyper(obj, input, fn, hooks);
     },
     scrollDown() {
@@ -303,7 +303,7 @@ export default {
     },
     infiniteHandler($state) {
       let md = require("markdown-it")();
-      this.axios
+      this.$http
         .get("/api/articles", {
           params: {
             current: this.current

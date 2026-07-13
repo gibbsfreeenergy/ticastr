@@ -7,7 +7,7 @@
     <!-- 链接列表 -->
     <v-card class="blog-container">
       <div class="link-title mb-1">
-        <v-icon color="blue">mdi-link-variant</v-icon> 大佬链接
+        <v-icon color="blue">$mdi-link-variant</v-icon> 大佬链接
       </div>
       <v-row class="link-container">
         <v-col
@@ -30,7 +30,7 @@
       </v-row>
       <!-- 说明 -->
       <div class="link-title mt-4 mb-4">
-        <v-icon color="blue">mdi-dots-horizontal-circle</v-icon> 添加友链
+        <v-icon color="blue">$mdi-dots-horizontal-circle</v-icon> 添加友链
       </div>
       <blockquote>
         <div>名称：{{ blogInfo.websiteConfig.websiteName }}</div>
@@ -66,7 +66,7 @@ export default {
   },
   methods: {
     listFriendLink() {
-      this.axios.get("/api/links").then(({ data }) => {
+      this.$http.get("/api/links").then(({ data }) => {
         this.friendLinkList = data.data;
       });
     }

@@ -114,16 +114,36 @@
 </template>
 
 <script>
-import "../../assets/js/china";
+import chinaMap from "../../assets/js/china";
 import CalendarHeatmap from "../../components/CalendarHeatmap.vue";
 import TagCloud from "../../components/TagCloud.vue";
 import ECharts from "vue-echarts";
-import { use } from "echarts/core";
+import { registerMap, use } from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
-import { LineChart, PieChart, BarChart } from "echarts/charts";
-import { TooltipComponent, LegendComponent, TitleComponent, GridComponent } from "echarts/components";
+import { BarChart, LineChart, MapChart, PieChart } from "echarts/charts";
+import {
+  GeoComponent,
+  GridComponent,
+  LegendComponent,
+  TitleComponent,
+  TooltipComponent,
+  VisualMapComponent
+} from "echarts/components";
 
-use([SVGRenderer, LineChart, PieChart, BarChart, TooltipComponent, LegendComponent, TitleComponent, GridComponent]);
+use([
+  SVGRenderer,
+  BarChart,
+  LineChart,
+  MapChart,
+  PieChart,
+  GeoComponent,
+  GridComponent,
+  LegendComponent,
+  TitleComponent,
+  TooltipComponent,
+  VisualMapComponent
+]);
+registerMap("china", chinaMap);
 
 export default {
   components: { CalendarHeatmap, TagCloud, "v-chart": ECharts },
@@ -314,7 +334,7 @@ export default {
   },
   methods: {
     getData() {
-      this.axios.get("/api/admin").then(({ data }) => {
+      this.$http.get("/api/admin").then(({ data }) => {
         this.viewsCount = data.data.viewsCount;
         this.messageCount = data.data.messageCount;
         this.userCount = data.data.userCount;
@@ -357,7 +377,7 @@ export default {
       });
     },
     listUserArea() {
-      this.axios
+      this.$http
         .get("/api/admin/users/area", {
           params: {
             type: this.type

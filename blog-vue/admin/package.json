@@ -2,6 +2,7 @@
   "name": "ticastr-admin",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=24.0.0 <25",
     "npm": ">=11"
@@ -11,12 +12,16 @@
     "dev": "vite",
     "serve": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
+    "dompurify": "^3.4.12",
     "echarts": "^6.0.0",
     "element-plus": "^2.14.3",
     "image-conversion": "^2.1.1",
@@ -29,7 +34,14 @@
     "vuex-persistedstate": "^4.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^6.0.7",
-    "vite": "^8.1.4"
+    "@vue/test-utils": "^2.4.11",
+    "eslint": "^10.7.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.7.0",
+    "jsdom": "^29.1.1",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
   }
 }

@@ -275,20 +275,19 @@ export default {
   },
   methods: {
     getAlbumInfo() {
-      this.axios
+      this.$http
         .get("/api/admin/photos/albums/" + this.$route.params.albumId + "/info")
         .then(({ data }) => {
           this.albumInfo = data.data;
         });
     },
     listAlbums() {
-      this.axios.get("/api/admin/photos/albums/info").then(({ data }) => {
+      this.$http.get("/api/admin/photos/albums/info").then(({ data }) => {
         this.albumList = data.data;
-        console.log(this.albumList);
       });
     },
     listPhotos() {
-      this.axios
+      this.$http
         .get("/api/admin/photos", {
           params: {
             current: this.current,
@@ -316,7 +315,7 @@ export default {
       this.uploadList.forEach(item => {
         photoUrlList.push(item.url);
       });
-      this.axios
+      this.$http
         .post("/api/admin/photos", {
           albumId: this.$route.params.albumId,
           photoUrlList: photoUrlList
@@ -343,7 +342,7 @@ export default {
         this.$message.error("照片名称不能为空");
         return false;
       }
-      this.axios.put("/api/admin/photos", this.photoForm).then(({ data }) => {
+      this.$http.put("/api/admin/photos", this.photoForm).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -360,7 +359,7 @@ export default {
       });
     },
     updatePhotoAlbum() {
-      this.axios
+      this.$http
         .put("/api/admin/photos/album", {
           albumId: this.albumId,
           photoIdList: this.selectPhotoIdList
@@ -426,7 +425,7 @@ export default {
       } else {
         param = { idList: [id], isDelete: 1 };
       }
-      this.axios.put("/api/admin/photos/delete", param).then(({ data }) => {
+      this.$http.put("/api/admin/photos/delete", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

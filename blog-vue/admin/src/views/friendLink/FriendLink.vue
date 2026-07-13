@@ -195,7 +195,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/links", param).then(({ data }) => {
+      this.$http.delete("/api/admin/links", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -242,7 +242,7 @@ export default {
         this.$message.error("友链地址不能为空");
         return false;
       }
-      this.axios.post("/api/admin/links", this.linkForm).then(({ data }) => {
+      this.$http.post("/api/admin/links", this.linkForm).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -259,7 +259,7 @@ export default {
       });
     },
     listLinks() {
-      this.axios
+      this.$http
         .get("/api/admin/links", {
           params: {
             current: this.current,

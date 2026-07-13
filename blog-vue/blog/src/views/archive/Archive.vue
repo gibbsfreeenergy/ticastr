@@ -45,7 +45,7 @@ export default {
   },
   methods: {
     listArchives() {
-      this.axios
+      this.$http
         .get("/api/articles/archives", {
           params: { current: this.current }
         })
@@ -68,7 +68,7 @@ export default {
   },
   watch: {
     current(value) {
-      this.axios
+      this.$http
         .get("/api/articles/archives", {
           params: { current: value }
         })

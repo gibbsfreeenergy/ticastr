@@ -2,7 +2,7 @@
   <v-dialog v-model="forgetFlag" :fullscreen="isMobile" max-width="460">
     <v-card class="login-container" style="border-radius:4px">
       <v-icon class="float-right" @click="forgetFlag = false">
-        mdi-close
+        $mdi-close
       </v-icon>
       <div class="login-wrapper">
         <!-- 用户名 -->
@@ -33,7 +33,7 @@
           label="密码"
           placeholder="请输入您的密码"
           @keyup.enter="forget"
-          :append-inner-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+          :append-inner-icon="show ? '$mdi-eye' : '$mdi-eye-off'"
           :type="show ? 'text' : 'password'"
           @click:append="show = !show"
         />
@@ -76,14 +76,14 @@ export default {
     },
     sendCode() {
       const that = this;
-      // eslint-disable-next-line no-undef
+
       var captcha = new TencentCaptcha(this.config.TENCENT_CAPTCHA, function(
         res
       ) {
         if (res.ret === 0) {
           //发送邮件
           that.countDown();
-          that.axios
+          that.$http
             .get("/api/users/code", {
               params: { username: that.username }
             })
@@ -131,7 +131,7 @@ export default {
         password: this.password,
         code: this.code
       };
-      this.axios.put("/api/users/password", user).then(({ data }) => {
+      this.$http.put("/api/users/password", user).then(({ data }) => {
         if (data.flag) {
           this.$toast({ type: "success", message: "修改成功" });
         } else {

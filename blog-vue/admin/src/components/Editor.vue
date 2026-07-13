@@ -2,7 +2,7 @@
   <div
     ref="editor"
     class="edit-container"
-    v-html="innerText"
+    v-safe-html="innerText"
     :placeholder="placeholder"
     :contenteditable="disable"
     @focus="onFocus"

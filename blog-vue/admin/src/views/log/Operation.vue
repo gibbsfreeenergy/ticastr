@@ -214,7 +214,7 @@ export default {
       this.listLogs();
     },
     listLogs() {
-      this.axios
+      this.$http
         .get("/api/admin/operation/logs", {
           params: {
             current: this.current,
@@ -235,7 +235,7 @@ export default {
       } else {
         param = { data: this.logIdList };
       }
-      this.axios.delete("/api/admin/operation/logs", param).then(({ data }) => {
+      this.$http.delete("/api/admin/operation/logs", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

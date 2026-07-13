@@ -2,7 +2,7 @@
   <v-dialog v-model="emailFlag" :fullscreen="isMobile" max-width="460">
     <v-card class="login-container" style="border-radius:4px">
       <v-icon class="float-right" @click="emailFlag = false">
-        mdi-close
+        $mdi-close
       </v-icon>
       <div class="login-wrapper">
         <!-- 用户名 -->
@@ -56,14 +56,14 @@ export default {
   methods: {
     sendCode() {
       const that = this;
-      // eslint-disable-next-line no-undef
+
       var captcha = new TencentCaptcha(this.config.TENCENT_CAPTCHA, function(
         res
       ) {
         if (res.ret === 0) {
           //发送邮件
           that.countDown();
-          that.axios
+          that.$http
             .get("/api/users/code", {
               params: { username: that.email }
             })
@@ -106,7 +106,7 @@ export default {
         email: this.email,
         code: this.code
       };
-      this.axios.post("/api/users/email", user).then(({ data }) => {
+      this.$http.post("/api/users/email", user).then(({ data }) => {
         if (data.flag) {
           this.$store.commit("saveEmail", this.email);
           this.email = "";

@@ -9,7 +9,7 @@
       <router-view :key="$route.fullPath" />
     </v-main>
     <!-- 页脚 -->
-    <Footer></Footer>
+    <BlogFooter></BlogFooter>
     <!-- 返回顶部 -->
     <BackTop></BackTop>
     <!-- 搜索模态框 -->
@@ -34,7 +34,7 @@
 import { defineAsyncComponent } from "vue";
 import TopNavBar from "./components/layout/TopNavBar";
 import SideNavBar from "./components/layout/SideNavBar";
-import Footer from "./components/layout/Footer";
+import BlogFooter from "./components/layout/Footer";
 import BackTop from "./components/BackTop";
 import searchModel from "./components/model/SearchModel";
 import LoginModel from "./components/model/LoginModel";
@@ -50,13 +50,13 @@ export default {
     // 获取博客信息
     this.getBlogInfo();
     // 上传访客信息
-    this.axios.post("/api/report");
+    this.$http.post("/api/report");
   },
   components: {
     TopNavBar,
     Player,
     SideNavBar,
-    Footer,
+    BlogFooter,
     BackTop,
     searchModel,
     LoginModel,
@@ -68,7 +68,7 @@ export default {
   },
   methods: {
     getBlogInfo() {
-      this.axios.get("/api/").then(({ data }) => {
+      this.$http.get("/api/").then(({ data }) => {
         this.$store.commit("checkBlogInfo", data.data);
       });
     }

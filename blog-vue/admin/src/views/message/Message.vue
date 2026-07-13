@@ -209,7 +209,7 @@ export default {
       } else {
         param = { data: this.messageIdList };
       }
-      this.axios.delete("/api/admin/messages", param).then(({ data }) => {
+      this.$http.delete("/api/admin/messages", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -233,7 +233,7 @@ export default {
         param.idList = this.messageIdList;
       }
       param.isReview = 1;
-      this.axios.put("/api/admin/messages/review", param).then(({ data }) => {
+      this.$http.put("/api/admin/messages/review", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -252,7 +252,7 @@ export default {
       this.isReview = review;
     },
     listMessages() {
-      this.axios
+      this.$http
         .get("/api/admin/messages", {
           params: {
             current: this.current,

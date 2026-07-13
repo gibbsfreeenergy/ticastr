@@ -236,7 +236,7 @@ export default {
       });
     },
     listRoles() {
-      this.axios
+      this.$http
         .get("/api/admin/roles", {
           params: {
             current: this.current,
@@ -249,10 +249,10 @@ export default {
           this.count = data.data.count;
           this.loading = false;
         });
-      this.axios.get("/api/admin/role/resources").then(({ data }) => {
+      this.$http.get("/api/admin/role/resources").then(({ data }) => {
         this.resourceList = data.data;
       });
-      this.axios.get("/api/admin/role/menus").then(({ data }) => {
+      this.$http.get("/api/admin/role/menus").then(({ data }) => {
         this.menuList = data.data;
       });
     },
@@ -263,7 +263,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/roles", param).then(({ data }) => {
+      this.$http.delete("/api/admin/roles", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -306,7 +306,7 @@ export default {
     saveOrUpdateRoleResource() {
       this.roleForm.menuIdList = null;
       this.roleForm.resourceIdList = this.$refs.resourceTree.getCheckedKeys();
-      this.axios.post("/api/admin/role", this.roleForm).then(({ data }) => {
+      this.$http.post("/api/admin/role", this.roleForm).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -335,7 +335,7 @@ export default {
       this.roleForm.menuIdList = this.$refs.menuTree
         .getCheckedKeys()
         .concat(this.$refs.menuTree.getHalfCheckedKeys());
-      this.axios.post("/api/admin/role", this.roleForm).then(({ data }) => {
+      this.$http.post("/api/admin/role", this.roleForm).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

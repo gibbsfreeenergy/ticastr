@@ -109,7 +109,7 @@ export default {
   },
   created() {
     if (this.$route.params.talkId) {
-      this.axios
+      this.$http
         .get("/api/admin/talks/" + this.$route.params.talkId)
         .then(({ data }) => {
           this.talk = data.data;
@@ -187,7 +187,7 @@ export default {
         });
         this.talk.images = JSON.stringify(imgList);
       }
-      this.axios.post("/api/admin/talks", this.talk).then(({ data }) => {
+      this.$http.post("/api/admin/talks", this.talk).then(({ data }) => {
         if (data.flag) {
           this.$refs.editor.clear();
           this.uploadList = [];

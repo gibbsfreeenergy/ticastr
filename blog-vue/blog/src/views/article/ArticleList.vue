@@ -29,14 +29,14 @@
               </div>
               <div style="margin-top:0.375rem">
                 <!-- 发表时间 -->
-                <v-icon size="20">mdi-clock-outline</v-icon>
+                <v-icon size="20">$mdi-clock-outline</v-icon>
                 {{ date(item.createTime) }}
                 <!-- 文章分类 -->
                 <router-link
                   :to="'/categories/' + item.categoryId"
                   class="float-right"
                 >
-                  <v-icon>mdi-bookmark</v-icon>{{ item.categoryName }}
+                  <v-icon>$mdi-bookmark</v-icon>{{ item.categoryName }}
                 </router-link>
               </div>
             </div>
@@ -85,7 +85,7 @@ export default {
   },
   methods: {
     infiniteHandler($state) {
-      this.axios
+      this.$http
         .get("/api/articles/condition", {
           params: {
             categoryId: this.$route.params.categoryId,

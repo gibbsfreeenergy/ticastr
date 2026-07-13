@@ -76,7 +76,7 @@ export default {
   },
   methods: {
     updataUserInfo() {
-      this.axios.put("/api/users/info", this.userInfo).then(({ data }) => {
+      this.$http.put("/api/users/info", this.userInfo).then(({ data }) => {
         if (data.flag) {
           this.$store.commit("updateUserInfo", this.userInfo);
           this.$toast({ type: "success", message: "修改成功" });

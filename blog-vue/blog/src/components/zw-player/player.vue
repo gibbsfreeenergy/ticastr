@@ -164,11 +164,12 @@
           <div class="dis_list" @click="DisList">···</div>
           <p class="music_title">{{ musicTitle }}</p>
           <p class="music_intro">歌手: {{ musicName }}</p>
-          <ul class="music_words">
+          <ul ref="musicWords" class="music_words">
             <div class="music_words_box" :style="{ top: wordsTop + 'px' }">
               <li
                 v-for="(item, index) in musicWords"
                 :key="index"
+                ref="musicWord"
                 class="music_word"
                 :class="{ word_highlight: wordIndex == index }"
               >
@@ -179,9 +180,14 @@
         </div>
         <div class="control_box">
           <div class="control_button">
-            <img :src="playIcon" alt="" class="control_icon" />
+            <img
+              :src="playIcon"
+              alt=""
+              class="control_icon"
+              @click="togglePlayback"
+            />
           </div>
-          <div class="progress">
+          <div ref="progress" class="progress" @mousedown="seekPlayback">
             <div class="progress_c" :style="{ width: currentProgress }">
               <div class="progress_circle">
                 <div class="progress_circle_c"></div>
@@ -190,12 +196,16 @@
           </div>
         </div>
       </div>
-      <video
+      <audio
+        ref="audio"
         id="music"
-        autoplay="autoplay"
         :src="musicUrl"
-        name="media"
-      ></video>
+        preload="metadata"
+        @ended="handleEnded"
+        @pause="handlePause"
+        @play="handlePlay"
+        @timeupdate="syncPlayback"
+      ></audio>
     </div>
   </div>
 </template>
@@ -218,7 +228,6 @@ import state0 from "./img/state_0.png";
 import state1 from "./img/state_1.png";
 import talkicon1 from "./img/talkicon1.png";
 import talkicon2 from "./img/talkicon2.png";
-import $ from "jquery";
 export default {
   name: "Player",
   data() {
@@ -235,8 +244,8 @@ export default {
       state1,
       talkicon1,
       talkicon2,
-      playState: true,
-      playIcon: pause,
+      playState: false,
+      playIcon: play,
       musicImg: "",
       musicUrl: "",
       musicWords: [],
@@ -274,11 +283,10 @@ export default {
     };
   },
   mounted() {
-    this.Player();
+    this.player = this.$refs.audio;
   },
   created() {
     this._getMusicType(3779629);
-    this.DisAuthorInfo(); //禁删~感谢配合
   },
   computed: {
     thisMusicList() {
@@ -301,13 +309,6 @@ export default {
     }
   },
   methods: {
-    //禁删~感谢配合
-    DisAuthorInfo() {
-      console.log(
-        "%c音乐播放器作者----仲威，博客地址：https://blogme.top",
-        "background-color:rgb(30,30,30);border-radius:4px;font-size:12px;padding:4px;color:rgb(220,208,129);"
-      );
-    },
     MusicAlert(val) {
       this.musicAlertState = true;
       this.musicAlertVal = val;
@@ -362,7 +363,7 @@ export default {
         this.wordsTop = 0;
         this.currentProgress = "0%";
         if (!this.playState) {
-          $(".control_icon").click();
+          this.playCurrent();
         }
       }
     },
@@ -388,7 +389,7 @@ export default {
             this.wordsTop = 0;
             this.currentProgress = "0%";
             if (!this.playState) {
-              $(".control_icon").click();
+              this.playCurrent();
             }
           } else {
             //自定义库没有歌曲 提示需要搜索才可以添加
@@ -407,7 +408,7 @@ export default {
             this.wordsTop = 0;
             this.currentProgress = "0%";
             if (!this.playState) {
-              $(".control_icon").click();
+              this.playCurrent();
             }
           });
         }
@@ -433,7 +434,6 @@ export default {
             //提示这首歌不能放
           } else {
             //遍历完没有找到
-            console.log("not");
             this.MusicAlert("此列表所有歌都不能播放");
           }
         } else {
@@ -444,6 +444,7 @@ export default {
               "https://"
             ) + "?param=300y300";
           this.musicTitle = this.musicList[this.thisMusicIndex].name;
+          this.$nextTick(() => this.playCurrent());
           let name_arr = [];
           this.musicList[this.thisMusicIndex].ar.forEach(i => {
             name_arr.push(i.name);
@@ -491,154 +492,76 @@ export default {
       }
       return { timeArr: timeArr, wordArr: wordArr };
     },
-    Player() {
-      let self = this;
-      let player = $("#music")[0];
-      let playerTimer = setInterval(timer, 1000);
-      $(".control_icon").click();
-      //定时器函数
-      $("body").on("click", () => {
-        player.play();
-        $("body").unbind("click");
-      });
-      function timer() {
-        self.currentProgress = `${(player.currentTime / player.duration) *
-          100}%`;
-        //接着这里写歌词滚动
-        if (player.currentTime >= self.wordsTime[self.o + 1]) {
-          self.top += Number.parseInt(
-            $(".music_word")
-              .eq(self.o)
-              .height() +
-              Number.parseInt(
-                $(".music_word")
-                  .eq(self.o)
-                  .css("marginTop")
-              )
-          );
-          if (self.top >= $(".music_words").height() / 2 - 11) {
-            //开始滚动的高度
-            self.wordsTop += -Number.parseInt(
-              $(".music_word")
-                .eq(self.o)
-                .height() +
-                Number.parseInt(
-                  $(".music_word")
-                    .eq(self.o)
-                    .css("marginTop")
-                )
-            );
-          }
-          self.wordIndex = self.o + 1;
-          self.o++;
-        }
-        if (player.currentTime >= player.duration) {
-          //切歌
-          if (self.musicList.length != 1) {
-            //只有一首歌  重复播放
-            if (self.musicState == 0) {
-              self.thisMusicIndex =
-                self.thisMusicIndex >= self.musicList.length - 1
-                  ? 0
-                  : self.thisMusicIndex + 1;
-              self._getInfo();
-            }
-          }
-          player.play();
-          self.top = 0;
-          self.o = 0;
-          self.wordIndex = 0;
-          self.wordsTop = 0;
-          self.currentProgress = "0%";
-        }
+    playCurrent() {
+      if (!this.player || !this.musicUrl) {
+        return;
       }
-      //进度条控制
-      $(".progress").on("mousedown", ev => {
-        console.log();
-        let e = ev || event;
-        let pro =
-          (e.clientX - $(".progress").offset().left) / $(".progress").width();
-        clearInterval(playerTimer);
-        this.currentProgress = `${pro * 100}%`;
-        $(document).on("mousemove", ev => {
-          let e = ev || event;
-          pro =
-            (e.clientX - $(".progress").offset().left) / $(".progress").width();
-          this.currentProgress = `${pro * 100}%`;
-        });
-        $(document).on("mouseup", () => {
-          player.currentTime = player.duration * pro;
-          let c_arr = [...this.wordsTime];
-          c_arr.push(player.currentTime);
-          c_arr.sort((l, r) => {
-            return l - r;
-          });
-          let now_o = c_arr.indexOf(player.currentTime) - 1;
-          let diff_h = 0;
-          if (this.o < now_o) {
-            for (let i = this.o; i < now_o; i++) {
-              diff_h += -Number.parseInt(
-                $(".music_word")
-                  .eq(i)
-                  .height() +
-                  Number.parseInt(
-                    $(".music_word")
-                      .eq(i)
-                      .css("marginTop")
-                  )
-              );
-            }
-          } else {
-            for (let i = now_o; i < this.o; i++) {
-              diff_h += Number.parseInt(
-                $(".music_word")
-                  .eq(i)
-                  .height() +
-                  Number.parseInt(
-                    $(".music_word")
-                      .eq(i)
-                      .css("marginTop")
-                  )
-              );
-            }
-          }
-          this.wordsTop += diff_h;
-          self.wordIndex = this.o = now_o;
-          clearInterval(playerTimer);
-          playerTimer = setInterval(timer, 1000);
-          this.playState = true;
-          this.playIcon = this.pause;
-          if (player.currentTime >= player.duration) {
-            this.top = 0;
-            this.o = 0;
-            this.wordIndex = 0;
-            this.wordsTop = 0;
-            this.currentProgress = "0%";
-          }
-          player.play();
-          $(document).unbind("mousemove");
-          $(document).unbind("mouseup");
-        });
-      });
-      //播放暂停按钮控制
-      $(".control_icon").on("click", () => {
-        if (this.playState) {
-          player.pause();
-          this.playState = false;
-          this.playIcon = this.play;
-          clearInterval(playerTimer);
-        } else {
-          player.play();
-          this.playState = true;
-          this.playIcon = this.pause;
-          clearInterval(playerTimer);
-          playerTimer = setInterval(timer, 1000);
-        }
-      });
+      this.player.play().catch(() => this.handlePause());
     },
-    Contorl() {
-      let player = $("#music")[0];
-      player.currentTime = 100;
+    togglePlayback() {
+      if (this.playState) {
+        this.player.pause();
+      } else {
+        this.playCurrent();
+      }
+    },
+    handlePlay() {
+      this.playState = true;
+      this.playIcon = this.pause;
+    },
+    handlePause() {
+      this.playState = false;
+      this.playIcon = this.play;
+    },
+    syncPlayback() {
+      const player = this.player;
+      if (!player || !Number.isFinite(player.duration)) {
+        return;
+      }
+      this.currentProgress = `${(player.currentTime / player.duration) * 100}%`;
+      let index = this.wordsTime.findLastIndex(time => time <= player.currentTime);
+      index = Math.max(index, 0);
+      this.o = index;
+      this.wordIndex = index;
+
+      const words = this.$refs.musicWord || [];
+      const visibleHeight = this.$refs.musicWords?.clientHeight || 0;
+      const consumedHeight = words.slice(0, index).reduce((height, element) => {
+        const marginTop =
+          Number.parseFloat(getComputedStyle(element).marginTop) || 0;
+        return height + element.offsetHeight + marginTop;
+      }, 0);
+      this.wordsTop = -Math.max(0, consumedHeight - visibleHeight / 2 + 11);
+    },
+    seekPlayback(event) {
+      const progress = this.$refs.progress;
+      if (!progress || !this.player || !Number.isFinite(this.player.duration)) {
+        return;
+      }
+      const bounds = progress.getBoundingClientRect();
+      const ratio = Math.min(
+        1,
+        Math.max(0, (event.clientX - bounds.left) / bounds.width)
+      );
+      this.player.currentTime = this.player.duration * ratio;
+      this.syncPlayback();
+    },
+    handleEnded() {
+      this.top = 0;
+      this.o = 0;
+      this.wordIndex = 0;
+      this.wordsTop = 0;
+      this.currentProgress = "0%";
+      if (this.musicState == 0 && this.musicList.length > 1) {
+        this.thisMusicIndex =
+          this.thisMusicIndex >= this.musicList.length - 1
+            ? 0
+            : this.thisMusicIndex + 1;
+        this._getInfo();
+        return;
+      }
+      this.player.currentTime = 0;
+      this.playCurrent();
     }
   }
 };

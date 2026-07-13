@@ -175,7 +175,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/tags", param).then(({ data }) => {
+      this.$http.delete("/api/admin/tags", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -192,7 +192,7 @@ export default {
       this.isDelete = false;
     },
     listTags() {
-      this.axios
+      this.$http
         .get("/api/admin/tags", {
           params: {
             current: this.current,
@@ -222,7 +222,7 @@ export default {
         this.$message.error("标签名不能为空");
         return false;
       }
-      this.axios.post("/api/admin/tags", this.tagForm).then(({ data }) => {
+      this.$http.post("/api/admin/tags", this.tagForm).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

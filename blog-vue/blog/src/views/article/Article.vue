@@ -68,7 +68,7 @@
           <article
             id="write"
             class="article-content markdown-body"
-            v-html="article.articleContent"
+            v-safe-html="article.articleContent"
             ref="article"
           />
           <!-- 版权声明 -->
@@ -105,13 +105,13 @@
                 {{ item.tagName }}
               </router-link>
             </div>
-            <v-btn style="margin-left:auto" variant="text" icon="mdi-share-variant" @click="shareArticle" />
+            <v-btn style="margin-left:auto" variant="text" icon="$mdi-share-variant" @click="shareArticle" />
           </div>
           <!-- 点赞打赏等 -->
           <div class="article-reward">
             <!-- 点赞按钮 -->
             <a :class="isLike" @click="like">
-              <v-icon size="14" color="#fff">mdi-thumb-up</v-icon> 点赞
+              <v-icon size="14" color="#fff">$mdi-thumb-up</v-icon> 点赞
               <span v-show="article.likeCount > 0">{{
                 article.likeCount
               }}</span>
@@ -184,7 +184,7 @@
             v-if="article.recommendArticleList.length"
           >
             <div class="recommend-title">
-              <v-icon size="20" color="#4c4948">mdi-thumb-up</v-icon> 相关推荐
+              <v-icon size="20" color="#4c4948">$mdi-thumb-up</v-icon> 相关推荐
             </div>
             <div class="recommend-list">
               <div
@@ -307,7 +307,7 @@ export default {
     getArticle() {
       const that = this;
       //查询文章
-      this.axios.get("/api" + this.$route.path).then(({ data }) => {
+      this.$http.get("/api" + this.$route.path).then(({ data }) => {
         document.title = data.data.articleTitle;
         //将markdown转换为Html
         this.markdownToHtml(data.data);
@@ -359,7 +359,7 @@ export default {
         return false;
       }
       //发送请求
-      this.axios
+      this.$http
         .post("/api/articles/" + this.article.id + "/like")
         .then(({ data }) => {
           if (data.flag) {
@@ -367,9 +367,9 @@ export default {
             if (
               this.$store.state.articleLikeSet.indexOf(this.article.id) != -1
             ) {
-              this.$set(this.article, "likeCount", this.article.likeCount - 1);
+              this.article.likeCount = this.article.likeCount - 1;
             } else {
-              this.$set(this.article, "likeCount", this.article.likeCount + 1);
+              this.article.likeCount = this.article.likeCount + 1;
             }
             this.$store.commit("articleLike", this.article.id);
           }

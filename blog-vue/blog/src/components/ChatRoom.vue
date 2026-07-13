@@ -19,7 +19,7 @@
           <div style="font-size:12px">当前{{ count }}人在线</div>
         </div>
         <v-icon class="close" @click="isShow = false">
-          mdi-close
+          $mdi-close
         </v-icon>
       </div>
       <!-- 对话内容 -->
@@ -31,7 +31,7 @@
           @mousemove.prevent.stop="translationmove($event)"
           @mouseup.prevent.stop="translationEnd($event)"
         >
-          <v-icon ref="voiceClose" class="close-voice">mdi-close</v-icon>
+          <v-icon ref="voiceClose" class="close-voice">$mdi-close</v-icon>
         </div>
         <div
           :class="isMyMessage(item)"
@@ -52,7 +52,7 @@
               :class="isMyContent(item)"
             >
               <!-- 文字消息 -->
-              <div v-if="item.type == 3" v-html="item.content" />
+              <div v-if="item.type == 3" v-safe-html="item.content" />
               <!-- 语音消息 -->
               <div v-if="item.type == 5" @click.prevent.stop="playVoice(item)">
                 <audio
@@ -68,7 +68,7 @@
                   ref="plays"
                   style="display:inline-flex;cursor: pointer;"
                 >
-                  mdi-arrow-right-drop-circle
+                  $mdi-arrow-right-drop-circle
                 </v-icon>
                 <!-- 暂停 -->
                 <v-icon
@@ -76,7 +76,7 @@
                   ref="pauses"
                   style="display:none;cursor: pointer;"
                 >
-                  mdi-pause-circle
+                  $mdi-pause-circle
                 </v-icon>
                 <!-- 音频时长 -->
                 <span ref="voiceTimes" />
@@ -101,14 +101,14 @@
           @click="isVoice = !isVoice"
           style="margin-right: 8px"
         >
-          mdi-microphone
+          $mdi-microphone
         </v-icon>
         <v-icon
           v-show="isVoice"
           @click="isVoice = !isVoice"
           style="margin-right: 8px"
         >
-          mdi-keyboard
+          $mdi-keyboard
         </v-icon>
         <!-- 文字输入 -->
         <textarea
@@ -215,13 +215,11 @@ export default {
         `${websocketUrl}${separator}clientId=${encodeURIComponent(clientId)}`
       );
       // 连接发生错误的回调方法
-      this.websocket.onerror = function(event) {
-        console.log(event);
-        alert("失败");
+      this.websocket.onerror = function() {
+        that.$toast({ type: "error", message: "聊天室连接失败" });
       };
       // 连接成功建立的回调方法
-      this.websocket.onopen = function(event) {
-        console.log(event);
+      this.websocket.onopen = function() {
         // 发送心跳消息
         that.heartBeat = setInterval(function() {
           var beatMessage = {
@@ -364,16 +362,14 @@ export default {
           .start()
           .then(() => {
             that.startVoiceTime = new Date();
-            console.log("start recording");
           })
-          .catch(error => {
-            console.log("Recording failed.", error);
+          .catch(() => {
+            that.$toast({ type: "error", message: "无法开始录音，请检查麦克风权限" });
           });
       });
     },
     // 录音结束
     translationEnd() {
-      console.log("结束");
       this.voiceActive = false;
       this.rc.pause();
       if (new Date() - this.startVoiceTime < 1000) {
@@ -398,7 +394,7 @@ export default {
           "Content-Type": "multipart/form-data"
         }
       };
-      this.axios(options);
+      this.$http(options);
     },
     translationmove() {},
     // 播放语音

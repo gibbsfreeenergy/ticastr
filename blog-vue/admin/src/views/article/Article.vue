@@ -214,7 +214,7 @@ export default {
     const arr = path.split("/");
     const articleId = arr[2];
     if (articleId) {
-      this.axios.get("/api/admin/articles/" + articleId).then(({ data }) => {
+      this.$http.get("/api/admin/articles/" + articleId).then(({ data }) => {
         this.article = data.data;
       });
     } else {
@@ -266,12 +266,12 @@ export default {
   },
   methods: {
     listCategories() {
-      this.axios.get("/api/admin/categories/search").then(({ data }) => {
+      this.$http.get("/api/admin/categories/search").then(({ data }) => {
         this.categoryList = data.data;
       });
     },
     listTags() {
-      this.axios.get("/api/admin/tags/search").then(({ data }) => {
+      this.$http.get("/api/admin/tags/search").then(({ data }) => {
         this.tagList = data.data;
       });
     },
@@ -316,7 +316,7 @@ export default {
         uploadFile = new window.File([compressedFile], file.name, { type: file.type });
       }
       formdata.append("file", uploadFile);
-      const { data } = await this.axios.post("/api/admin/articles/images", formdata);
+      const { data } = await this.$http.post("/api/admin/articles/images", formdata);
       return data.data;
     },    saveArticleDraft() {
       if (this.article.articleTitle.trim() == "") {
@@ -328,7 +328,7 @@ export default {
         return false;
       }
       this.article.status = 3;
-      this.axios.post("/api/admin/articles", this.article).then(({ data }) => {
+      this.$http.post("/api/admin/articles", this.article).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -365,7 +365,7 @@ export default {
         this.$message.error("文章封面不能为空");
         return false;
       }
-      this.axios.post("/api/admin/articles", this.article).then(({ data }) => {
+      this.$http.post("/api/admin/articles", this.article).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -390,7 +390,7 @@ export default {
         this.article.articleContent.trim() != "" &&
         this.article.id != null
       ) {
-        this.axios
+        this.$http
           .post("/api/admin/articles", this.article)
           .then(({ data }) => {
             if (data.flag) {
@@ -412,7 +412,7 @@ export default {
       }
     },
     searchCategories(keywords, cb) {
-      this.axios
+      this.$http
         .get("/api/admin/categories/search", {
           params: {
             keywords: keywords
@@ -442,7 +442,7 @@ export default {
       this.article.categoryName = null;
     },
     searchTags(keywords, cb) {
-      this.axios
+      this.$http
         .get("/api/admin/tags/search", {
           params: {
             keywords: keywords

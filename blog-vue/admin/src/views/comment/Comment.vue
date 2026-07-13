@@ -124,7 +124,7 @@
       <!-- 评论内容 -->
       <el-table-column prop="commentContent" label="评论内容" align="center">
         <template #default="scope">
-          <span v-html="scope.row.commentContent" class="comment-content" />
+          <span v-safe-html="scope.row.commentContent" class="comment-content" />
         </template>
       </el-table-column>
       <!-- 评论时间 -->
@@ -269,7 +269,7 @@ export default {
         param.idList = this.commentIdList;
       }
       param.isReview = 1;
-      this.axios.put("/api/admin/comments/review", param).then(({ data }) => {
+      this.$http.put("/api/admin/comments/review", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -291,7 +291,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/comments", param).then(({ data }) => {
+      this.$http.delete("/api/admin/comments", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -308,7 +308,7 @@ export default {
       });
     },
     listComments() {
-      this.axios
+      this.$http
         .get("/api/admin/comments", {
           params: {
             current: this.current,

@@ -385,7 +385,7 @@ export default {
         param.idList = this.articleIdList;
       }
       param.isDelete = this.isDelete == 0 ? 1 : 0;
-      this.axios.put("/api/admin/articles", param).then(({ data }) => {
+      this.$http.put("/api/admin/articles", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -408,7 +408,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.axios.delete("/api/admin/articles", param).then(({ data }) => {
+      this.$http.delete("/api/admin/articles", param).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -459,7 +459,7 @@ export default {
       this.activeStatus = status;
     },
     changeTop(article) {
-      this.axios
+      this.$http
         .put("/api/admin/articles/top", {
           id: article.id,
           isTop: article.isTop
@@ -480,7 +480,7 @@ export default {
         });
     },
     listArticles() {
-      this.axios
+      this.$http
         .get("/api/admin/articles", {
           params: {
             current: this.current,
@@ -500,12 +500,12 @@ export default {
         });
     },
     listCategories() {
-      this.axios.get("/api/admin/categories/search").then(({ data }) => {
+      this.$http.get("/api/admin/categories/search").then(({ data }) => {
         this.categoryList = data.data;
       });
     },
     listTags() {
-      this.axios.get("/api/admin/tags/search").then(({ data }) => {
+      this.$http.get("/api/admin/tags/search").then(({ data }) => {
         this.tagList = data.data;
       });
     }

@@ -16,7 +16,7 @@
       <div
         ref="about"
         class="about-content markdown-body"
-        v-html="aboutContent"
+        v-safe-html="aboutContent"
       />
     </v-card>
   </div>
@@ -43,7 +43,7 @@ export default {
   methods: {
     getAboutContent() {
       const that = this;
-      this.axios.get("/api/about").then(({ data }) => {
+      this.$http.get("/api/about").then(({ data }) => {
         this.markdownToHtml(data);
         this.$nextTick(() => {
           // 添加代码复制功能

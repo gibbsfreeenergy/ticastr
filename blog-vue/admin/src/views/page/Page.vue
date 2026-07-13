@@ -120,7 +120,6 @@ export default {
   methods: {
     openModel(item) {
       if (item) {
-        console.log(item);
         this.pageForum = JSON.parse(item);
         this.$refs.pageTitle.innerHTML = "修改页面";
       } else {
@@ -135,7 +134,7 @@ export default {
       this.addOrEdit = true;
     },
     listPages() {
-      this.axios.get("/api/admin/pages").then(({ data }) => {
+      this.$http.get("/api/admin/pages").then(({ data }) => {
         this.pageList = data.data;
         this.loading = false;
       });
@@ -153,7 +152,7 @@ export default {
         this.$message.error("页面封面不能为空");
         return false;
       }
-      this.axios.post("/api/admin/pages", this.pageForum).then(({ data }) => {
+      this.$http.post("/api/admin/pages", this.pageForum).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -192,12 +191,11 @@ export default {
         this.pageForum.id = data;
         this.isdeletePage = true;
       } else {
-        console.log(data);
         this.openModel(data);
       }
     },
     deletePage() {
-      this.axios
+      this.$http
         .delete("/api/admin/pages/" + this.pageForum.id)
         .then(({ data }) => {
           if (data.flag) {

@@ -157,7 +157,7 @@ export default {
   },
   methods: {
     listResources() {
-      this.axios
+      this.$http
         .get("/api/admin/resources", {
           params: {
             keywords: this.keywords
@@ -169,7 +169,7 @@ export default {
         });
     },
     changeResource(resource) {
-      this.axios.post("/api/admin/resources", resource).then(({ data }) => {
+      this.$http.post("/api/admin/resources", resource).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -204,14 +204,13 @@ export default {
       this.addResource = true;
     },
     openAddResourceModel(resource) {
-      console.log(resource);
       this.resourceForm = {};
       this.resourceForm.parentId = resource.id;
       this.$refs.resourceTitle.innerHTML = "添加资源";
       this.addResource = true;
     },
     deleteResource(id) {
-      this.axios.delete("/api/admin/resources/" + id).then(({ data }) => {
+      this.$http.delete("/api/admin/resources/" + id).then(({ data }) => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -231,7 +230,7 @@ export default {
         this.$message.error("资源名不能为空");
         return false;
       }
-      this.axios
+      this.$http
         .post("/api/admin/resources", this.resourceForm)
         .then(({ data }) => {
           if (data.flag) {
