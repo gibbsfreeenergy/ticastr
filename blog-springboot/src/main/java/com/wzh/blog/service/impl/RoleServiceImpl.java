@@ -16,7 +16,7 @@ import com.wzh.blog.entity.RoleMenu;
 import com.wzh.blog.entity.RoleResource;
 import com.wzh.blog.entity.UserRole;
 import com.wzh.blog.exception.BizException;
-import com.wzh.blog.handler.FilterInvocationSecurityMetadataSourceImpl;
+import com.wzh.blog.service.AuthorizationCacheService;
 import com.wzh.blog.service.RoleMenuService;
 import com.wzh.blog.service.RoleResourceService;
 import com.wzh.blog.service.RoleService;
@@ -47,7 +47,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
     @Autowired
     private UserRoleDao userRoleDao;
     @Autowired
-    private FilterInvocationSecurityMetadataSourceImpl filterInvocationSecurityMetadataSource;
+    private AuthorizationCacheService authorizationCacheService;
 
 
 
@@ -105,8 +105,6 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
                             .build())
                     .collect(Collectors.toList());
             roleResourceService.saveBatch(roleResourceList);
-            // 重新加载角色资源信息
-            filterInvocationSecurityMetadataSource.clearDataSource();
         }
         // 更新角色菜单关系
         if (Objects.nonNull(roleVO.getMenuIdList())) {
@@ -121,6 +119,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
                     .collect(Collectors.toList());
             roleMenuService.saveBatch(roleMenuList);
         }
+        authorizationCacheService.invalidate();
     }
 
 
@@ -134,6 +133,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
             throw new BizException("该角色下存在用户");
         }
         roleDao.deleteByIds(roleIdList);
+        authorizationCacheService.invalidate();
     }
 
 }

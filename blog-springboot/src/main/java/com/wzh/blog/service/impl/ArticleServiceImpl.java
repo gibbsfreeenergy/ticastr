@@ -203,19 +203,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public void saveArticleLike(Integer articleId) {
-        // 判断是否点赞
         String articleLikeKey = ARTICLE_USER_LIKE + UserUtils.getLoginUser().getUserInfoId();
-        if (redisService.sIsMember(articleLikeKey, articleId)) {
-            // 点过赞则删除文章id
-            redisService.sRemove(articleLikeKey, articleId);
-            // 文章点赞量-1
-            redisService.hDecr(ARTICLE_LIKE_COUNT, articleId.toString(), 1L);
-        } else {
-            // 未点赞则增加文章id
-            redisService.sAdd(articleLikeKey, articleId);
-            // 文章点赞量+1
-            redisService.hIncr(ARTICLE_LIKE_COUNT, articleId.toString(), 1L);
-        }
+        redisService.toggleMemberAndCount(articleLikeKey, articleId, ARTICLE_LIKE_COUNT);
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import java.time.LocalDateTime;
 
@@ -26,12 +28,15 @@ public class ConditionVO {
      * 页码
      */
     @Schema(description = "页码")
+    @Min(value = 1, message = "页码必须大于0")
     private Long current;
 
     /**
      * 条数
      */
     @Schema(description = "条数")
+    @Min(value = 1, message = "分页条数必须大于0")
+    @Max(value = 100, message = "分页条数不能超过100")
     private Long size;
 
     /**

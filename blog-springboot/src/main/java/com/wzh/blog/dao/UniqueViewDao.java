@@ -28,4 +28,6 @@ public interface UniqueViewDao extends BaseMapper<UniqueView> {
      */
     List<UniqueViewDTO> listUniqueViews(@Param("startTime") Date startTime, @Param("endTime") Date endTime);
 
+    void upsertDailyUniqueView(UniqueView uniqueView);
+
 }

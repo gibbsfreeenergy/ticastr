@@ -11,7 +11,7 @@ import com.wzh.blog.dto.LabelOptionDTO;
 import com.wzh.blog.entity.Resource;
 import com.wzh.blog.entity.RoleResource;
 import com.wzh.blog.exception.BizException;
-import com.wzh.blog.handler.FilterInvocationSecurityMetadataSourceImpl;
+import com.wzh.blog.service.AuthorizationCacheService;
 import com.wzh.blog.service.ResourceService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.ConditionVO;
@@ -37,7 +37,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
     @Autowired
     private RoleResourceDao roleResourceDao;
     @Autowired
-    private FilterInvocationSecurityMetadataSourceImpl filterInvocationSecurityMetadataSource;
+    private AuthorizationCacheService authorizationCacheService;
 
 
 
@@ -49,7 +49,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
         Resource resource = BeanCopyUtils.copyObject(resourceVO, Resource.class);
         this.saveOrUpdate(resource);
         // 重新加载角色资源信息
-        filterInvocationSecurityMetadataSource.clearDataSource();
+        authorizationCacheService.invalidate();
     }
 
 
@@ -71,6 +71,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> impl
                 .collect(Collectors.toList());
         resourceIdList.add(resourceId);
         resourceDao.deleteByIds(resourceIdList);
+        authorizationCacheService.invalidate();
     }
 
 

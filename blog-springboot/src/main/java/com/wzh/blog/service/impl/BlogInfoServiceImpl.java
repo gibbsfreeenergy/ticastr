@@ -208,23 +208,13 @@ public class BlogInfoServiceImpl implements BlogInfoService {
         // 生成唯一用户标识
         String uuid = ipAddress + browser.getName() + operatingSystem.getName();
         String md5 = DigestUtils.md5DigestAsHex(uuid.getBytes());
-        // 判断是否访问
-        if (!redisService.sIsMember(UNIQUE_VISITOR, md5)) {
-            // 统计游客地域分布
-            String ipSource = IpUtils.getIpSource(ipAddress);
-            if (StringUtils.isNotBlank(ipSource)) {
-                ipSource = ipSource.substring(0, 2)
-                        .replaceAll(PROVINCE, "")
-                        .replaceAll(CITY, "");
-                redisService.hIncr(VISITOR_AREA, ipSource, 1L);
-            } else {
-                redisService.hIncr(VISITOR_AREA, UNKNOWN, 1L);
-            }
-            // 访问量+1
-            redisService.incr(BLOG_VIEWS_COUNT, 1);
-            // 保存唯一标识
-            redisService.sAdd(UNIQUE_VISITOR, md5);
-        }
+        String ipSource = IpUtils.getIpSource(ipAddress);
+        String area = StringUtils.isNotBlank(ipSource)
+                ? ipSource.substring(0, Math.min(2, ipSource.length()))
+                    .replaceAll(PROVINCE, "")
+                    .replaceAll(CITY, "")
+                : UNKNOWN;
+        redisService.recordUniqueVisitor(UNIQUE_VISITOR, md5, BLOG_VIEWS_COUNT, VISITOR_AREA, area);
     }
 
     /**

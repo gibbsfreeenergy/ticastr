@@ -57,6 +57,13 @@ public interface RedisService {
      */
     Boolean consumeIfEquals(String key, Object value);
 
+    /** Atomically toggles a member and keeps its aggregate hash counter in sync. */
+    Boolean toggleMemberAndCount(String memberSetKey, Object member, String countHashKey);
+
+    /** Records a visitor once and updates the global and regional counters atomically. */
+    Boolean recordUniqueVisitor(String visitorSetKey, Object visitor, String viewsKey,
+                                String areaHashKey, String area);
+
     /**
      * 批量删除属性
      *

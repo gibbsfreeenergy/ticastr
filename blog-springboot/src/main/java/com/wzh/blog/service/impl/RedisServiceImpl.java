@@ -37,6 +37,23 @@ public class RedisServiceImpl implements RedisService {
     private static final DefaultRedisScript<Long> CONSUME_IF_EQUALS_SCRIPT = new DefaultRedisScript<>(
             "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
             Long.class);
+    private static final DefaultRedisScript<Long> INCREMENT_WITH_EXPIRY_SCRIPT = new DefaultRedisScript<>(
+            "local count = redis.call('INCR', KEYS[1]); "
+                    + "if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return count",
+            Long.class);
+    private static final DefaultRedisScript<Long> TOGGLE_MEMBER_AND_COUNT_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then "
+                    + "redis.call('SREM', KEYS[1], ARGV[1]); "
+                    + "local count = redis.call('HINCRBY', KEYS[2], ARGV[1], -1); "
+                    + "if count < 0 then redis.call('HSET', KEYS[2], ARGV[1], 0); end; return 0; "
+                    + "else redis.call('SADD', KEYS[1], ARGV[1]); "
+                    + "redis.call('HINCRBY', KEYS[2], ARGV[1], 1); return 1; end",
+            Long.class);
+    private static final DefaultRedisScript<Long> RECORD_UNIQUE_VISITOR_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('SADD', KEYS[1], ARGV[1]) == 0 then return 0; end; "
+                    + "redis.call('INCR', KEYS[2]); "
+                    + "redis.call('HINCRBY', KEYS[3], cjson.decode(ARGV[2]), 1); return 1",
+            Long.class);
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -67,6 +84,22 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public Boolean toggleMemberAndCount(String memberSetKey, Object member, String countHashKey) {
+        Long result = redisTemplate.execute(
+                TOGGLE_MEMBER_AND_COUNT_SCRIPT, List.of(memberSetKey, countHashKey), member);
+        return result != null && result == 1L;
+    }
+
+    @Override
+    public Boolean recordUniqueVisitor(String visitorSetKey, Object visitor, String viewsKey,
+                                       String areaHashKey, String area) {
+        Long result = redisTemplate.execute(
+                RECORD_UNIQUE_VISITOR_SCRIPT,
+                List.of(visitorSetKey, viewsKey, areaHashKey), visitor, area);
+        return result != null && result == 1L;
+    }
+
+    @Override
     public Long del(List<String> keys) {
         return redisTemplate.delete(keys);
     }
@@ -93,11 +126,7 @@ public class RedisServiceImpl implements RedisService {
 
     @Override
     public Long incrExpire(String key, long time) {
-        Long count = redisTemplate.opsForValue().increment(key, 1);
-        if (count != null && count == 1) {
-            redisTemplate.expire(key, Expiration.seconds(time));
-        }
-        return count;
+        return redisTemplate.execute(INCREMENT_WITH_EXPIRY_SCRIPT, List.of(key), time);
     }
 
     @Override

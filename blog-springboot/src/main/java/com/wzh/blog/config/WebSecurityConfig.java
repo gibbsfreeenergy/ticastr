@@ -15,15 +15,15 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
+import org.springframework.session.security.SpringSessionBackedSessionRegistry;
 
 /** Security configuration compatible with Spring Security 7. */
 @Configuration
@@ -42,13 +42,9 @@ public class WebSecurityConfig {
     private LogoutSuccessHandlerImpl logoutSuccessHandler;
 
     @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
-    }
-
-    @Bean
-    public HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new HttpSessionEventPublisher();
+    public SpringSessionBackedSessionRegistry<? extends Session> sessionRegistry(
+            FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
+        return new SpringSessionBackedSessionRegistry<>(sessionRepository);
     }
 
     @Bean
@@ -60,7 +56,8 @@ public class WebSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    DynamicAuthorizationManager dynamicAuthorizationManager,
                                                    CsrfCookieFilter csrfCookieFilter,
-                                                   MonitoringTokenFilter monitoringTokenFilter) throws Exception {
+                                                   MonitoringTokenFilter monitoringTokenFilter,
+                                                   SpringSessionBackedSessionRegistry<? extends Session> sessionRegistry) throws Exception {
         http
                 .formLogin(formLogin -> formLogin
                         .loginProcessingUrl("/login")
@@ -84,7 +81,7 @@ public class WebSecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .sessionManagement(sessionManagement -> sessionManagement
                         .maximumSessions(20)
-                        .sessionRegistry(sessionRegistry()));
+                        .sessionRegistry(sessionRegistry));
         return http.build();
     }
 }

@@ -9,6 +9,9 @@ server:
         same-site: lax
 
 spring:
+  session:
+    redis:
+      namespace: ${SESSION_REDIS_NAMESPACE:ticastr:session}
   flyway:
     enabled: true
     baseline-on-migrate: true

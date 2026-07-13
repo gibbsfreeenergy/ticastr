@@ -78,6 +78,8 @@ Uploads are persisted in the `uploads` volume and served through `/uploads/` on 
 
 Chat delivery, message recalls, and the online count are distributed through the Redis channel `ticastr:chat:events`. All API replicas must use the same Redis instance; WebSocket sessions are local to each replica and Redis fans events out to every replica. Online-session entries expire after 90 seconds without a heartbeat, so a failed node does not leave a permanent count behind.
 
+HTTP sessions are stored in Redis under the configurable `ticastr:session` namespace. Authorization changes publish a Redis invalidation event so every API replica reloads its URL-role map. Short scheduled jobs use ownership-token locks, which prevents duplicate daily statistics when several API replicas are running.
+
 The API exposes unauthenticated liveness/readiness checks at `/actuator/health` and `/actuator/health/**`; detailed health information remains private.
 
 For metrics, set a non-empty `MONITORING_TOKEN` and scrape the API directly at `/actuator/prometheus` with the `X-Monitoring-Token` request header. The two frontend Nginx instances intentionally return `404` for this path, so a collector must reach the API through its private service network. The endpoint includes application-tagged JVM, process, HTTP server, datasource, and custom application metrics; HTTP request histograms include 100 ms, 500 ms, 1 s, and 5 s SLO buckets.

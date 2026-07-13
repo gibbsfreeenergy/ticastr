@@ -112,19 +112,8 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
     @Override
     public void saveTalkLike(Integer talkId) {
-        // 判断是否点赞
         String talkLikeKey = TALK_USER_LIKE + UserUtils.getLoginUser().getUserInfoId();
-        if (redisService.sIsMember(talkLikeKey, talkId)) {
-            // 点过赞则删除说说id
-            redisService.sRemove(talkLikeKey, talkId);
-            // 说说点赞量-1
-            redisService.hDecr(TALK_LIKE_COUNT, talkId.toString(), 1L);
-        } else {
-            // 未点赞则增加说说id
-            redisService.sAdd(talkLikeKey, talkId);
-            // 说说点赞量+1
-            redisService.hIncr(TALK_LIKE_COUNT, talkId.toString(), 1L);
-        }
+        redisService.toggleMemberAndCount(talkLikeKey, talkId, TALK_LIKE_COUNT);
     }
 
 
