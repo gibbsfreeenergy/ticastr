@@ -13,6 +13,7 @@ blog-springboot/src/main/resources/application-local.yml
 .env
 .env.local
 .env.*.local
+.vercel/
 
 # Log files
 npm-debug.log*
