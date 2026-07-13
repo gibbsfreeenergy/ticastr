@@ -22,6 +22,7 @@ public abstract class AbstractUploadStrategyImpl implements UploadStrategy {
     @Override
     public String uploadFile(MultipartFile file, String path) {
         try {
+            FileUtils.validateUpload(file, path);
             // 获取文件md5值
             String md5 = FileUtils.getMd5(file.getInputStream());
             // 获取文件扩展名

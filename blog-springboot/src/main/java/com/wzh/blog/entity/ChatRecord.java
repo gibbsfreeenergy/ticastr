@@ -1,6 +1,7 @@
 package com.wzh.blog.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -61,6 +62,12 @@ public class ChatRecord {
      * ip来源
      */
     private String ipSource;
+
+    @JSONField(serialize = false)
+    private String clientToken;
+
+    @TableField(exist = false)
+    private Boolean owner;
 
     /**
      * 创建时间

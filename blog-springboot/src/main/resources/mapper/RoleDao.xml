@@ -6,6 +6,7 @@
         <id column="id" property="id"/>
         <result column="url" property="url"/>
         <result column="request_method" property="requestMethod"/>
+        <result column="is_anonymous" property="anonymous"/>
         <collection property="roleList" ofType="java.lang.String">
             <constructor>
                 <arg column="role_label"/>

@@ -19,10 +19,13 @@ spring:
     username: noreply@example.com
     password: change-me
 
+monitoring:
+  token: change-me
+
 upload:
   mode: local
   local:
-    url: http://localhost:8090
+    url: http://localhost:8090/uploads/
     path: ./uploads/
 
 website:

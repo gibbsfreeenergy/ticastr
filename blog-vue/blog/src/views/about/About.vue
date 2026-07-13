@@ -23,6 +23,8 @@
 </template>
 
 <script>
+import MarkdownIt from "markdown-it";
+import { hljs } from "../../utils/markdown";
 import Clipboard from "clipboard";
 export default {
   created() {
@@ -61,8 +63,6 @@ export default {
       });
     },
     markdownToHtml(data) {
-      const MarkdownIt = require("markdown-it");
-      const hljs = require("highlight.js");
       const md = new MarkdownIt({
         html: true,
         linkify: true,

@@ -93,7 +93,8 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
     @Override
     public void saveUserEmail(EmailVO emailVO) {
-        if (!emailVO.getCode().equals(redisService.get(USER_CODE_KEY + emailVO.getEmail()).toString())) {
+        String codeKey = USER_CODE_KEY + emailVO.getEmail();
+        if (!Boolean.TRUE.equals(redisService.consumeIfEquals(codeKey, emailVO.getCode()))) {
             throw new BizException("验证码错误！");
         }
         UserInfo userInfo = UserInfo.builder()

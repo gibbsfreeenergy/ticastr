@@ -18,6 +18,8 @@ public class RedisPrefixConst {
      */
     public static final String USER_CODE_KEY = "code:";
 
+    public static final String USER_CODE_SEND_LIMIT_KEY = "code:send-limit:";
+
     /**
      * 博客浏览量
      */

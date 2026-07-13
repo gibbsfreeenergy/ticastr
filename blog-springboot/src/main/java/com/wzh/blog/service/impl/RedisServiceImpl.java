@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.types.Expiration;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -33,6 +34,9 @@ import java.util.stream.Collectors;
  **/
 @Service
 public class RedisServiceImpl implements RedisService {
+    private static final DefaultRedisScript<Long> CONSUME_IF_EQUALS_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+            Long.class);
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -54,6 +58,12 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public Boolean del(String key) {
         return redisTemplate.delete(key);
+    }
+
+    @Override
+    public Boolean consumeIfEquals(String key, Object value) {
+        Long result = redisTemplate.execute(CONSUME_IF_EQUALS_SCRIPT, List.of(key), value);
+        return result != null && result > 0;
     }
 
     @Override

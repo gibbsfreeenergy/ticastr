@@ -81,6 +81,17 @@ INSERT INTO `tb_category` VALUES (187, '测试分类', '2022-01-24 23:33:56', NU
 -- ----------------------------
 -- Table structure for tb_chat_record
 -- ----------------------------
+DROP TABLE IF EXISTS `tb_about`;
+CREATE TABLE `tb_about`  (
+  `id` int NOT NULL COMMENT '固定主键',
+  `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '关于我内容',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+INSERT INTO `tb_about` VALUES (1, '', NOW(), NULL);
+
 DROP TABLE IF EXISTS `tb_chat_record`;
 CREATE TABLE `tb_chat_record`  (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -90,6 +101,7 @@ CREATE TABLE `tb_chat_record`  (
   `content` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '聊天内容',
   `ip_address` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'ip地址',
   `ip_source` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'ip来源',
+  `client_token` char(64) CHARACTER SET ascii COLLATE ascii_general_ci NULL DEFAULT NULL COMMENT '匿名客户端身份摘要',
   `type` tinyint NOT NULL COMMENT '类型',
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
@@ -467,6 +479,7 @@ INSERT INTO `tb_resource` VALUES (284, '保存或修改说说', '/admin/talks', 
 INSERT INTO `tb_resource` VALUES (285, '删除说说', '/admin/talks', 'DELETE', 278, 0, '2022-01-24 01:31:22', NULL);
 INSERT INTO `tb_resource` VALUES (286, '查看后台说说', '/admin/talks', 'GET', 278, 0, '2022-01-24 01:31:38', NULL);
 INSERT INTO `tb_resource` VALUES (287, '根据id查看后台说说', '/admin/talks/*', 'GET', 278, 0, '2022-01-24 01:31:53', '2022-01-24 01:33:14');
+INSERT INTO `tb_resource` VALUES (288, '上传网站配置图片', '/admin/config/images', 'POST', 166, 0, '2026-07-12 00:00:00', NULL);
 
 -- ----------------------------
 -- Table structure for tb_role
@@ -742,6 +755,7 @@ INSERT INTO `tb_role_resource` VALUES (4849, 1, 284);
 INSERT INTO `tb_role_resource` VALUES (4850, 1, 285);
 INSERT INTO `tb_role_resource` VALUES (4851, 1, 286);
 INSERT INTO `tb_role_resource` VALUES (4852, 1, 287);
+INSERT INTO `tb_role_resource` VALUES (4886, 1, 288);
 INSERT INTO `tb_role_resource` VALUES (4853, 3, 192);
 INSERT INTO `tb_role_resource` VALUES (4854, 3, 195);
 INSERT INTO `tb_role_resource` VALUES (4855, 3, 183);

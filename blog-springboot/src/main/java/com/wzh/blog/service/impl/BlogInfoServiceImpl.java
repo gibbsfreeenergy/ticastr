@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dao.*;
 import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Article;
+import com.wzh.blog.entity.About;
 import com.wzh.blog.entity.WebsiteConfig;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.PageService;
@@ -22,6 +23,7 @@ import eu.bitwalker.useragentutils.OperatingSystem;
 import eu.bitwalker.useragentutils.UserAgent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
 import jakarta.annotation.Resource;
@@ -62,6 +64,8 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     private HttpServletRequest request;
     @Autowired
     private PageService pageService;
+    @Autowired
+    private AboutDao aboutDao;
 
     @Override
     public BlogHomeInfoDTO getBlogHomeInfo() {
@@ -162,12 +166,35 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     @Override
     public String getAbout() {
         Object value = redisService.get(ABOUT);
-        return Objects.nonNull(value) ? value.toString() : "";
+        if (Objects.nonNull(value)) {
+            String content = value.toString();
+            About about = aboutDao.selectById(DEFAULT_CONFIG_ID);
+            if (about == null || about.getContent() == null || about.getContent().isBlank()) {
+                persistAbout(content);
+            }
+            return content;
+        }
+        About about = aboutDao.selectById(DEFAULT_CONFIG_ID);
+        String content = about == null ? "" : about.getContent();
+        redisService.set(ABOUT, content);
+        return content;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateAbout(BlogInfoVO blogInfoVO) {
+        persistAbout(blogInfoVO.getAboutContent());
         redisService.set(ABOUT, blogInfoVO.getAboutContent());
+    }
+
+    private void persistAbout(String content) {
+        About about = About.builder()
+                .id(DEFAULT_CONFIG_ID)
+                .content(content)
+                .build();
+        if (aboutDao.updateById(about) == 0) {
+            aboutDao.insert(about);
+        }
     }
 
     @Override

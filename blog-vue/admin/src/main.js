@@ -2,27 +2,34 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
-import ElementPlus from "element-plus";
-import { ElMessage } from "element-plus";
-import "element-plus/dist/index.css";
+import { ElButton, ElForm, ElFormItem, ElInput, ElMessage } from "element-plus";
+import "element-plus/es/components/button/style/css";
+import "element-plus/es/components/form/style/css";
+import "element-plus/es/components/input/style/css";
+import "element-plus/es/components/message/style/css";
 import "./assets/css/index.css";
 import "./assets/css/iconfont.css";
 import config from "./assets/js/config";
 import axios from "axios";
-import ECharts from "vue-echarts";
-import { use } from "echarts/core";
-import { SVGRenderer } from "echarts/renderers";
-import { LineChart, PieChart, BarChart } from "echarts/charts";
-import { TooltipComponent, LegendComponent, TitleComponent, GridComponent } from "echarts/components";
-import { MdEditor } from "md-editor-v3";
-import "md-editor-v3/lib/style.css";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import dayjs from "dayjs";
 
-use([SVGRenderer, LineChart, PieChart, BarChart, TooltipComponent, LegendComponent, TitleComponent, GridComponent]);
-
 const app = createApp(App);
+let adminElementComponentsPromise;
+
+function registerLoginElementComponents() {
+  [ElButton, ElForm, ElFormItem, ElInput].forEach(component => app.component(component.name, component));
+}
+
+function ensureAdminElementComponents() {
+  if (!adminElementComponentsPromise) {
+    adminElementComponentsPromise = import("./plugins/elementPlus").then(({ registerAdminElementComponents }) => {
+      registerAdminElementComponents(app);
+    });
+  }
+  return adminElementComponentsPromise;
+}
 axios.defaults.timeout = 15000;
 axios.defaults.withCredentials = true;
 axios.defaults.xsrfCookieName = "XSRF-TOKEN";
@@ -33,13 +40,15 @@ app.config.globalProperties.axios = axios;
 app.config.globalProperties.$moment = dayjs;
 app.config.globalProperties.date = (value, formatStr = "YYYY-MM-DD") => dayjs(value).format(formatStr);
 app.config.globalProperties.dateTime = (value, formatStr = "YYYY-MM-DD HH:mm:ss") => dayjs(value).format(formatStr);
-app.use(store).use(router).use(ElementPlus);
-app.component("MdEditor", MdEditor);
-app.component("v-chart", ECharts);
+registerLoginElementComponents();
+app.use(store).use(router);
 
 NProgress.configure({ easing: "ease", speed: 500, showSpinner: false, trickleSpeed: 200, minimum: 0.3 });
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   NProgress.start();
+  if (to.path !== "/login" && store.state.userId) {
+    await ensureAdminElementComponents();
+  }
   next(to.path === "/login" || store.state.userId ? undefined : { path: "/login" });
 });
 router.afterEach(() => NProgress.done());

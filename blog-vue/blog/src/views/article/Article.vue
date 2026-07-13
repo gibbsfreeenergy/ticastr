@@ -255,6 +255,8 @@
 </template>
 
 <script>
+import MarkdownIt from "markdown-it";
+import { hljs } from "../../utils/markdown";
 import Clipboard from "clipboard";
 import Comment from "../../components/Comment";
 import tocbot from "tocbot";
@@ -374,8 +376,6 @@ export default {
         });
     },
     markdownToHtml(article) {
-      const MarkdownIt = require("markdown-it");
-      const hljs = require("highlight.js");
       const md = new MarkdownIt({
         html: true,
         linkify: true,

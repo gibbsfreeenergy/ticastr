@@ -9,6 +9,11 @@ server:
         same-site: lax
 
 spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    connect-retries: 10
   mvc:
     static-path-pattern: /**
   datasource:
@@ -67,7 +72,7 @@ search:
 upload:
   mode: ${UPLOAD_MODE:local}
   local:
-    url: ${UPLOAD_LOCAL_URL:http://localhost:8090}
+    url: ${UPLOAD_LOCAL_URL:http://localhost:8090/uploads/}
     path: ${UPLOAD_LOCAL_PATH:./uploads/}
   oss:
     url: ${OSS_URL:}
@@ -109,11 +114,14 @@ app:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
 
+monitoring:
+  token: ${MONITORING_TOKEN:}
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
@@ -124,3 +132,11 @@ management:
       enabled: ${MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED:false}
     mail:
       enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
+  metrics:
+    tags:
+      application: ticastr-api
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,500ms,1s,5s

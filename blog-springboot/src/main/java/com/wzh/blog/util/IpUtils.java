@@ -29,7 +29,7 @@ public class IpUtils {
     public static String getIpAddress(HttpServletRequest request) {
         String ipAddress = null;
         try {
-            ipAddress = request.getHeader("x-forwarded-for");
+            ipAddress = request.getHeader("X-Real-IP");
             if (ipAddress == null || ipAddress.length() == 0 || "unknown".equalsIgnoreCase(ipAddress)) {
                 ipAddress = request.getHeader("Proxy-Client-IP");
             }

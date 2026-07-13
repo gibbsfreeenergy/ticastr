@@ -204,7 +204,16 @@ export default {
     },
     connect() {
       var that = this;
-      this.websocket = new WebSocket(this.blogInfo.websiteConfig.websocketUrl);
+      const clientId = this.getClientId();
+      if (!clientId) {
+        this.$toast({ type: "error", message: "浏览器不支持聊天身份初始化" });
+        return;
+      }
+      const websocketUrl = this.blogInfo.websiteConfig.websocketUrl;
+      const separator = websocketUrl.includes("?") ? "&" : "?";
+      this.websocket = new WebSocket(
+        `${websocketUrl}${separator}clientId=${encodeURIComponent(clientId)}`
+      );
       // 连接发生错误的回调方法
       this.websocket.onerror = function(event) {
         console.log(event);
@@ -289,13 +298,8 @@ export default {
       //   );
       // });
       var socketMsg = {
-        nickname: this.nickname,
-        avatar: this.avatar,
         content: this.content,
-        userId: this.userId,
-        type: 3,
-        ipAddress: this.ipAddress,
-        ipSource: this.ipSource
+        type: 3
       };
       this.WebsocketMessage.type = 3;
       this.WebsocketMessage.data = socketMsg;
@@ -307,15 +311,25 @@ export default {
       this.$refs.chatInput.focus();
       this.content += value;
     },
+    getClientId() {
+      const storageKey = "ticastr.chat.client-id";
+      const currentId = window.localStorage.getItem(storageKey);
+      if (currentId) {
+        return currentId;
+      }
+      if (!window.crypto || !window.crypto.randomUUID) {
+        return null;
+      }
+      const clientId = window.crypto.randomUUID();
+      window.localStorage.setItem(storageKey, clientId);
+      return clientId;
+    },
     // 展示菜单
     showBack(item, index, e) {
       this.$refs.backBtn.forEach(item => {
         item.style.display = "none";
       });
-      if (
-        item.ipAddress == this.ipAddress ||
-        (item.userId != null && item.userId == this.userId)
-      ) {
+      if (item.owner) {
         this.$refs.backBtn[index].style.left = e.offsetX + "px";
         this.$refs.backBtn[index].style.bottom = e.offsetY + "px";
         this.$refs.backBtn[index].style.display = "block";
@@ -375,13 +389,7 @@ export default {
       var formData = new window.FormData();
       formData.append("file", file);
       formData.append("type", 5);
-      formData.append("nickname", this.nickname);
-      formData.append("avatar", this.avatar);
-      if (this.userId != null) {
-        formData.append("userId", this.userId);
-      }
-      formData.append("ipAddress", this.ipAddress);
-      formData.append("ipSource", this.ipSource);
+      formData.append("clientId", this.getClientId());
       var options = {
         url: "/api/voice",
         data: formData,
@@ -434,10 +442,7 @@ export default {
   computed: {
     isSelf() {
       return function(item) {
-        return (
-          item.ipAddress == this.ipAddress ||
-          (item.userId != null && item.userId == this.userId)
-        );
+        return item.owner === true;
       };
     },
     isleft() {

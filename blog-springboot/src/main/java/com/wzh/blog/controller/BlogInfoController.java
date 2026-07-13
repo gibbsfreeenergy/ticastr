@@ -8,6 +8,7 @@ import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.impl.WebSocketServiceImpl;
 import com.wzh.blog.strategy.context.UploadStrategyContext;
+import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.vo.BlogInfoVO;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.VoiceVO;
@@ -16,13 +17,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 
 import static com.wzh.blog.constant.OptTypeConst.UPDATE;
+import com.wzh.blog.dto.UserDetailDTO;
 
 /**
  * 博客信息控制器
@@ -39,6 +44,8 @@ public class BlogInfoController {
     private WebSocketServiceImpl webSocketService;
     @Autowired
     private UploadStrategyContext uploadStrategyContext;
+    @Autowired
+    private HttpServletRequest request;
 
     /**
      * 查看博客信息
@@ -133,8 +140,26 @@ public class BlogInfoController {
     @Operation(summary = "上传语音")
     @PostMapping("/voice")
     public Result<String> sendVoice(VoiceVO voiceVO) {
+        String ipAddress = IpUtils.getIpAddress(request);
+        applyVoiceSender(voiceVO);
+        voiceVO.setIpAddress(ipAddress);
+        voiceVO.setIpSource(IpUtils.getIpSource(ipAddress));
         webSocketService.sendVoice(voiceVO);
         return Result.ok();
+    }
+
+    private void applyVoiceSender(VoiceVO voiceVO) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof UserDetailDTO userDetail) {
+            voiceVO.setUserId(userDetail.getUserInfoId());
+            voiceVO.setNickname(userDetail.getNickname());
+            voiceVO.setAvatar(userDetail.getAvatar());
+            return;
+        }
+        voiceVO.setUserId(null);
+        voiceVO.setNickname("游客");
+        voiceVO.setAvatar(blogInfoService.getWebsiteConfig().getTouristAvatar());
     }
 
     /**

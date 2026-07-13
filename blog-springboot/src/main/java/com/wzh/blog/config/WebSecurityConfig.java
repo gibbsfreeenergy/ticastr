@@ -7,6 +7,7 @@ import com.wzh.blog.handler.AuthenticationSuccessHandlerImpl;
 import com.wzh.blog.handler.CsrfCookieFilter;
 import com.wzh.blog.handler.DynamicAuthorizationManager;
 import com.wzh.blog.handler.LogoutSuccessHandlerImpl;
+import com.wzh.blog.handler.MonitoringTokenFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /** Security configuration compatible with Spring Security 7. */
@@ -57,7 +59,8 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    DynamicAuthorizationManager dynamicAuthorizationManager,
-                                                   CsrfCookieFilter csrfCookieFilter) throws Exception {
+                                                   CsrfCookieFilter csrfCookieFilter,
+                                                   MonitoringTokenFilter monitoringTokenFilter) throws Exception {
         http
                 .formLogin(formLogin -> formLogin
                         .loginProcessingUrl("/login")
@@ -68,13 +71,14 @@ public class WebSecurityConfig {
                         .logoutSuccessHandler(logoutSuccessHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/login", "/actuator/health/**").permitAll()
+                        .requestMatchers("/login", "/actuator/health/**", "/actuator/prometheus", "/uploads/**", "/websocket").permitAll()
                         .anyRequest().access(dynamicAuthorizationManager))
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers("/login"))
                 .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
+                .addFilterBefore(monitoringTokenFilter, AuthorizationFilter.class)
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))

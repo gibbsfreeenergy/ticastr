@@ -13,7 +13,6 @@ import dayjs from "dayjs";
 import axios from "axios";
 import InfiniteLoading from "v3-infinite-loading";
 import "v3-infinite-loading/lib/style.css";
-import "highlight.js/styles/atom-one-dark.css";
 import Toast from "./components/toast/index";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";

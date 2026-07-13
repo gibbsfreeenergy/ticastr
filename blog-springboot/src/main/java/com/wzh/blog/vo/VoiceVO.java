@@ -76,4 +76,7 @@ public class VoiceVO {
     @Schema(description = "ip来源")
     private String ipSource;
 
+    @Schema(description = "匿名客户端身份")
+    private String clientId;
+
 }

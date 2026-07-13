@@ -30,6 +30,8 @@ The repository pins its runtime expectations in [`.java-version`](.java-version)
    mysql -u <user> -p <database> < blog-mysql8.sql
    ```
 
+   Existing installations are upgraded automatically by Flyway when the API starts. The first run baselines the legacy schema at version `0` and applies versioned migrations from `blog-springboot/src/main/resources/db/migration`; do not manually import the destructive seed file.
+
 2. Configure local services with environment variables or an ignored `application-local.yml`. Start from [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml); the committed `application.yml` intentionally contains no credentials. For local OAuth and captcha site keys, copy the relevant frontend `.env.example` file to `.env.local`.
 
 3. Start the API:
@@ -39,7 +41,7 @@ The repository pins its runtime expectations in [`.java-version`](.java-version)
    mvn spring-boot:run
    ```
 
-   The API listens on `http://localhost:8090` by default.
+   The API listens on `http://localhost:8090` by default. Local uploads are served from `http://localhost:8090/uploads/`.
 
 4. Install and start either frontend:
 
@@ -72,7 +74,15 @@ docker compose up --build
 
 This starts MySQL, Redis, RabbitMQ, the API, the public site on `http://localhost:8080`, and the console on `http://localhost:8081`. The SQL initialization script runs only when the named MySQL volume is first created; it drops and recreates its tables, so never reuse a production data volume.
 
+Uploads are persisted in the `uploads` volume and served through `/uploads/` on both frontend hosts. Redis state is persisted in the `redis-data` volume; use a managed Redis backup strategy in production.
+
+Chat delivery, message recalls, and the online count are distributed through the Redis channel `ticastr:chat:events`. All API replicas must use the same Redis instance; WebSocket sessions are local to each replica and Redis fans events out to every replica. Online-session entries expire after 90 seconds without a heartbeat, so a failed node does not leave a permanent count behind.
+
 The API exposes unauthenticated liveness/readiness checks at `/actuator/health` and `/actuator/health/**`; detailed health information remains private.
+
+For metrics, set a non-empty `MONITORING_TOKEN` and scrape the API directly at `/actuator/prometheus` with the `X-Monitoring-Token` request header. The two frontend Nginx instances intentionally return `404` for this path, so a collector must reach the API through its private service network. The endpoint includes application-tagged JVM, process, HTTP server, datasource, and custom application metrics; HTTP request histograms include 100 ms, 500 ms, 1 s, and 5 s SLO buckets.
+
+Configure the collector to send the `X-Monitoring-Token` header from its secret store. Keep the token out of this repository and do not substitute an `Authorization` header; the API intentionally accepts only the dedicated monitoring header.
 
 ## Development notes
 

@@ -117,8 +117,16 @@
 import "../../assets/js/china";
 import CalendarHeatmap from "../../components/CalendarHeatmap.vue";
 import TagCloud from "../../components/TagCloud.vue";
+import ECharts from "vue-echarts";
+import { use } from "echarts/core";
+import { SVGRenderer } from "echarts/renderers";
+import { LineChart, PieChart, BarChart } from "echarts/charts";
+import { TooltipComponent, LegendComponent, TitleComponent, GridComponent } from "echarts/components";
+
+use([SVGRenderer, LineChart, PieChart, BarChart, TooltipComponent, LegendComponent, TitleComponent, GridComponent]);
+
 export default {
-  components: { CalendarHeatmap, TagCloud },
+  components: { CalendarHeatmap, TagCloud, "v-chart": ECharts },
   created() {
     this.listUserArea();
     this.getData();

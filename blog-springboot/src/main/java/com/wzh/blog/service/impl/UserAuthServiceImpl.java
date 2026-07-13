@@ -74,6 +74,10 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
 
     @Override
     public void sendCode(String username) {
+        Long sendCount = redisService.incrExpire(USER_CODE_SEND_LIMIT_KEY + username, 60);
+        if (sendCount != null && sendCount > 1) {
+            throw new BizException("验证码已发送，请一分钟后再试");
+        }
         // 校验账号是否合法
         if (!checkEmail(username)) {
             throw new BizException("请输入正确邮箱");
@@ -224,7 +228,8 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
      * @return 结果
      */
     private Boolean checkUser(UserVO user) {
-        if (!user.getCode().equals(redisService.get(USER_CODE_KEY + user.getUsername()))) {
+        String codeKey = USER_CODE_KEY + user.getUsername();
+        if (!Boolean.TRUE.equals(redisService.consumeIfEquals(codeKey, user.getCode()))) {
             throw new BizException("验证码错误！");
         }
         //查询用户名是否存在

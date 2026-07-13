@@ -53,6 +53,11 @@ public interface RedisService {
     Boolean del(String key);
 
     /**
+     * Atomically verifies a value and removes it only when it matches.
+     */
+    Boolean consumeIfEquals(String key, Object value);
+
+    /**
      * 批量删除属性
      *
      * @param keys key值集合

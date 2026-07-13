@@ -75,6 +75,7 @@ public class UserAuthController {
      * @return {@link Result<>}
      */
     @Operation(summary = "用户注册")
+    @AccessLimit(seconds = 60, maxCount = 5)
     @PostMapping("/register")
     public Result<?> register(@Valid @RequestBody UserVO user) {
         userAuthService.register(user);
@@ -88,6 +89,7 @@ public class UserAuthController {
      * @return {@link Result<>}
      */
     @Operation(summary = "修改密码")
+    @AccessLimit(seconds = 60, maxCount = 5)
     @PutMapping("/users/password")
     public Result<?> updatePassword(@Valid @RequestBody UserVO user) {
         userAuthService.updatePassword(user);

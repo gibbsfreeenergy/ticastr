@@ -1,6 +1,6 @@
 <template>
   <el-card class="main-card">
-    <el-tabs v-model="activeName" @tab-click="handleClick">
+    <el-tabs v-model="activeName">
       <!-- 修改信息 -->
       <el-tab-pane label="修改信息" name="info">
         <div class="info-container">
@@ -97,13 +97,6 @@ export default {
     };
   },
   methods: {
-    handleClick(tab) {
-      if (tab.index == 2 && this.notice == "") {
-        this.axios.get("/api/admin/notice").then(({ data }) => {
-          this.notice = data.data;
-        });
-      }
-    },
     updateAvatar(response) {
       if (response.flag) {
         this.$message.success(response.message);
@@ -156,21 +149,6 @@ export default {
           }
         });
     },
-    updateNotice() {
-      if (this.notice.trim() == "") {
-        this.$message.error("公告不能为空");
-        return false;
-      }
-      let param = new URLSearchParams();
-      param.append("notice", this.notice);
-      this.axios.put("/api/admin/notice", param).then(({ data }) => {
-        if (data.flag) {
-          this.$message.success(data.message);
-        } else {
-          this.$message.error(data.message);
-        }
-      });
-    }
   },
   computed: {
     avatar() {

@@ -1,10 +1,14 @@
 package com.wzh.blog.util;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.wzh.blog.enums.FilePathEnum;
+import com.wzh.blog.exception.BizException;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.security.MessageDigest;
 import java.util.Objects;
@@ -17,6 +21,50 @@ import java.util.Objects;
  */
 @Log4j2
 public class FileUtils {
+
+    private static final long MAX_IMAGE_PIXELS = 40_000_000L;
+
+    public static void validateUpload(MultipartFile file, String path) {
+        if (file == null || file.isEmpty()) {
+            throw new BizException("请选择要上传的文件");
+        }
+        String extension = getExtName(file.getOriginalFilename()).toLowerCase();
+        if (FilePathEnum.VOICE.getPath().equals(path)) {
+            if (!".wav".equals(extension) || !isWaveFile(file)) {
+                throw new BizException("仅支持 WAV 格式的语音文件");
+            }
+            return;
+        }
+        if (!(".jpg".equals(extension) || ".jpeg".equals(extension) || ".png".equals(extension))) {
+            throw new BizException("仅支持 JPG、JPEG 或 PNG 图片");
+        }
+        validateImage(file);
+    }
+
+    private static void validateImage(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            BufferedImage image = ImageIO.read(inputStream);
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0
+                    || (long) image.getWidth() * image.getHeight() > MAX_IMAGE_PIXELS) {
+                throw new BizException("图片格式或尺寸不合法");
+            }
+        } catch (BizException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new BizException("无法读取图片文件");
+        }
+    }
+
+    private static boolean isWaveFile(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            byte[] header = inputStream.readNBytes(12);
+            return header.length == 12
+                    && "RIFF".equals(new String(header, 0, 4, java.nio.charset.StandardCharsets.US_ASCII))
+                    && "WAVE".equals(new String(header, 8, 4, java.nio.charset.StandardCharsets.US_ASCII));
+        } catch (IOException e) {
+            return false;
+        }
+    }
 
     /**
      * 获取文件md5值

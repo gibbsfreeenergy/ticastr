@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
@@ -23,6 +24,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Value("${app.security.cors.allowed-origins}")
     private String allowedOrigins;
+
+    @Value("${upload.local.path}")
+    private String localUploadPath;
 
     @Bean
     public WebSecurityHandler getWebSecurityHandler() {
@@ -46,6 +50,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new PageableHandlerInterceptor());
         registry.addInterceptor(getWebSecurityHandler());
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String normalizedPath = localUploadPath.endsWith("/") || localUploadPath.endsWith("\\")
+                ? localUploadPath
+                : localUploadPath + "/";
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + normalizedPath);
     }
 
 

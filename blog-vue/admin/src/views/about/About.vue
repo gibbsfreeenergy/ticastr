@@ -19,8 +19,11 @@
 </template>
 
 <script>
+import { MdEditor } from "md-editor-v3";
+import "md-editor-v3/lib/style.css";
 import * as imageConversion from "image-conversion";
 export default {
+  components: { MdEditor },
   created() {
     this.getAbout();
   },
