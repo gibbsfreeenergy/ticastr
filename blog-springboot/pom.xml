@@ -86,7 +86,7 @@
         <dependency>
             <groupId>com.qcloud</groupId>
             <artifactId>cos_api</artifactId>
-            <version>5.6.75</version>
+            <version>5.6.271</version>
         </dependency>
         <!-- 华为云obs-->
         <dependency>
