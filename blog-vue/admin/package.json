@@ -22,7 +22,7 @@
     "image-conversion": "^2.1.1",
     "md-editor-v3": "^6.5.3",
     "nprogress": "^0.2.0",
-    "vue": "^3.5.39",
+    "vue": "^3.5.40",
     "vue-echarts": "^8.0.1",
     "vue-router": "^5.1.0",
     "vuex": "^4.1.0",
