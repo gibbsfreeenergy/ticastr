@@ -12,7 +12,7 @@
     "dayjs": "^1.11.19",
     "easy-typer-js": "^2.1.0",
     "highlight.js": "^11.11.1",
-    "jquery": "^3.7.1",
+    "jquery": "^4.0.0",
     "markdown-it": "^14.1.0",
     "nprogress": "^0.2.0",
     "recorderx": "^2.0.2",
