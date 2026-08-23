@@ -6,7 +6,7 @@ RUN mvn -B -DskipTests dependency:go-offline
 COPY blog-springboot/src ./src
 RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 
 RUN addgroup --system spring && adduser --system --ingroup spring spring
 WORKDIR /app
