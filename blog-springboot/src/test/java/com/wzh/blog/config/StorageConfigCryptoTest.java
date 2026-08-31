@@ -36,6 +36,13 @@ class StorageConfigCryptoTest {
         assertFalse(new StorageConfigCrypto("").hasKey());
     }
 
+    @Test
+    void rejectsMalformedNonblankEncryptionKeysImmediately() {
+        assertThrows(IllegalStateException.class, () -> new StorageConfigCrypto("not-base64"));
+        assertThrows(IllegalStateException.class, () -> new StorageConfigCrypto(shortBase64Key()));
+        assertFalse(new StorageConfigCrypto("").hasKey());
+    }
+
     private String base64Key() {
         return Base64.getEncoder().encodeToString(new byte[32]);
     }
@@ -44,5 +51,9 @@ class StorageConfigCryptoTest {
         byte[] key = new byte[32];
         key[0] = 1;
         return Base64.getEncoder().encodeToString(key);
+    }
+
+    private String shortBase64Key() {
+        return Base64.getEncoder().encodeToString(new byte[31]);
     }
 }

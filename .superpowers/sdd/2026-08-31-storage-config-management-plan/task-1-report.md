@@ -27,4 +27,11 @@ Notes:
 
 Concerns:
 - Only the task-focused Maven test was run; the broader module test suite was not executed.
-- Nonblank but invalid encryption keys are treated as unavailable rather than failing startup, which is acceptable for this primitive boundary but may need stricter validation in a later task.
+
+Round 1 fix:
+- Review finding addressed: malformed nonblank encryption keys now fail immediately in `StorageConfigCrypto` instead of being silently treated as unavailable.
+- Updated coverage:
+  - `rejectsMalformedNonblankEncryptionKeysImmediately()` now asserts that invalid Base64 and wrong decoded length both throw `IllegalStateException`, while a blank key still reports `hasKey() == false`.
+- Command: `mvn -Dtest=StorageConfigCryptoTest test`
+- Result: build success.
+- Test summary: `Tests run: 3, Failures: 0, Errors: 0, Skipped: 0`

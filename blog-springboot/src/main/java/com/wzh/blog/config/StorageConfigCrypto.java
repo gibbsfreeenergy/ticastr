@@ -81,11 +81,11 @@ public class StorageConfigCrypto {
         try {
             byte[] keyBytes = Base64.getDecoder().decode(base64Key);
             if (keyBytes.length != KEY_SIZE_BYTES) {
-                return null;
+                throw new IllegalStateException(ERROR_MESSAGE);
             }
             return new SecretKeySpec(keyBytes, "AES");
         } catch (IllegalArgumentException exception) {
-            return null;
+            throw new IllegalStateException(ERROR_MESSAGE, exception);
         }
     }
 
