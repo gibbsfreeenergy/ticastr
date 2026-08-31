@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -57,6 +59,20 @@ class StorageUsageContractTest {
                 "https://cdn.example.test", "access-id", null);
 
         assertThrows(IOException.class, () -> new OssStorageProvider(incomplete).usage());
+    }
+
+    @Test
+    void removesSdkFailureDetailsFromCloudUsageErrors() {
+        OSS client = mock(OSS.class);
+        when(client.listObjects(any(ListObjectsRequest.class)))
+                .thenThrow(new IllegalStateException("https://storage.example.test?Authorization=secret-signature"));
+
+        IOException failure = assertThrows(IOException.class,
+                () -> new OssStorageProvider(snapshot(), () -> client).usage());
+
+        assertEquals("OSS storage usage lookup failed", failure.getMessage());
+        assertNull(failure.getCause());
+        assertFalse(failure.toString().contains("secret-signature"));
     }
 
     private static StorageProviderConfigSnapshot snapshot() {

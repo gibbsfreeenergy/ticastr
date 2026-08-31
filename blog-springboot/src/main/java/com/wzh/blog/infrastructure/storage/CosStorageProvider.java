@@ -190,7 +190,7 @@ public final class CosStorageProvider implements StorageProvider {
                 }
             }
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS storage usage lookup failed", exception);
+            throw StorageProviderSupport.sanitizedUsageIOException("COS storage usage lookup failed");
         }
     }
 

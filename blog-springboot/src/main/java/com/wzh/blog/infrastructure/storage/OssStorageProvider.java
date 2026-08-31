@@ -196,7 +196,7 @@ public final class OssStorageProvider implements StorageProvider {
                 }
             }
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS storage usage lookup failed", exception);
+            throw StorageProviderSupport.sanitizedUsageIOException("OSS storage usage lookup failed");
         }
     }
 

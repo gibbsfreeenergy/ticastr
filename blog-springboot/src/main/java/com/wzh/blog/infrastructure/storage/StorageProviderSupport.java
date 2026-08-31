@@ -22,6 +22,10 @@ final class StorageProviderSupport {
         return new IOException(message, exception);
     }
 
+    static IOException sanitizedUsageIOException(String message) {
+        return new IOException(message);
+    }
+
     static String checksum(MessageDigest digest) {
         return HexFormat.of().formatHex(digest.digest());
     }

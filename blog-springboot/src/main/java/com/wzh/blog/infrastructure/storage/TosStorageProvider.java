@@ -202,7 +202,7 @@ public final class TosStorageProvider implements StorageProvider {
                 }
             }
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("TOS storage usage lookup failed", exception);
+            throw StorageProviderSupport.sanitizedUsageIOException("TOS storage usage lookup failed");
         }
     }
 
