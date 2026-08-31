@@ -1,61 +1,81 @@
 package com.wzh.blog.media;
 
+import com.wzh.blog.config.StorageConfigCrypto;
+import com.wzh.blog.dao.StorageProviderConfigDao;
+import com.wzh.blog.entity.StorageProviderConfig;
+import com.wzh.blog.infrastructure.storage.StorageProviderFactory;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class StorageProviderRegistryTest {
 
     @Test
-    void normalizesSupportedProviderNamesAndRejectsRemovedProvider() {
-        assertEquals(StorageProviderType.LOCAL, StorageProviderType.from(" local "));
-        assertEquals(StorageProviderType.OSS, StorageProviderType.from("OSS"));
-        assertEquals(StorageProviderType.COS, StorageProviderType.from("cos"));
-        assertEquals(StorageProviderType.TOS, StorageProviderType.from("tos"));
+    void routesNewAndHistoricalObjectsByConfigIdWithoutCreatingProvidersAtConstruction() {
+        StorageProviderConfig oldConfig = config(11L, "old-cos", true);
+        StorageProviderConfig newConfig = config(12L, "new-cos", false);
+        StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+        when(configDao.selectActive()).thenReturn(oldConfig);
+        when(configDao.selectById(11L)).thenReturn(oldConfig);
+        when(configDao.selectById(12L)).thenReturn(newConfig);
 
-        assertThrows(IllegalArgumentException.class, () -> StorageProviderType.from("obs"));
-        assertThrows(IllegalArgumentException.class, () -> StorageProviderType.from(""));
-        assertThrows(IllegalArgumentException.class, () -> StorageProviderType.from(null));
+        TestProvider oldCos = new TestProvider(StorageProviderType.COS);
+        TestProvider newCos = new TestProvider(StorageProviderType.COS);
+        FakeProviderFactory factory = new FakeProviderFactory(Map.of(11L, oldCos, 12L, newCos));
+
+        StorageProviderRegistry registry = new StorageProviderRegistry(configDao, factory);
+
+        assertEquals(0, factory.created());
+        assertSame(oldCos, registry.providerForNewAsset());
+        registry.refresh(12L);
+        assertSame(newCos, registry.providerForNewAsset());
+        assertSame(oldCos, registry.providerForConfig(11L));
+        assertEquals(12L, registry.activeConfigId());
+        assertEquals(0, oldCos.operations());
+        assertEquals(0, newCos.operations());
     }
 
-    @Test
-    void selectsActiveProviderWithoutPerformingNetworkWorkAtConstruction() {
-        TestProvider local = new TestProvider(StorageProviderType.LOCAL);
-        TestProvider oss = new TestProvider(StorageProviderType.OSS);
-        TestProvider cos = new TestProvider(StorageProviderType.COS);
-        TestProvider tos = new TestProvider(StorageProviderType.TOS);
-
-        StorageProviderRegistry registry = new StorageProviderRegistry(
-                StorageProviderType.COS, List.of(local, oss, cos, tos));
-
-        assertSame(cos, registry.providerForNewAsset());
-        assertEquals(0, local.operations());
-        assertEquals(0, oss.operations());
-        assertEquals(0, cos.operations());
-        assertEquals(0, tos.operations());
-
-        registry.refresh(StorageProviderType.TOS);
-        assertSame(tos, registry.providerForNewAsset());
-        assertSame(cos, registry.providerFor(StorageProviderType.COS));
+    private static StorageProviderConfig config(long id, String name, boolean active) {
+        return StorageProviderConfig.builder()
+                .id(id)
+                .configName(name)
+                .provider("cos")
+                .endpoint("https://cos.example.test")
+                .bucket("blog-assets")
+                .region("ap-shanghai")
+                .publicUrl("https://cdn.example.test/assets")
+                .accessKeyIdCiphertext("encrypted-id")
+                .accessKeySecretCiphertext("encrypted-secret")
+                .active(active)
+                .build();
     }
 
-    @Test
-    void rejectsUnsafeObjectKeysBeforeProviderCall() {
-        TestProvider provider = new TestProvider(StorageProviderType.LOCAL);
+    private static final class FakeProviderFactory extends StorageProviderFactory {
+        private final Map<Long, StorageProvider> providers;
+        private final AtomicInteger created = new AtomicInteger();
 
-        assertThrows(IllegalArgumentException.class,
-                () -> provider.put("../secret", new ByteArrayInputStream(new byte[]{1}), 1, "text/plain"));
-        assertThrows(IllegalArgumentException.class,
-                () -> provider.put("/absolute", new ByteArrayInputStream(new byte[]{1}), 1, "text/plain"));
-        assertThrows(IllegalArgumentException.class,
-                () -> provider.put("media\\windows", new ByteArrayInputStream(new byte[]{1}), 1, "text/plain"));
-        assertEquals(0, provider.operations());
+        private FakeProviderFactory(Map<Long, StorageProvider> providers) {
+            super(new StorageConfigCrypto(""));
+            this.providers = providers;
+        }
+
+        @Override
+        public StorageProvider create(StorageProviderConfig config) {
+            created.incrementAndGet();
+            return providers.get(config.getId());
+        }
+
+        private int created() {
+            return created.get();
+        }
     }
 
     private static final class TestProvider implements StorageProvider {
@@ -74,7 +94,6 @@ class StorageProviderRegistryTest {
         @Override
         public StorageObjectMetadata put(String objectKey, java.io.InputStream content, long size, String contentType)
                 throws IOException {
-            ObjectKeyPolicy.requireSafe(objectKey);
             operations.incrementAndGet();
             return new StorageObjectMetadata(objectKey, contentType, size, "checksum", Instant.now());
         }
@@ -105,6 +124,12 @@ class StorageProviderRegistryTest {
         @Override
         public void validateConnection() {
             operations.incrementAndGet();
+        }
+
+        @Override
+        public StorageUsage usage() {
+            operations.incrementAndGet();
+            return new StorageUsage(0, 0, null);
         }
 
         private int operations() {

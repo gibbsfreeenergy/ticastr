@@ -23,6 +23,12 @@ public interface StorageProvider {
 
     void validateConnection();
 
+    StorageUsage usage() throws IOException;
+
+    default void close() {
+        // Providers without a managed client do not own shutdown resources.
+    }
+
     /** Configuration presence is safe to expose as a boolean to administrators. */
     default boolean configured() {
         return true;

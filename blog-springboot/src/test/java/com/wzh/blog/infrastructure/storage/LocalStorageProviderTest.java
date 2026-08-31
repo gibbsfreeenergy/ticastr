@@ -2,6 +2,7 @@ package com.wzh.blog.infrastructure.storage;
 
 import com.wzh.blog.media.StorageObject;
 import com.wzh.blog.media.StorageObjectMetadata;
+import com.wzh.blog.media.StorageUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -10,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,6 +62,22 @@ class LocalStorageProviderTest {
                 () -> provider.get("../outside"));
         assertThrows(IllegalArgumentException.class,
                 () -> provider.put("media\\outside", new ByteArrayInputStream(body), body.length, "text/plain"));
+    }
+
+    @Test
+    void reportsRegularFileUsageAcrossNestedDirectories() throws Exception {
+        LocalStorageProvider provider = new LocalStorageProvider(root);
+        Files.createDirectories(root.resolve("nested"));
+        Files.write(root.resolve("first.txt"), new byte[]{1, 2, 3});
+        Files.write(root.resolve("nested").resolve("second.txt"), new byte[]{4, 5, 6, 7});
+        Instant latest = Instant.parse("2026-09-01T02:03:04Z");
+        Files.setLastModifiedTime(root.resolve("nested").resolve("second.txt"), FileTime.from(latest));
+
+        StorageUsage usage = provider.usage();
+
+        assertEquals(2, usage.objectCount());
+        assertEquals(7, usage.totalBytes());
+        assertEquals(latest, usage.latestObjectModified());
     }
 
     private static final class TrackingInputStream extends InputStream {

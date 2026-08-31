@@ -5,6 +5,7 @@ import com.wzh.blog.media.StorageObject;
 import com.wzh.blog.media.StorageObjectMetadata;
 import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderType;
+import com.wzh.blog.media.StorageUsage;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -153,6 +154,31 @@ public final class LocalStorageProvider implements StorageProvider {
                 throw new IllegalStateException("Local storage cleanup validation failed", exception);
             }
         }
+    }
+
+    @Override
+    public StorageUsage usage() throws IOException {
+        long objectCount = 0;
+        long totalBytes = 0;
+        Instant latest = null;
+        try (var paths = Files.walk(root)) {
+            var iterator = paths.iterator();
+            while (iterator.hasNext()) {
+                Path path = iterator.next();
+                if (!Files.isRegularFile(path)) {
+                    continue;
+                }
+                objectCount = Math.addExact(objectCount, 1);
+                totalBytes = Math.addExact(totalBytes, Files.size(path));
+                Instant modified = Files.getLastModifiedTime(path).toInstant();
+                if (latest == null || modified.isAfter(latest)) {
+                    latest = modified;
+                }
+            }
+        } catch (ArithmeticException exception) {
+            throw new IOException("Local storage usage exceeds supported limits", exception);
+        }
+        return new StorageUsage(objectCount, totalBytes, latest);
     }
 
     public Path root() {

@@ -1,36 +1,54 @@
 package com.wzh.blog.infrastructure.storage;
 
+import com.aliyun.oss.ClientBuilderConfiguration;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.ServiceException;
+import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.OSSObject;
+import com.aliyun.oss.model.OSSObjectSummary;
+import com.aliyun.oss.model.ObjectListing;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PutObjectRequest;
-import com.wzh.blog.config.StorageProperties;
 import com.wzh.blog.media.ObjectKeyPolicy;
 import com.wzh.blog.media.StorageObject;
 import com.wzh.blog.media.StorageObjectMetadata;
 import com.wzh.blog.media.StorageProvider;
+import com.wzh.blog.media.StorageProviderConfigSnapshot;
 import com.wzh.blog.media.StorageProviderType;
+import com.wzh.blog.media.StorageUsage;
 import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 public final class OssStorageProvider implements StorageProvider {
 
-    private final StorageProperties.Provider properties;
+    private static final int USAGE_PAGE_SIZE = 1000;
+    private static final int MAX_USAGE_PAGES = 10_000;
+    private static final Duration MAX_USAGE_DURATION = Duration.ofSeconds(30);
+
+    private final StorageProviderConfigSnapshot profile;
+    private final Supplier<OSS> clientFactory;
     private volatile OSS client;
 
-    public OssStorageProvider(StorageProperties properties) {
-        this(properties.getOss());
+    public OssStorageProvider(StorageProviderConfigSnapshot profile) {
+        this(profile, null);
     }
 
-    OssStorageProvider(StorageProperties.Provider properties) {
-        this.properties = properties;
+    OssStorageProvider(StorageProviderConfigSnapshot profile, Supplier<OSS> clientFactory) {
+        this.profile = Objects.requireNonNull(profile, "profile");
+        if (profile.provider() != StorageProviderType.OSS) {
+            throw new IllegalArgumentException("Storage profile is not an OSS profile");
+        }
+        this.clientFactory = clientFactory == null ? this::buildClient : clientFactory;
     }
 
     @Override
@@ -40,7 +58,8 @@ public final class OssStorageProvider implements StorageProvider {
 
     @Override
     public boolean configured() {
-        return properties.configured();
+        return hasText(profile.endpoint()) && hasText(profile.bucket()) && hasText(profile.region())
+                && hasText(profile.accessKeyId()) && hasText(profile.accessKeySecret());
     }
 
     @Override
@@ -52,7 +71,7 @@ public final class OssStorageProvider implements StorageProvider {
         metadata.setContentLength(size);
         metadata.setContentType(contentType);
         try {
-            client().putObject(new PutObjectRequest(properties.getBucket(), objectKey, digesting, metadata));
+            client().putObject(new PutObjectRequest(profile.bucket(), objectKey, digesting, metadata));
             if (digesting.count() != size) {
                 delete(objectKey);
                 throw new IOException("Object stream size does not match declared size");
@@ -67,7 +86,7 @@ public final class OssStorageProvider implements StorageProvider {
     public StorageObject get(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            OSSObject object = client().getObject(properties.getBucket(), objectKey);
+            OSSObject object = client().getObject(profile.bucket(), objectKey);
             ObjectMetadata metadata = object.getObjectMetadata();
             return new StorageObject(
                     StorageProviderSupport.closeWith(object.getObjectContent(), object),
@@ -82,7 +101,7 @@ public final class OssStorageProvider implements StorageProvider {
     public StorageObjectMetadata head(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            ObjectMetadata metadata = client().getObjectMetadata(properties.getBucket(), objectKey);
+            ObjectMetadata metadata = client().getObjectMetadata(profile.bucket(), objectKey);
             return metadata(objectKey, metadata.getContentType(), metadata.getContentLength(),
                     valueOrEtag(metadata.getETag()), instant(metadata.getLastModified()));
         } catch (RuntimeException exception) {
@@ -94,7 +113,7 @@ public final class OssStorageProvider implements StorageProvider {
     public void delete(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            client().deleteObject(properties.getBucket(), objectKey);
+            client().deleteObject(profile.bucket(), objectKey);
         } catch (ServiceException exception) {
             if (isMissingObject(exception)) {
                 return;
@@ -109,7 +128,7 @@ public final class OssStorageProvider implements StorageProvider {
     public boolean exists(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            return client().doesObjectExist(properties.getBucket(), objectKey);
+            return client().doesObjectExist(profile.bucket(), objectKey);
         } catch (RuntimeException exception) {
             throw StorageProviderSupport.asIOException("OSS exists failed", exception);
         }
@@ -138,6 +157,49 @@ public final class OssStorageProvider implements StorageProvider {
         }
     }
 
+    @Override
+    public StorageUsage usage() throws IOException {
+        requireConfiguredForUsage();
+        long objectCount = 0;
+        long totalBytes = 0;
+        Instant latest = null;
+        String marker = null;
+        int pages = 0;
+        long deadline = System.nanoTime() + MAX_USAGE_DURATION.toNanos();
+        try {
+            while (true) {
+                if (pages >= MAX_USAGE_PAGES || System.nanoTime() >= deadline) {
+                    throw new IOException("OSS storage usage aggregation exceeded safe limits");
+                }
+                ListObjectsRequest request = new ListObjectsRequest(profile.bucket());
+                request.setMaxKeys(USAGE_PAGE_SIZE);
+                request.setMarker(marker);
+                ObjectListing listing = client().listObjects(request);
+                pages++;
+                List<OSSObjectSummary> summaries = listing.getObjectSummaries();
+                if (summaries != null) {
+                    for (OSSObjectSummary summary : summaries) {
+                        objectCount = Math.addExact(objectCount, 1);
+                        totalBytes = Math.addExact(totalBytes, summary.getSize());
+                        Instant modified = instantOrNull(summary.getLastModified());
+                        if (latest == null || (modified != null && modified.isAfter(latest))) {
+                            latest = modified;
+                        }
+                    }
+                }
+                if (!listing.isTruncated()) {
+                    return new StorageUsage(objectCount, totalBytes, latest);
+                }
+                marker = listing.getNextMarker();
+                if (!hasText(marker)) {
+                    throw new IOException("OSS storage usage pagination failed");
+                }
+            }
+        } catch (RuntimeException exception) {
+            throw StorageProviderSupport.asIOException("OSS storage usage lookup failed", exception);
+        }
+    }
+
     private OSS client() {
         requireConfigured();
         OSS current = client;
@@ -145,15 +207,20 @@ public final class OssStorageProvider implements StorageProvider {
             synchronized (this) {
                 current = client;
                 if (current == null) {
-                    current = new OSSClientBuilder().build(
-                            properties.getEndpoint(),
-                            properties.getAccessKeyId(),
-                            properties.getAccessKeySecret());
+                    current = Objects.requireNonNull(clientFactory.get(), "OSS client factory returned null");
                     client = current;
                 }
             }
         }
         return current;
+    }
+
+    private OSS buildClient() {
+        ClientBuilderConfiguration configuration = new ClientBuilderConfiguration();
+        configuration.setConnectionTimeout(3000);
+        configuration.setSocketTimeout(5000);
+        configuration.setMaxErrorRetry(2);
+        return new OSSClientBuilder().build(profile.endpoint(), profile.accessKeyId(), profile.accessKeySecret(), configuration);
     }
 
     private void requireConfigured() {
@@ -162,14 +229,17 @@ public final class OssStorageProvider implements StorageProvider {
         }
     }
 
+    private void requireConfiguredForUsage() throws IOException {
+        if (!configured()) {
+            throw new IOException("OSS storage provider is not configured");
+        }
+    }
+
     private StorageObjectMetadata metadata(String objectKey, String contentType, long size,
                                            String checksum, Instant lastModified) {
-        return new StorageObjectMetadata(
-                objectKey,
+        return new StorageObjectMetadata(objectKey,
                 contentType == null || contentType.isBlank() ? "application/octet-stream" : contentType,
-                size,
-                checksum == null || checksum.isBlank() ? "unknown" : checksum,
-                lastModified);
+                size, checksum == null || checksum.isBlank() ? "unknown" : checksum, lastModified);
     }
 
     private String valueOrEtag(String etag) {
@@ -180,17 +250,26 @@ public final class OssStorageProvider implements StorageProvider {
         return date == null ? Instant.now() : date.toInstant();
     }
 
+    private Instant instantOrNull(Date date) {
+        return date == null ? null : date.toInstant();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private boolean isMissingObject(ServiceException exception) {
         String code = exception.getErrorCode();
         String message = exception.getMessage();
-        return "NoSuchKey".equalsIgnoreCase(code)
-                || "NoSuchObject".equalsIgnoreCase(code)
+        return "NoSuchKey".equalsIgnoreCase(code) || "NoSuchObject".equalsIgnoreCase(code)
                 || (message != null && (message.contains("NoSuchKey") || message.contains("404")));
     }
 
+    @Override
     @PreDestroy
-    void close() {
+    public synchronized void close() {
         OSS current = client;
+        client = null;
         if (current != null) {
             current.shutdown();
         }

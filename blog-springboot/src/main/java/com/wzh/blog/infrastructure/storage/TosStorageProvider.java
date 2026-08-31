@@ -8,37 +8,45 @@ import com.volcengine.tos.model.object.GetObjectV2Input;
 import com.volcengine.tos.model.object.GetObjectV2Output;
 import com.volcengine.tos.model.object.HeadObjectV2Input;
 import com.volcengine.tos.model.object.HeadObjectV2Output;
+import com.volcengine.tos.model.object.ListObjectsType2Input;
+import com.volcengine.tos.model.object.ListObjectsType2Output;
+import com.volcengine.tos.model.object.ListedObjectV2;
 import com.volcengine.tos.model.object.ObjectMetaRequestOptions;
 import com.volcengine.tos.model.object.PutObjectInput;
-import com.wzh.blog.config.StorageProperties;
+import com.volcengine.tos.transport.TransportConfig;
 import com.wzh.blog.media.ObjectKeyPolicy;
 import com.wzh.blog.media.StorageObject;
 import com.wzh.blog.media.StorageObjectMetadata;
 import com.wzh.blog.media.StorageProvider;
+import com.wzh.blog.media.StorageProviderConfigSnapshot;
 import com.wzh.blog.media.StorageProviderType;
+import com.wzh.blog.media.StorageUsage;
 import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Volcengine TOS adapter. The SDK client is lazy so inactive providers do not
- * open sockets or validate credentials during application startup.
- */
+/** Volcengine TOS adapter with a lazy profile-scoped SDK client. */
 public final class TosStorageProvider implements StorageProvider {
 
-    private final StorageProperties.Provider properties;
+    private static final int USAGE_PAGE_SIZE = 1000;
+    private static final int MAX_USAGE_PAGES = 10_000;
+    private static final Duration MAX_USAGE_DURATION = Duration.ofSeconds(30);
+
+    private final StorageProviderConfigSnapshot profile;
     private volatile TOSV2 client;
 
-    public TosStorageProvider(StorageProperties properties) {
-        this(properties.getTos());
-    }
-
-    TosStorageProvider(StorageProperties.Provider properties) {
-        this.properties = properties;
+    public TosStorageProvider(StorageProviderConfigSnapshot profile) {
+        this.profile = Objects.requireNonNull(profile, "profile");
+        if (profile.provider() != StorageProviderType.TOS) {
+            throw new IllegalArgumentException("Storage profile is not a TOS profile");
+        }
     }
 
     @Override
@@ -48,7 +56,8 @@ public final class TosStorageProvider implements StorageProvider {
 
     @Override
     public boolean configured() {
-        return properties.configured();
+        return hasText(profile.endpoint()) && hasText(profile.bucket()) && hasText(profile.region())
+                && hasText(profile.accessKeyId()) && hasText(profile.accessKeySecret());
     }
 
     @Override
@@ -58,7 +67,7 @@ public final class TosStorageProvider implements StorageProvider {
         StorageProviderSupport.DigestingInputStream digesting = StorageProviderSupport.digesting(content);
         ObjectMetaRequestOptions options = new ObjectMetaRequestOptions().setContentType(contentType);
         PutObjectInput input = new PutObjectInput()
-                .setBucket(properties.getBucket())
+                .setBucket(profile.bucket())
                 .setKey(objectKey)
                 .setContent(digesting)
                 .setContentLength(size)
@@ -80,11 +89,8 @@ public final class TosStorageProvider implements StorageProvider {
     public StorageObject get(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            GetObjectV2Output output = client().getObject(new GetObjectV2Input()
-                    .setBucket(properties.getBucket())
-                    .setKey(objectKey));
-            return new StorageObject(
-                    StorageProviderSupport.closeWith(output.getContent(), output),
+            GetObjectV2Output output = client().getObject(new GetObjectV2Input().setBucket(profile.bucket()).setKey(objectKey));
+            return new StorageObject(StorageProviderSupport.closeWith(output.getContent(), output),
                     metadata(objectKey, output.getContentType(), output.getContentLength(),
                             valueOrEtag(output.getEtag()), instant(output.getLastModifiedInDate())));
         } catch (RuntimeException exception) {
@@ -96,9 +102,7 @@ public final class TosStorageProvider implements StorageProvider {
     public StorageObjectMetadata head(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            HeadObjectV2Output output = client().headObject(new HeadObjectV2Input()
-                    .setBucket(properties.getBucket())
-                    .setKey(objectKey));
+            HeadObjectV2Output output = client().headObject(new HeadObjectV2Input().setBucket(profile.bucket()).setKey(objectKey));
             return metadata(objectKey, output.getContentType(), output.getContentLength(),
                     valueOrEtag(output.getEtag()), instant(output.getLastModifiedInDate()));
         } catch (RuntimeException exception) {
@@ -110,9 +114,7 @@ public final class TosStorageProvider implements StorageProvider {
     public void delete(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            client().deleteObject(new DeleteObjectInput()
-                    .setBucket(properties.getBucket())
-                    .setKey(objectKey));
+            client().deleteObject(new DeleteObjectInput().setBucket(profile.bucket()).setKey(objectKey));
         } catch (TosServerException exception) {
             if (isMissingObject(exception)) {
                 return;
@@ -127,14 +129,11 @@ public final class TosStorageProvider implements StorageProvider {
     public boolean exists(String objectKey) throws IOException {
         ObjectKeyPolicy.requireSafe(objectKey);
         try {
-            client().headObject(new HeadObjectV2Input()
-                    .setBucket(properties.getBucket())
-                    .setKey(objectKey));
+            client().headObject(new HeadObjectV2Input().setBucket(profile.bucket()).setKey(objectKey));
             return true;
         } catch (RuntimeException exception) {
             String message = exception.getMessage();
-            if (message != null && (message.contains("404") || message.contains("NoSuchKey")
-                    || message.contains("NotFound"))) {
+            if (message != null && (message.contains("404") || message.contains("NoSuchKey") || message.contains("NotFound"))) {
                 return false;
             }
             throw StorageProviderSupport.asIOException("TOS exists failed", exception);
@@ -164,6 +163,49 @@ public final class TosStorageProvider implements StorageProvider {
         }
     }
 
+    @Override
+    public StorageUsage usage() throws IOException {
+        requireConfiguredForUsage();
+        long objectCount = 0;
+        long totalBytes = 0;
+        Instant latest = null;
+        String continuationToken = null;
+        int pages = 0;
+        long deadline = System.nanoTime() + MAX_USAGE_DURATION.toNanos();
+        try {
+            while (true) {
+                if (pages >= MAX_USAGE_PAGES || System.nanoTime() >= deadline) {
+                    throw new IOException("TOS storage usage aggregation exceeded safe limits");
+                }
+                ListObjectsType2Output output = client().listObjectsType2(new ListObjectsType2Input()
+                        .setBucket(profile.bucket())
+                        .setContinuationToken(continuationToken)
+                        .setMaxKeys(USAGE_PAGE_SIZE));
+                pages++;
+                List<ListedObjectV2> contents = output.getContents();
+                if (contents != null) {
+                    for (ListedObjectV2 object : contents) {
+                        objectCount = Math.addExact(objectCount, 1);
+                        totalBytes = Math.addExact(totalBytes, object.getSize());
+                        Instant modified = instantOrNull(object.getLastModified());
+                        if (latest == null || (modified != null && modified.isAfter(latest))) {
+                            latest = modified;
+                        }
+                    }
+                }
+                if (!output.isTruncated()) {
+                    return new StorageUsage(objectCount, totalBytes, latest);
+                }
+                continuationToken = output.getNextContinuationToken();
+                if (!hasText(continuationToken)) {
+                    throw new IOException("TOS storage usage pagination failed");
+                }
+            }
+        } catch (RuntimeException exception) {
+            throw StorageProviderSupport.asIOException("TOS storage usage lookup failed", exception);
+        }
+    }
+
     private TOSV2 client() {
         requireConfigured();
         TOSV2 current = client;
@@ -171,11 +213,13 @@ public final class TosStorageProvider implements StorageProvider {
             synchronized (this) {
                 current = client;
                 if (current == null) {
-                    current = new TOSV2ClientBuilder().build(
-                            properties.getRegion(),
-                            properties.getEndpoint(),
-                            properties.getAccessKeyId(),
-                            properties.getAccessKeySecret());
+                    TransportConfig transport = new TransportConfig()
+                            .setConnectTimeoutMills(3000)
+                            .setReadTimeoutMills(5000)
+                            .setWriteTimeoutMills(5000)
+                            .setMaxRetryCount(2);
+                    current = new TOSV2ClientBuilder().build(profile.region(), profile.endpoint(),
+                            profile.accessKeyId(), profile.accessKeySecret(), transport);
                     client = current;
                 }
             }
@@ -189,14 +233,17 @@ public final class TosStorageProvider implements StorageProvider {
         }
     }
 
+    private void requireConfiguredForUsage() throws IOException {
+        if (!configured()) {
+            throw new IOException("TOS storage provider is not configured");
+        }
+    }
+
     private StorageObjectMetadata metadata(String objectKey, String contentType, long size,
                                            String checksum, Instant lastModified) {
-        return new StorageObjectMetadata(
-                objectKey,
+        return new StorageObjectMetadata(objectKey,
                 contentType == null || contentType.isBlank() ? "application/octet-stream" : contentType,
-                size,
-                checksum == null || checksum.isBlank() ? "unknown" : checksum,
-                lastModified);
+                size, checksum == null || checksum.isBlank() ? "unknown" : checksum, lastModified);
     }
 
     private String valueOrEtag(String etag) {
@@ -207,22 +254,31 @@ public final class TosStorageProvider implements StorageProvider {
         return date == null ? Instant.now() : date.toInstant();
     }
 
+    private Instant instantOrNull(Date date) {
+        return date == null ? null : date.toInstant();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private boolean isMissingObject(TosServerException exception) {
         String code = exception.getCode();
         String message = exception.getMessage();
-        return exception.getStatusCode() == 404
-                || "NoSuchKey".equalsIgnoreCase(code)
+        return exception.getStatusCode() == 404 || "NoSuchKey".equalsIgnoreCase(code)
                 || "NoSuchObject".equalsIgnoreCase(code)
                 || (message != null && (message.contains("NoSuchKey") || message.contains("404")));
     }
 
+    @Override
     @PreDestroy
-    void close() {
+    public synchronized void close() {
         TOSV2 current = client;
+        client = null;
         if (current != null) {
             try {
                 current.close();
-            } catch (IOException exception) {
+            } catch (IOException ignored) {
                 // Shutdown must not prevent the Spring context from closing.
             }
         }
