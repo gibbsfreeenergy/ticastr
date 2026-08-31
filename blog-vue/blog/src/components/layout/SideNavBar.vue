@@ -57,6 +57,11 @@
         </router-link>
       </div>
       <div class="menus-item">
+        <router-link to="/orbit">
+          <i class="iconfont iconfaxian" /> 阅读星图
+        </router-link>
+      </div>
+      <div class="menus-item">
         <router-link to="/albums">
           <i class="iconfont iconxiangce1" /> 相册
         </router-link>

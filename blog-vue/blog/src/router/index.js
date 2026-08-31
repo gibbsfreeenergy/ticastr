@@ -4,6 +4,7 @@ const routes = [
   { path: "/", component: () => import("../views/home/Home.vue") },
   { path: "/articles/:articleId", component: () => import("../views/article/Article.vue") },
   { path: "/archives", component: () => import("../views/archive/Archive.vue"), meta: { title: "归档" } },
+  { path: "/orbit", component: () => import("../views/orbit/Orbit.vue"), meta: { title: "阅读星图" } },
   { path: "/albums", component: () => import("../views/album/Album.vue"), meta: { title: "相册" } },
   { path: "/talks", component: () => import("../views/talk/Talk.vue"), meta: { title: "说说" } },
   { path: "/talks/:talkId", component: () => import("../views/talk/TalkInfo.vue"), meta: { title: "说说" } },

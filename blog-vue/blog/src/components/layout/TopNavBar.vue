@@ -53,6 +53,11 @@
                 <i class="iconfont iconbiaoqian" /> 标签
               </router-link>
             </li>
+            <li>
+              <router-link to="/orbit">
+                <i class="iconfont iconfaxian" /> 阅读星图
+              </router-link>
+            </li>
           </ul>
         </div>
         <div class="menus-item">
@@ -134,13 +139,19 @@ export default {
       navClass: "nav"
     };
   },
+  watch: {
+    "$route.path"() {
+      this.updateNavigation();
+    }
+  },
   methods: {
     updateNavigation() {
       const scrollTop =
         window.pageYOffset ||
         document.documentElement.scrollTop ||
         document.body.scrollTop;
-      this.navClass = scrollTop > 60 ? "nav-fixed" : "nav";
+      const orbitClass = this.$route.path === "/orbit" ? " orbit-nav" : "";
+      this.navClass = (scrollTop > 60 ? "nav-fixed" : "nav") + orbitClass;
     },
     openSearch() {
       this.$store.state.searchFlag = true;
@@ -189,6 +200,16 @@ ul {
 }
 .nav a {
   color: #eee !important;
+}
+.v-theme--light.orbit-nav:not(.nav-fixed) {
+  background: rgba(13, 18, 41, 0.94) !important;
+}
+.v-theme--light.orbit-nav:not(.nav-fixed) a {
+  color: #f4f5ff !important;
+  text-shadow: none;
+}
+.v-theme--light.orbit-nav:not(.nav-fixed) .menu-btn:hover {
+  color: #f6c978 !important;
 }
 .nav .menu-btn {
   text-shadow: 0.05rem 0.05rem 0.1rem rgba(0, 0, 0, 0.3);
