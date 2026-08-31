@@ -4,7 +4,7 @@ package com.wzh.blog.config;
 import com.wzh.blog.handler.PageableHandlerInterceptor;
 import com.wzh.blog.handler.WebSecurityHandler;
 import com.wzh.blog.web.PaginationContext;
-import org.springframework.beans.factory.annotation.Value;
+import com.wzh.blog.service.RateLimitStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -24,20 +24,23 @@ import java.util.Arrays;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final PaginationContext paginationContext;
+    private final RateLimitStore rateLimitStore;
+    private final StorageProperties storageProperties;
 
-    public WebMvcConfig(PaginationContext paginationContext) {
+    public WebMvcConfig(PaginationContext paginationContext,
+                        RateLimitStore rateLimitStore,
+                        StorageProperties storageProperties) {
         this.paginationContext = paginationContext;
+        this.rateLimitStore = rateLimitStore;
+        this.storageProperties = storageProperties;
     }
 
-    @Value("${app.security.cors.allowed-origins}")
+    @org.springframework.beans.factory.annotation.Value("${app.security.cors.allowed-origins}")
     private String allowedOrigins;
-
-    @Value("${upload.local.path}")
-    private String localUploadPath;
 
     @Bean
     public WebSecurityHandler getWebSecurityHandler() {
-        return new WebSecurityHandler();
+        return new WebSecurityHandler(rateLimitStore);
     }
 
     @Override
@@ -59,11 +62,16 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(getWebSecurityHandler());
     }
 
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String normalizedPath = localUploadPath.endsWith("/") || localUploadPath.endsWith("\\")
-                ? localUploadPath
-                : localUploadPath + "/";
+        String localRoot = java.nio.file.Path.of(storageProperties.getLocalRoot())
+                .toAbsolutePath()
+                .normalize()
+                .toString();
+        String normalizedPath = localRoot.endsWith("\\") || localRoot.endsWith("/")
+                ? localRoot
+                : localRoot + java.io.File.separator;
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + normalizedPath);
     }

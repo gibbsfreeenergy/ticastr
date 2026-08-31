@@ -98,8 +98,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -119,7 +119,7 @@
     </el-dialog>
     <!-- 添加对话框 -->
     <el-dialog v-model="addOrEdit" width="30%">
-      <template #header><div class="dialog-title-container" ref="linkTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="linkForm">
         <el-form-item label="链接名">
           <el-input style="width:250px" v-model="linkForm.linkName" />
@@ -154,6 +154,7 @@ export default {
       loading: true,
       deleteFlag: false,
       addOrEdit: false,
+      dialogTitle: "添加友链",
       linkIdList: [],
       linkList: [],
       linkForm: {
@@ -195,7 +196,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/links", param).then(({ data }) => {
+      this.$api.admin.removeLinks(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -214,14 +215,14 @@ export default {
     openModel(link) {
       if (link != null) {
         this.linkForm = JSON.parse(JSON.stringify(link));
-        this.$refs.linkTitle.innerHTML = "修改友链";
+        this.dialogTitle = "修改友链";
       } else {
         this.linkForm.id = null;
         this.linkForm.linkName = "";
         this.linkForm.linkAvatar = "";
         this.linkForm.linkIntro = "";
         this.linkForm.linkAddress = "";
-        this.$refs.linkTitle.innerHTML = "添加友链";
+        this.dialogTitle = "添加友链";
       }
       this.addOrEdit = true;
     },
@@ -242,7 +243,7 @@ export default {
         this.$message.error("友链地址不能为空");
         return false;
       }
-      this.$http.post("/api/admin/links", this.linkForm).then(({ data }) => {
+      this.$api.admin.saveLink(this.linkForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -259,15 +260,15 @@ export default {
       });
     },
     listLinks() {
-      this.$http
-        .get("/api/admin/links", {
+      this.$api.admin
+        .links({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.linkList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;

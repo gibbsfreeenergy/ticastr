@@ -5,6 +5,7 @@ import com.wzh.blog.dto.OperationLogDTO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.OperationLog;
 import com.wzh.blog.vo.SearchQueryVO;
+import com.wzh.blog.web.PageQuery;
 
 /**
  * 操作日志服务
@@ -20,6 +21,6 @@ public interface OperationLogService extends IService<OperationLog> {
      * @param conditionVO 条件
      * @return 日志列表
      */
-    PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO);
+    PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO, PageQuery pageQuery);
 
 }

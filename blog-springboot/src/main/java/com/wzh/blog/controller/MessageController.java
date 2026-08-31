@@ -10,7 +10,6 @@ import com.wzh.blog.dto.MessageDTO;
 import com.wzh.blog.service.MessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -28,8 +27,11 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
 @Tag(name = "留言模块")
 @RestController
 public class MessageController {
-    @Autowired
-    private MessageService messageService;
+    private final MessageService messageService;
+
+    public MessageController(MessageService messageService) {
+        this.messageService = messageService;
+    }
 
     /**
      * 添加留言
@@ -65,7 +67,7 @@ public class MessageController {
     @Operation(summary = "查看后台留言列表")
     @GetMapping("/admin/messages")
     public Result<PageResult<MessageBackDTO>> listMessageBackDTO(ModerationQueryVO condition) {
-        return Result.ok(messageService.listMessageBackDTO(condition));
+        return Result.ok(messageService.listMessageBackDTO(condition, condition.toPageQuery()));
     }
 
     /**

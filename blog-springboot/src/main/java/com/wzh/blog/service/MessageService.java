@@ -8,6 +8,7 @@ import com.wzh.blog.dto.MessageDTO;
 import com.wzh.blog.entity.Message;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.ReviewVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -46,6 +47,6 @@ public interface MessageService extends IService<Message> {
      * @param condition 条件
      * @return 留言列表
      */
-    PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition);
+    PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition, PageQuery pageQuery);
 
 }

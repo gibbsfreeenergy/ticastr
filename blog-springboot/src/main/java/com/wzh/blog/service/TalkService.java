@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.StatusQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.TalkVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public interface TalkService extends IService<Talk> {
      *
      * @return {@link PageResult<TalkDTO>} 说说列表
      */
-    PageResult<TalkDTO> listTalks();
+    PageResult<TalkDTO> listTalks(PageQuery pageQuery);
 
     /**
      * 根据id查看说说
@@ -67,7 +68,7 @@ public interface TalkService extends IService<Talk> {
      * @param conditionVO 条件
      * @return {@link PageResult<TalkBackDTO>}
      */
-    PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO);
+    PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO, PageQuery pageQuery);
 
     /**
      * 根据id查看后台说说

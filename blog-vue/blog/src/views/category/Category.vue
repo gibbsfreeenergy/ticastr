@@ -36,7 +36,7 @@ export default {
   },
   methods: {
     listCategories() {
-      this.$http.get("/api/categories").then(({ data }) => {
+      this.$api.catalog.categories().then(data => {
         this.categoryList = data.data.recordList;
         this.count = data.data.count;
       });

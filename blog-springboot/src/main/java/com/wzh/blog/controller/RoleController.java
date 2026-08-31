@@ -10,7 +10,6 @@ import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.RoleVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -28,8 +27,11 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
 @Tag(name = "角色模块")
 @RestController
 public class RoleController {
-    @Autowired
-    private RoleService roleService;
+    private final RoleService roleService;
+
+    public RoleController(RoleService roleService) {
+        this.roleService = roleService;
+    }
 
     /**
      * 查询用户角色选项
@@ -51,7 +53,7 @@ public class RoleController {
     @Operation(summary = "查询角色列表")
     @GetMapping("/admin/roles")
     public Result<PageResult<RoleDTO>> listRoles(SearchQueryVO conditionVO) {
-        return Result.ok(roleService.listRoles(conditionVO));
+        return Result.ok(roleService.listRoles(conditionVO, conditionVO.toPageQuery()));
     }
 
     /**

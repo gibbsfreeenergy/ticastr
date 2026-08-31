@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.OutboxEventDao">
+    <select id="listClaimable" resultType="com.wzh.blog.entity.OutboxEvent">
+        SELECT event_id, event_type, event_version, aggregate_id, payload, trace_id, status, attempts,
+               next_attempt_at, claimed_at, enqueued_at, processing_started_at, created_at,
+               published_at, processed_at, last_error
+        FROM tb_outbox_event
+        WHERE (
+            (status IN ('PENDING', 'ENQUEUED') AND next_attempt_at &lt;= NOW())
+            OR (status = 'PROCESSING' AND COALESCE(processing_started_at, claimed_at)
+                &lt; DATE_SUB(NOW(), INTERVAL 10 MINUTE))
+        )
+        ORDER BY created_at, event_id
+        LIMIT #{limit}
+        FOR UPDATE SKIP LOCKED
+    </select>
+
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM tb_outbox_event
+        WHERE status = #{status}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM tb_outbox_event
+    </select>
+
+    <select id="listRecent" resultType="com.wzh.blog.entity.OutboxEvent">
+        SELECT event_id, event_type, event_version, aggregate_id, status, attempts,
+               next_attempt_at, created_at, published_at, processed_at, last_error
+        FROM tb_outbox_event
+        ORDER BY created_at DESC, event_id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="existsOpen" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM tb_outbox_event
+            WHERE event_type = #{eventType}
+              AND aggregate_id = #{aggregateId}
+              AND status &lt;&gt; 'PUBLISHED'
+        )
+    </select>
+
+    <select id="listEnqueueable" resultType="com.wzh.blog.entity.OutboxEvent">
+        SELECT event_id, event_type, event_version, aggregate_id, payload, trace_id, status, attempts,
+               next_attempt_at, claimed_at, enqueued_at, processing_started_at, created_at,
+               published_at, processed_at, last_error
+        FROM tb_outbox_event
+        WHERE status = 'PENDING'
+          AND next_attempt_at &lt;= NOW()
+        ORDER BY created_at, event_id
+        LIMIT #{limit}
+        FOR UPDATE SKIP LOCKED
+    </select>
+</mapper>

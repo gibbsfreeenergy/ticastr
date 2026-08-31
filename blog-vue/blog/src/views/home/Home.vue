@@ -104,9 +104,9 @@
                 <v-icon size="14">$mdi-tag-multiple</v-icon>{{ tag.tagName }}
               </router-link>
             </div>
-            <!-- 文章内容 -->
-            <div class="article-content">
-              {{ item.articleContent }}
+            <!-- 正文按需从文章内容接口读取，首页只保留轻量元数据。 -->
+            <div class="article-content article-content-hint">
+              点击标题阅读全文
             </div>
           </div>
         </v-card>
@@ -132,7 +132,6 @@
                   v-if="blogInfo.websiteConfig.websiteAvatar"
                   class="author-avatar"
                   :src="blogInfo.websiteConfig.websiteAvatar"
-                  @error="hideBrokenImage"
                 />
               </v-avatar>
               <div style="font-size: 1.375rem;margin-top:0.625rem">
@@ -238,9 +237,6 @@
 <script>
 import Swiper from "../../components/Swiper.vue";
 import EasyTyper from "easy-typer-js";
-import MarkdownIt from "markdown-it";
-
-const markdown = new MarkdownIt();
 export default {
   components: {
     Swiper
@@ -267,15 +263,12 @@ export default {
       },
       articleList: [],
       talkList: [],
-      current: 1,
+      nextCursor: null,
       loadingArticles: false,
       articlesComplete: false
     };
   },
   methods: {
-    hideBrokenImage(event) {
-      event.currentTarget.style.display = "none";
-    },
     // 初始化
     init() {
       document.title = this.blogInfo.websiteConfig.websiteName;
@@ -291,12 +284,12 @@ export default {
           this.initTyped(this.blogInfo.websiteConfig.websiteIntro);
         });
     },
-    async requestWithRetry(url, config = {}) {
+    async requestWithRetry(request, config = {}) {
       const retryDelays = [0, 800, 1600];
       for (const delay of retryDelays) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         try {
-          return await this.$http.get(url, {
+          return await request({
             ...config,
             suppressErrorToast: true,
             timeout: 5000
@@ -308,8 +301,8 @@ export default {
       return null;
     },
     async listHomeTalks() {
-      const response = await this.requestWithRetry("/api/home/talks");
-      if (response?.data?.data) this.talkList = response.data.data;
+      const response = await this.requestWithRetry(config => this.$api.public.homeTalks(config));
+      if (response?.data) this.talkList = response.data;
     },
     initTyped(input, fn, hooks) {
       const obj = this.obj;
@@ -340,26 +333,22 @@ export default {
       if (this.loadingArticles || this.articlesComplete) return;
       this.loadingArticles = true;
       try {
-        const response = await this.requestWithRetry("/api/articles", {
+        const response = await this.requestWithRetry(config => this.$api.article.home(config), {
           params: {
-            current: this.current
+            cursor: this.nextCursor || undefined,
+            size: 10
           }
         });
         if (!response) return;
-        const { data } = response;
-        if (!data.data.length) {
+        const page = response.data || {};
+        const items = Array.isArray(page.items) ? page.items : [];
+        if (!items.length) {
           this.articlesComplete = true;
           return;
         }
-        data.data.forEach(item => {
-          item.articleContent = markdown
-            .render(item.articleContent)
-            .replace(/<\/?[^>]*>/g, "")
-            .replace(/[|]*\n/, "")
-            .replace(/&npsp;/gi, "");
-        });
-        this.articleList.push(...data.data);
-        this.current++;
+        this.articleList.push(...items);
+        this.nextCursor = page.nextCursor || null;
+        this.articlesComplete = !page.hasNext;
       } finally {
         this.loadingArticles = false;
       }
@@ -378,7 +367,7 @@ export default {
       return this.$store.state.blogInfo;
     },
     isShowSocial() {
-      return function(social) {
+      return social => {
         return this.blogInfo.websiteConfig.socialUrlList.indexOf(social) != -1;
       };
     },

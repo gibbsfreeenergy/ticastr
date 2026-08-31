@@ -5,6 +5,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system spring && adduser --system --ingroup spring spring
+RUN mkdir -p /data/uploads /data/search && chown -R spring:spring /data
 WORKDIR /app
 COPY deploy/backend/app.jar /app/app.jar
 

@@ -2,10 +2,10 @@ package com.wzh.blog.aspect;
 
 import com.wzh.blog.annotation.OptLog;
 import com.wzh.blog.entity.OperationLog;
+import com.wzh.blog.security.CurrentUser;
 import com.wzh.blog.service.AuditLogService;
 import com.wzh.blog.util.AuditLogSanitizer;
 import com.wzh.blog.util.IpUtils;
-import com.wzh.blog.util.UserUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import org.aspectj.lang.JoinPoint;
@@ -13,7 +13,6 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
@@ -35,12 +34,16 @@ import java.util.Objects;
 @Log4j2
 public class OptLogAspect {
 
-    @Autowired
-    private AuditLogService auditLogService;
+    private final AuditLogService auditLogService;
 
     private final AuditLogSanitizer sanitizer;
+    private final CurrentUser currentUser;
 
-    public OptLogAspect(@Value("${app.audit.max-payload-length:8000}") int maxPayloadLength) {
+    public OptLogAspect(AuditLogService auditLogService,
+                        CurrentUser currentUser,
+                        @Value("${app.audit.max-payload-length:8000}") int maxPayloadLength) {
+        this.auditLogService = auditLogService;
+        this.currentUser = currentUser;
         this.sanitizer = new AuditLogSanitizer(maxPayloadLength);
     }
 
@@ -94,9 +97,10 @@ public class OptLogAspect {
         // 返回结果
         operationLog.setResponseData(sanitizer.sanitize(keys));
         // 请求用户ID
-        operationLog.setUserId(UserUtils.getLoginUser().getId());
+        var loginUser = currentUser.require();
+        operationLog.setUserId(loginUser.getId());
         // 请求用户
-        operationLog.setNickname(UserUtils.getLoginUser().getNickname());
+        operationLog.setNickname(loginUser.getNickname());
         // 请求IP
         String ipAddress = IpUtils.getIpAddress(request);
         operationLog.setIpAddress(ipAddress);

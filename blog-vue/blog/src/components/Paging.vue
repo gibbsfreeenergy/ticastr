@@ -151,7 +151,7 @@ export default {
   },
   computed: {
     isActive() {
-      return function(i) {
+      return i => {
         if (i == this.current) {
           return "active";
         }

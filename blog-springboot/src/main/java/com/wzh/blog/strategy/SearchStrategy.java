@@ -1,6 +1,7 @@
 package com.wzh.blog.strategy;
 
 import com.wzh.blog.dto.ArticleSearchDTO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -18,6 +19,6 @@ public interface SearchStrategy {
      * @param keywords 关键字
      * @return {@link List<ArticleSearchDTO>} 文章列表
      */
-    List<ArticleSearchDTO> searchArticle(String keywords);
+    List<ArticleSearchDTO> searchArticle(String keywords, PageQuery pageQuery);
 
 }

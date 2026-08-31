@@ -56,10 +56,13 @@
           </v-card>
         </v-col>
       </v-row>
-      <!-- 无限加载 -->
-      <infinite-loading @infinite="infiniteHandler">
-        <template #complete><div /></template>
-      </infinite-loading>
+      <div class="article-list-status" role="status">
+        <span v-if="loading">加载中...</span>
+        <button v-else-if="loadError || hasMore" type="button" @click="loadMore">
+          {{ loadError ? "重试" : "加载更多" }}
+        </button>
+        <span v-else>{{ articleList.length ? "没有更多文章" : "暂无文章" }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -73,6 +76,7 @@ export default {
     } else {
       this.title = "标签";
     }
+    this.loadMore();
   },
   data: function() {
     return {
@@ -80,31 +84,42 @@ export default {
       size: 10,
       articleList: [],
       name: "",
-      title: ""
+      title: "",
+      loading: false,
+      hasMore: true,
+      loadError: false
     };
   },
   methods: {
-    infiniteHandler($state) {
-      this.$http
-        .get("/api/articles/condition", {
+    loadMore() {
+      if (this.loading || (!this.hasMore && !this.loadError)) return;
+      this.loading = true;
+      this.loadError = false;
+      this.$api.article
+        .condition({
           params: {
             categoryId: this.$route.params.categoryId,
             tagId: this.$route.params.tagId,
             current: this.current
           }
         })
-        .then(({ data }) => {
-          if (data.data.name) {
-            this.name = data.data.name;
+        .then(data => {
+          const result = data.data || {};
+          const articlePreviewDTOList = result.articlePreviewDTOList || [];
+          if (result.name) {
+            this.name = result.name;
             document.title = this.title + " - " + this.name;
           }
-          if (data.data.articlePreviewDTOList.length) {
-            this.current++;
-            this.articleList.push(...data.data.articlePreviewDTOList);
-            $state.loaded();
-          } else {
-            $state.complete();
-          }
+          this.current++;
+          this.articleList.push(...articlePreviewDTOList);
+          this.hasMore = articlePreviewDTOList.length >= this.size;
+        })
+        .catch(() => {
+          this.loadError = true;
+          this.hasMore = true;
+        })
+        .finally(() => {
+          this.loading = false;
         });
     }
   },
@@ -188,5 +203,18 @@ export default {
   background: linear-gradient(to right, #bf4643 0%, #6c9d8f 100%);
   opacity: 0.6;
   margin-right: 0.5rem;
+}
+.article-list-status {
+  padding: 1.25rem;
+  color: #8a8a8a;
+  text-align: center;
+}
+.article-list-status button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 1.25rem;
+  color: #fff;
+  background: linear-gradient(135deg, #49b1f5, #8e8cd8);
+  cursor: pointer;
 }
 </style>

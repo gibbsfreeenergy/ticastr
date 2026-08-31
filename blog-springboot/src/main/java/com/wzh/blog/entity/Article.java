@@ -49,10 +49,8 @@ public class Article {
      */
     private String articleTitle;
 
-    /**
-     * 内容
-     */
-    private String articleContent;
+    /** Current immutable Markdown asset pointer. */
+    private String contentAssetId;
 
     /**
      * 文章类型

@@ -9,7 +9,6 @@ import com.wzh.blog.vo.MenuVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -24,8 +23,11 @@ import java.util.List;
 @Tag(name = "菜单模块")
 @RestController
 public class MenuController {
-    @Autowired
-    private MenuService menuService;
+    private final MenuService menuService;
+
+    public MenuController(MenuService menuService) {
+        this.menuService = menuService;
+    }
 
     /**
      * 查询菜单列表

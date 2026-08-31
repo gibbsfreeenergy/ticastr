@@ -43,7 +43,7 @@ export default {
   methods: {
     getAboutContent() {
       const that = this;
-      this.$http.get("/api/about").then(({ data }) => {
+      this.$api.public.about().then(data => {
         this.markdownToHtml(data);
         this.$nextTick(() => {
           // 添加代码复制功能

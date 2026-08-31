@@ -70,8 +70,8 @@
       class="pagination-container"
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       layout="prev, pager, next"
     />
@@ -122,15 +122,15 @@ export default {
       }
     },
     listTalks() {
-      this.$http
-        .get("/api/admin/talks", {
+      this.$api.talk
+        .adminList({
           params: {
             current: this.current,
             size: this.size,
             status: this.status
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.talkList = data.data.recordList;
           this.talkList.forEach(item => {
             if (item.imgList) {
@@ -157,9 +157,9 @@ export default {
       this.listTalks();
     },
     deleteTalk() {
-      this.$http
-        .delete("/api/admin/talks", { data: [this.talkId] })
-        .then(({ data }) => {
+      this.$api.talk
+        .remove({ data: [this.talkId] })
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -178,7 +178,7 @@ export default {
   },
   computed: {
     isActive() {
-      return function(status) {
+      return status => {
         return this.status == status ? "active-status" : "status";
       };
     }

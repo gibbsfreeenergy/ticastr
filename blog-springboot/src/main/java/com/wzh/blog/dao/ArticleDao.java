@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 
 /**
@@ -28,6 +29,14 @@ public interface ArticleDao extends BaseMapper<Article> {
      */
     List<ArticleHomeDTO> listArticles(@Param("current") Long current, @Param("size") Long size);
 
+    List<ArticleHomeDTO> listPublicArticlesAfter(@Param("cursorTime") LocalDateTime cursorTime,
+                                                 @Param("cursorId") Integer cursorId,
+                                                 @Param("limit") int limit);
+
+    List<ArchiveDTO> listPublicArchivesAfter(@Param("cursorTime") LocalDateTime cursorTime,
+                                             @Param("cursorId") Integer cursorId,
+                                             @Param("limit") int limit);
+
     /**
      * 根据id查询文章
      *
@@ -35,6 +44,9 @@ public interface ArticleDao extends BaseMapper<Article> {
      * @return 文章信息
      */
     ArticleDTO getArticleById(@Param("articleId") Integer articleId);
+
+    /** Locks the article row for a content-version pointer update. */
+    Article selectForUpdate(@Param("articleId") Integer articleId);
 
     /**
      * 根据条件查询文章
@@ -71,6 +83,9 @@ public interface ArticleDao extends BaseMapper<Article> {
      * @return 文章列表
      */
     List<ArticleRecommendDTO> listRecommendArticles(@Param("articleId") Integer articleId);
+
+    /** Keyset source for rebuilding the local search projection. */
+    List<Article> listPublishedArticlesAfter(@Param("afterId") Integer afterId, @Param("limit") int limit);
 
     /**
      * 文章统计

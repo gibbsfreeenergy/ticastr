@@ -9,7 +9,6 @@ import com.wzh.blog.service.FriendLinkService;
 import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -27,8 +26,11 @@ import static com.wzh.blog.constant.OptTypeConst.REMOVE;
 @Tag(name = "友链模块")
 @RestController
 public class FriendLinkController {
-    @Autowired
-    private FriendLinkService friendLinkService;
+    private final FriendLinkService friendLinkService;
+
+    public FriendLinkController(FriendLinkService friendLinkService) {
+        this.friendLinkService = friendLinkService;
+    }
 
     /**
      * 查看友链列表
@@ -50,7 +52,7 @@ public class FriendLinkController {
     @Operation(summary = "查看后台友链列表")
     @GetMapping("/admin/links")
     public Result<PageResult<FriendLinkBackDTO>> listFriendLinkDTO(SearchQueryVO condition) {
-        return Result.ok(friendLinkService.listFriendLinkDTO(condition));
+        return Result.ok(friendLinkService.listFriendLinkDTO(condition, condition.toPageQuery()));
     }
 
     /**

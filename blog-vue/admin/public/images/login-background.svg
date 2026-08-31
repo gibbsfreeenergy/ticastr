@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">管理端登录背景</title>
+  <desc id="desc">蓝紫色渐变的抽象登录背景</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dbeafe"/>
+      <stop offset=".5" stop-color="#eff6ff"/>
+      <stop offset="1" stop-color="#ede9fe"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#7c3aed" stop-opacity=".55"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#background)"/>
+  <circle cx="1040" cy="180" r="300" fill="url(#accent)" opacity=".55"/>
+  <circle cx="560" cy="820" r="360" fill="#60a5fa" opacity=".18"/>
+  <path d="M0 620C250 520 420 570 640 690s390 160 800-40v250H0Z" fill="#fff" opacity=".6"/>
+  <path d="M0 180C210 280 390 280 620 150S1050 20 1440 150v120C1060 180 920 260 660 350S220 380 0 290Z" fill="#fff" opacity=".35"/>
+</svg>

@@ -10,12 +10,10 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.util.IpUtils;
 import eu.bitwalker.useragentutils.UserAgent;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -33,16 +31,21 @@ import static com.wzh.blog.enums.ZoneEnum.SHANGHAI;
  */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
-    @Autowired
-    private UserAuthDao userAuthDao;
-    @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private RoleDao roleDao;
-    @Autowired
-    private RedisService redisService;
-    @Resource
-    private HttpServletRequest request;
+    private final UserAuthDao userAuthDao;
+    private final UserInfoDao userInfoDao;
+    private final RoleDao roleDao;
+    private final RedisService redisService;
+    private final HttpServletRequest request;
+
+    public UserDetailsServiceImpl(UserAuthDao userAuthDao, UserInfoDao userInfoDao,
+                                  RoleDao roleDao, RedisService redisService,
+                                  HttpServletRequest request) {
+        this.userAuthDao = userAuthDao;
+        this.userInfoDao = userInfoDao;
+        this.roleDao = roleDao;
+        this.redisService = redisService;
+        this.request = request;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) {

@@ -36,10 +36,11 @@ public class ArticleDTO {
      */
     private String articleTitle;
 
-    /**
-     * 内容
-     */
-    private String articleContent;
+    /** Current content version; the body is fetched from the content endpoint. */
+    private Integer contentVersion;
+
+    /** Relative content endpoint, never a provider credential or bucket URL. */
+    private String contentUrl;
 
     /**
      * 点赞量

@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dao.ArticleDao;
@@ -18,7 +16,7 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.CategoryService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.vo.CategoryVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,12 +32,13 @@ import java.util.Objects;
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> implements CategoryService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private CategoryDao categoryDao;
-    @Autowired
-    private ArticleDao articleDao;
+    private final CategoryDao categoryDao;
+    private final ArticleDao articleDao;
+
+    public CategoryServiceImpl(CategoryDao categoryDao, ArticleDao articleDao) {
+        this.categoryDao = categoryDao;
+        this.articleDao = articleDao;
+    }
 
 
 
@@ -52,7 +51,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> impl
 
 
     @Override
-    public PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO condition) {
+    public PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO condition, PageQuery pageQuery) {
         // 查询分类数量
         Long count = categoryDao.selectCount(new LambdaQueryWrapper<Category>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Category::getCategoryName, condition.getKeywords()));
@@ -60,7 +59,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, Category> impl
             return new PageResult<>();
         }
         // 分页查询分类列表
-        List<CategoryBackDTO> categoryList = categoryDao.listCategoryBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<CategoryBackDTO> categoryList = categoryDao.listCategoryBackDTO(pageQuery.offset(), pageQuery.size(), condition);
         return new PageResult<>(categoryList, count);
     }
 

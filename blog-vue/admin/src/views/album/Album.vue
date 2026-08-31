@@ -13,7 +13,7 @@
       </el-button>
       <div style="margin-left:auto">
         <el-button
-          type="text"
+          type="link"
           size="small"
           icon="el-icon-delete"
           style="margin-right:1rem"
@@ -75,14 +75,14 @@
       class="pagination-container"
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       layout="prev, pager, next"
     />
     <!-- 新增模态框 -->
     <el-dialog v-model="addOrEdit" width="35%" top="10vh">
-      <template #header><div class="dialog-title-container" ref="albumTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="albumForum">
         <el-form-item label="相册名称">
           <el-input style="width:220px" v-model="albumForum.albumName" />
@@ -96,7 +96,7 @@
             drag
             :show-file-list="false"
             :before-upload="beforeUpload"
-            action="/api/admin/photos/albums/cover"
+            :action="$api.admin.uploadAlbumCoverUrl"
             multiple
             :on-success="uploadCover"
           >
@@ -114,8 +114,8 @@
         </el-form-item>
         <el-form-item label="发布形式">
           <el-radio-group v-model="albumForum.status">
-            <el-radio :label="1">公开</el-radio>
-            <el-radio :label="2">私密</el-radio>
+            <el-radio :value="1">公开</el-radio>
+            <el-radio :value="2">私密</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -154,6 +154,7 @@ export default {
       loading: true,
       isdelete: false,
       addOrEdit: false,
+      dialogTitle: "新建相册",
       albumForum: {
         id: null,
         albumName: "",
@@ -171,7 +172,7 @@ export default {
     openModel(item) {
       if (item) {
         this.albumForum = JSON.parse(item);
-        this.$refs.albumTitle.innerHTML = "修改相册";
+        this.dialogTitle = "修改相册";
       } else {
         this.albumForum = {
           id: null,
@@ -180,7 +181,7 @@ export default {
           albumCover: "",
           status: 1
         };
-        this.$refs.albumTitle.innerHTML = "新建相册";
+        this.dialogTitle = "新建相册";
       }
       this.addOrEdit = true;
     },
@@ -191,15 +192,15 @@ export default {
       this.$router.push({ path: "/photos/delete" });
     },
     listAlbums() {
-      this.$http
-        .get("/api/admin/photos/albums", {
+      this.$api.album
+        .adminList({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.albumList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -218,9 +219,9 @@ export default {
         this.$message.error("相册封面不能为空");
         return false;
       }
-      this.$http
-        .post("/api/admin/photos/albums", this.albumForum)
-        .then(({ data }) => {
+      this.$api.album
+        .save(this.albumForum)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -263,9 +264,9 @@ export default {
       }
     },
     deleteAlbum() {
-      this.$http
-        .delete("/api/admin/photos/albums/" + this.albumForum.id)
-        .then(({ data }) => {
+      this.$api.album
+        .remove(this.albumForum.id)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",

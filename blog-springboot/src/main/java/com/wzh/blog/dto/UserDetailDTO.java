@@ -2,9 +2,11 @@ package com.wzh.blog.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import com.alibaba.fastjson2.annotation.JSONField;
+import com.wzh.blog.security.AuthenticatedUserPrincipal;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -21,7 +23,13 @@ import static com.wzh.blog.constant.CommonConst.FALSE;
  */
 @Data
 @Builder
-public class UserDetailDTO implements UserDetails {
+@EqualsAndHashCode(callSuper = false)
+/**
+ * Authentication-phase user details. It is retained only as the short-lived
+ * credential-bearing object returned by UserDetailsService; successful login
+ * replaces it with AuthenticatedUserPrincipal before session persistence.
+ */
+public class UserDetailDTO extends AuthenticatedUserPrincipal {
 
     /**
      * 用户账号id
@@ -51,7 +59,13 @@ public class UserDetailDTO implements UserDetails {
     /**
      * 密码
      */
-    private String password;
+    /**
+     * The password is needed only during the authentication handshake.  It is
+     * transient and excluded from JSON serializers so a session principal can
+     * never persist or expose the password hash.
+     */
+    @JSONField(serialize = false, deserialize = false)
+    private transient String password;
 
     /**
      * 用户角色
@@ -126,7 +140,7 @@ public class UserDetailDTO implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.roleList.stream()
+        return Optional.ofNullable(this.roleList).orElseGet(List::of).stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toSet());
     }
@@ -134,6 +148,11 @@ public class UserDetailDTO implements UserDetails {
     @Override
     public String getPassword() {
         return this.password;
+    }
+
+    /** Clears the authentication-only credential before session persistence. */
+    public void eraseCredentials() {
+        this.password = null;
     }
 
     @Override

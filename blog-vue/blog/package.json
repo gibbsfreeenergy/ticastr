@@ -12,10 +12,16 @@
     "dev": "vite",
     "serve": "vite",
     "build": "vite build",
+    "build:seo": "npm run build && npm run optimize:images && npm run generate:feeds && node scripts/prerender.mjs && npm run verify:static && npm run verify:budget",
     "preview": "vite preview",
+    "generate:feeds": "node scripts/generate-site-feeds.mjs",
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "verify:budget": "node scripts/check-bundle-budget.mjs",
+    "verify:static": "node scripts/check-static-contract.mjs",
     "lint": "eslint .",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:seo": "node --test scripts/generate-site-feeds.test.mjs scripts/prerender.test.mjs"
   },
   "dependencies": {
     "@mdi/js": "^7.4.47",
@@ -47,6 +53,7 @@
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
     "sass-embedded": "^1.93.3",
+    "sharp": "^0.35.4",
     "stylus": "^0.64.0",
     "vite": "^8.1.4",
     "vitest": "^4.1.10"

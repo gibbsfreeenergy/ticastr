@@ -183,8 +183,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -269,7 +269,7 @@ export default {
         param.idList = this.commentIdList;
       }
       param.isReview = 1;
-      this.$http.put("/api/admin/comments/review", param).then(({ data }) => {
+      this.$api.comment.review(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -291,7 +291,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/comments", param).then(({ data }) => {
+      this.$api.comment.remove(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -308,8 +308,8 @@ export default {
       });
     },
     listComments() {
-      this.$http
-        .get("/api/admin/comments", {
+      this.$api.comment
+        .adminList({
           params: {
             current: this.current,
             size: this.size,
@@ -318,7 +318,7 @@ export default {
             isReview: this.isReview
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.commentList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;

@@ -3,12 +3,10 @@ import router, { resetRouter } from "../../router";
 import store from "../../store";
 
 vi.mock("../../api/http", () => ({
-  default: {
-    get: vi.fn()
-  }
+  api: { admin: { menus: vi.fn() } }
 }));
 
-import http from "../../api/http";
+import { api } from "../../api/http";
 import { generaMenu, isMenuReady, resetMenuLoader } from "./menu";
 
 describe("dynamic menu loading", () => {
@@ -19,16 +17,14 @@ describe("dynamic menu loading", () => {
   });
 
   it("waits for menu data before marking routes ready", async () => {
-    http.get.mockResolvedValue({
-      data: {
-        flag: true,
-        data: [{
-          path: "/",
-          name: "home",
-          component: "Layout",
-          children: [{ path: "home", name: "dashboard", component: "/home/Home.vue", icon: "home" }]
-        }]
-      }
+    api.admin.menus.mockResolvedValue({
+      flag: true,
+      data: [{
+        path: "/",
+        name: "home",
+        component: "Layout",
+        children: [{ path: "home", name: "dashboard", component: "/home/Home.vue", icon: "home" }]
+      }]
     });
 
     await generaMenu();

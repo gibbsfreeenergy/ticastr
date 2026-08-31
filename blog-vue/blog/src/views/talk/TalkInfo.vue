@@ -90,9 +90,9 @@ export default {
   },
   methods: {
     getTalkById() {
-      this.$http
-        .get("/api/talks/" + this.$route.params.talkId)
-        .then(({ data }) => {
+      this.$api.talk
+        .byId(this.$route.params.talkId)
+        .then(data => {
           this.talkInfo = data.data;
           this.previewList = this.talkInfo.imgList;
         });
@@ -113,7 +113,7 @@ export default {
         return false;
       }
       // 发送请求
-      this.$http.post("/api/talks/" + talk.id + "/like").then(({ data }) => {
+      this.$api.talk.like(talk.id).then(data => {
         if (data.flag) {
           // 判断是否点赞
           if (this.$store.state.talkLikeSet.indexOf(talk.id) != -1) {
@@ -137,7 +137,7 @@ export default {
       return "background: url(" + cover + ") center center / cover no-repeat";
     },
     isLike() {
-      return function(talkId) {
+      return talkId => {
         var talkLikeSet = this.$store.state.talkLikeSet;
         return talkLikeSet.indexOf(talkId) != -1 ? "#eb5055" : "#999";
       };

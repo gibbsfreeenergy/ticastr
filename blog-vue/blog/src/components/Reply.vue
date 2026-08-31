@@ -1,5 +1,5 @@
 <template>
-  <div class="reply-input-wrapper" style="display: none" ref="reply">
+  <div v-show="visible" class="reply-input-wrapper">
     <textarea
       class="comment-textarea"
       :placeholder="'回复 @' + nickname + '：'"
@@ -47,12 +47,19 @@ export default {
       nickname: "",
       replyUserId: null,
       parentId: null,
-      commentContent: ""
+      commentContent: "",
+      visible: false
     };
   },
   methods: {
     cancleReply() {
-      this.$refs.reply.style.display = "none";
+      this.hide();
+    },
+    show() {
+      this.visible = true;
+    },
+    hide() {
+      this.visible = false;
     },
     insertReply() {
       //判断登录
@@ -90,7 +97,7 @@ export default {
           break;
       }
       this.commentContent = "";
-      this.$http.post("/api/comments", comment).then(({ data }) => {
+      this.$api.comment.create(comment).then(data => {
         if (data.flag) {
           this.$emit("reloadReply", this.index);
           this.$toast({ type: "success", message: "回复成功" });

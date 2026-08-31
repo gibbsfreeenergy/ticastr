@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.ArticleLikeDao">
+    <insert id="insertIgnore">
+        INSERT IGNORE INTO tb_article_like (user_id, article_id, created_at)
+        VALUES (#{userId}, #{articleId}, NOW())
+    </insert>
+
+    <delete id="deleteByUserAndArticle">
+        DELETE FROM tb_article_like
+        WHERE user_id = #{userId} AND article_id = #{articleId}
+    </delete>
+
+    <select id="existsByUserAndArticle" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM tb_article_like
+            WHERE user_id = #{userId} AND article_id = #{articleId}
+        )
+    </select>
+</mapper>

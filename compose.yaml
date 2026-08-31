@@ -8,33 +8,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./blog-mysql8.sql:/docker-entrypoint-initdb.d/01-blog.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-
-  redis:
-    image: redis:7.4-alpine
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"]
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: blog
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -47,34 +22,37 @@ services:
       DB_URL: jdbc:mysql://mysql:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true
       DB_USERNAME: blog
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_USERNAME: blog
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      APP_REDIS_ENABLED: ${APP_REDIS_ENABLED:-false}
       MONITORING_TOKEN: ${MONITORING_TOKEN:?Set MONITORING_TOKEN in .env}
+      DEPLOYMENT_PROFILE: local
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:8090}
       BOOTSTRAP_ADMIN_ENABLED: ${BOOTSTRAP_ADMIN_ENABLED:-false}
       BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       BOOTSTRAP_ADMIN_NICKNAME: ${BOOTSTRAP_ADMIN_NICKNAME:-Administrator}
-      UPLOAD_MODE: local
-      UPLOAD_LOCAL_URL: http://localhost:8080/uploads/
-      UPLOAD_LOCAL_PATH: /data/uploads/
+      STORAGE_ACTIVE_PROVIDER: ${STORAGE_ACTIVE_PROVIDER:-local}
+      STORAGE_LOCAL_ROOT: /data/uploads/
+      STORAGE_LOCAL_PUBLIC_URL: /uploads/
+      SEARCH_DATA_ROOT: /data/search
       WEBSITE_URL: http://localhost:8080
       CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:8081
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     volumes:
       - uploads:/data/uploads
+      - search-data:/data/search
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8090/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
 
   blog:
     build:
-      context: ./blog-vue/blog
+      context: ./blog-vue
+      dockerfile: blog/Dockerfile
       args:
         VITE_QQ_APP_ID: ${VITE_QQ_APP_ID:-}
         VITE_QQ_REDIRECT_URI: ${VITE_QQ_REDIRECT_URI:-http://localhost:8080/oauth/login/qq}
@@ -90,7 +68,8 @@ services:
 
   admin:
     build:
-      context: ./blog-vue/admin
+      context: ./blog-vue
+      dockerfile: admin/Dockerfile
       args:
         VITE_TENCENT_CAPTCHA_ID: ${VITE_TENCENT_CAPTCHA_ID:-}
     ports:
@@ -101,5 +80,5 @@ services:
 
 volumes:
   mysql-data:
-  redis-data:
   uploads:
+  search-data:

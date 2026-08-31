@@ -34,7 +34,7 @@
           </el-popover>
           <!-- 图片上传 -->
           <el-upload
-            action="/api/admin/talks/images"
+            :action="$api.admin.uploadTalkImageUrl"
             multiple
             :before-upload="beforeUpload"
             :on-success="upload"
@@ -85,7 +85,7 @@
       <el-upload
         class="talk-image-upload"
         v-show="uploadList.length > 0"
-        action="/api/admin/talks/images"
+        :action="$api.admin.uploadTalkImageUrl"
         list-type="picture-card"
         :file-list="uploadList"
         multiple
@@ -109,9 +109,9 @@ export default {
   },
   created() {
     if (this.$route.params.talkId) {
-      this.$http
-        .get("/api/admin/talks/" + this.$route.params.talkId)
-        .then(({ data }) => {
+      this.$api.talk
+        .adminById(this.$route.params.talkId)
+        .then(data => {
           this.talk = data.data;
           if (data.data.imgList) {
             data.data.imgList.forEach(item => {
@@ -187,7 +187,7 @@ export default {
         });
         this.talk.images = JSON.stringify(imgList);
       }
-      this.$http.post("/api/admin/talks", this.talk).then(({ data }) => {
+      this.$api.talk.save(this.talk).then(data => {
         if (data.flag) {
           this.$refs.editor.clear();
           this.uploadList = [];

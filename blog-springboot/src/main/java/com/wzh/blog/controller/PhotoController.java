@@ -7,7 +7,6 @@ import com.wzh.blog.service.PhotoService;
 import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -24,8 +23,11 @@ import static com.wzh.blog.constant.OptTypeConst.*;
 @Tag(name = "照片模块")
 @RestController
 public class PhotoController {
-    @Autowired
-    private PhotoService photoService;
+    private final PhotoService photoService;
+
+    public PhotoController(PhotoService photoService) {
+        this.photoService = photoService;
+    }
 
     /**
      * 获取后台照片列表
@@ -36,7 +38,7 @@ public class PhotoController {
     @Operation(summary = "根据相册id获取照片列表")
     @GetMapping("/admin/photos")
     public Result<PageResult<PhotoBackDTO>> listPhotos(PhotoQueryVO condition) {
-        return Result.ok(photoService.listPhotos(condition));
+        return Result.ok(photoService.listPhotos(condition, condition.toPageQuery()));
     }
 
     /**
@@ -117,8 +119,9 @@ public class PhotoController {
      */
     @Operation(summary = "根据相册id查看照片列表")
     @GetMapping("/albums/{albumId}/photos")
-    public Result<PhotoDTO> listPhotosByAlbumId(@PathVariable("albumId") Integer albumId) {
-        return Result.ok(photoService.listPhotosByAlbumId(albumId));
+    public Result<PhotoDTO> listPhotosByAlbumId(@PathVariable("albumId") Integer albumId,
+                                                PageQueryVO pageQueryVO) {
+        return Result.ok(photoService.listPhotosByAlbumId(albumId, pageQueryVO.toPageQuery()));
     }
 
 }

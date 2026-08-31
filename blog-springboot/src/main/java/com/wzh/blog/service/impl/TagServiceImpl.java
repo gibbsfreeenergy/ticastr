@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.wzh.blog.dao.ArticleTagDao;
@@ -17,7 +15,7 @@ import com.wzh.blog.service.TagService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.TagVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,12 +31,13 @@ import java.util.Objects;
 @Service
 public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private TagDao tagDao;
-    @Autowired
-    private ArticleTagDao articleTagDao;
+    private final TagDao tagDao;
+    private final ArticleTagDao articleTagDao;
+
+    public TagServiceImpl(TagDao tagDao, ArticleTagDao articleTagDao) {
+        this.tagDao = tagDao;
+        this.articleTagDao = articleTagDao;
+    }
 
 
 
@@ -57,7 +56,7 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
 
 
     @Override
-    public PageResult<TagBackDTO> listTagBackDTO(SearchQueryVO condition) {
+    public PageResult<TagBackDTO> listTagBackDTO(SearchQueryVO condition, PageQuery pageQuery) {
         // 查询标签数量
         Long count = tagDao.selectCount(new LambdaQueryWrapper<Tag>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Tag::getTagName, condition.getKeywords()));
@@ -65,7 +64,7 @@ public class TagServiceImpl extends ServiceImpl<TagDao, Tag> implements TagServi
             return new PageResult<>();
         }
         // 分页查询标签列表
-        List<TagBackDTO> tagList = tagDao.listTagBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<TagBackDTO> tagList = tagDao.listTagBackDTO(pageQuery.offset(), pageQuery.size(), condition);
         return new PageResult<>(tagList, count);
     }
 

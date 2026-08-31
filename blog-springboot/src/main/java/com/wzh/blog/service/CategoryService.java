@@ -8,6 +8,7 @@ import com.wzh.blog.entity.Category;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.CategoryVO;
 import com.wzh.blog.vo.SearchQueryVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public interface CategoryService extends IService<Category> {
      * @param conditionVO 条件
      * @return {@link PageResult<CategoryBackDTO>} 后台分类
      */
-    PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO conditionVO);
+    PageResult<CategoryBackDTO> listBackCategories(SearchQueryVO conditionVO, PageQuery pageQuery);
 
     /**
      * 搜索文章分类

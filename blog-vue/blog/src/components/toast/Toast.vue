@@ -5,7 +5,12 @@
 </template>
 
 <script>
+import { VSnackbar } from "vuetify/components";
+
 export default {
+  components: {
+    VSnackbar
+  },
   data: function() {
     return {
       show: false,

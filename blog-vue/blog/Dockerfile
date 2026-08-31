@@ -1,6 +1,6 @@
 FROM node:24-alpine AS build
 
-WORKDIR /app
+WORKDIR /workspace
 ARG VITE_QQ_APP_ID
 ARG VITE_QQ_REDIRECT_URI
 ARG VITE_WEIBO_APP_ID
@@ -13,12 +13,14 @@ ENV VITE_WEIBO_APP_ID=$VITE_WEIBO_APP_ID
 ENV VITE_WEIBO_REDIRECT_URI=$VITE_WEIBO_REDIRECT_URI
 ENV VITE_TENCENT_CAPTCHA_ID=$VITE_TENCENT_CAPTCHA_ID
 ENV VITE_MUSIC_API_BASE_URL=$VITE_MUSIC_API_BASE_URL
-COPY package*.json ./
-RUN npm ci
-COPY . .
+COPY blog/package*.json ./blog/
+RUN cd blog && npm ci
+COPY blog/ ./blog/
+COPY shared/ ./shared/
+WORKDIR /workspace/blog
 RUN npm run build
 
 FROM nginx:1.27-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY blog/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /workspace/blog/dist /usr/share/nginx/html
 EXPOSE 80

@@ -3,6 +3,7 @@ package com.wzh.blog.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.wzh.blog.entity.ChatRecord;
 import org.springframework.stereotype.Repository;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 聊天记录
@@ -12,4 +13,9 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface ChatRecordDao extends BaseMapper<ChatRecord> {
+
+    int insertIgnore(ChatRecord record);
+
+    ChatRecord selectByClientMessage(@Param("clientToken") String clientToken,
+                                     @Param("clientMessageId") String clientMessageId);
 }

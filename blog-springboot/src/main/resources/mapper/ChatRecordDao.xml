@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.ChatRecordDao">
+    <insert id="insertIgnore" parameterType="com.wzh.blog.entity.ChatRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT IGNORE INTO tb_chat_record
+            (user_id, nickname, avatar, content, ip_address, ip_source, client_token,
+             client_message_id, type, create_time, update_time)
+        VALUES
+            (#{userId}, #{nickname}, #{avatar}, #{content}, #{ipAddress}, #{ipSource}, #{clientToken},
+             #{clientMessageId}, #{type}, COALESCE(#{createTime}, NOW()), #{updateTime})
+    </insert>
+
+    <select id="selectByClientMessage" resultType="com.wzh.blog.entity.ChatRecord">
+        SELECT id, user_id, nickname, avatar, content, ip_address, ip_source, client_token,
+               client_message_id, type, create_time, update_time
+        FROM tb_chat_record
+        WHERE client_token = #{clientToken}
+          AND client_message_id = #{clientMessageId}
+        LIMIT 1
+    </select>
+</mapper>

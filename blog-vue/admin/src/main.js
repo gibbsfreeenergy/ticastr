@@ -11,6 +11,7 @@ import "./assets/css/iconfont.css";
 import config from "./assets/js/config";
 import { installHttp } from "./api/http";
 import { installSafeHtml } from "./plugins/safeHtml";
+import { installImageFallback } from "./plugins/imageFallback";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import dayjs from "dayjs";
@@ -41,28 +42,27 @@ registerLoginElementComponents();
 app.use(store).use(router);
 installHttp(app);
 installSafeHtml(app);
+installImageFallback();
 
 NProgress.configure({ easing: "ease", speed: 500, showSpinner: false, trickleSpeed: 200, minimum: 0.3 });
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async to => {
   NProgress.start();
   if (to.path === "/login") {
-    next();
-    return;
+    return true;
   }
   if (!store.state.userId) {
-    next({ path: "/login", replace: true });
-    return;
+    return { path: "/login", replace: true };
   }
   try {
     await ensureAdminElementComponents();
     const shouldResolveAgain = !isMenuReady();
     await generaMenu();
-    next(shouldResolveAgain ? { path: to.fullPath, replace: true } : undefined);
+    return shouldResolveAgain ? { path: to.fullPath, replace: true } : true;
   } catch (error) {
     store.commit("logout");
     resetRouter();
     resetMenuLoader();
-    next({ path: "/login", replace: true });
+    return { path: "/login", replace: true };
   }
 });
 router.afterEach(() => NProgress.done());

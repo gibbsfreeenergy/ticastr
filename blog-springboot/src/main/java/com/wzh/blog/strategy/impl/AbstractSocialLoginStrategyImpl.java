@@ -9,6 +9,7 @@ import com.wzh.blog.dto.SocialUserInfoDTO;
 import com.wzh.blog.dto.SocialTokenDTO;
 import com.wzh.blog.dto.UserDetailDTO;
 import com.wzh.blog.dto.UserInfoDTO;
+import com.wzh.blog.security.AuthenticatedUserPrincipal;
 import com.wzh.blog.entity.UserAuth;
 import com.wzh.blog.entity.UserInfo;
 import com.wzh.blog.entity.UserRole;
@@ -19,12 +20,9 @@ import com.wzh.blog.service.RoleLookupService;
 import com.wzh.blog.strategy.SocialLoginStrategy;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.IpUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -40,20 +38,27 @@ import static com.wzh.blog.enums.ZoneEnum.SHANGHAI;
  * @author yezhiqiu
  * @date 2021/07/28
  */
-@Service
 public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStrategy {
-    @Autowired
-    private UserAuthDao userAuthDao;
-    @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private UserRoleDao userRoleDao;
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
-    @Autowired
-    private RoleLookupService roleLookupService;
-    @Resource
-    private HttpServletRequest request;
+    private final UserAuthDao userAuthDao;
+    private final UserInfoDao userInfoDao;
+    private final UserRoleDao userRoleDao;
+    private final UserDetailsServiceImpl userDetailsService;
+    private final RoleLookupService roleLookupService;
+    private final HttpServletRequest request;
+
+    protected AbstractSocialLoginStrategyImpl(UserAuthDao userAuthDao,
+                                             UserInfoDao userInfoDao,
+                                             UserRoleDao userRoleDao,
+                                             UserDetailsServiceImpl userDetailsService,
+                                             RoleLookupService roleLookupService,
+                                             HttpServletRequest request) {
+        this.userAuthDao = userAuthDao;
+        this.userInfoDao = userInfoDao;
+        this.userRoleDao = userRoleDao;
+        this.userDetailsService = userDetailsService;
+        this.roleLookupService = roleLookupService;
+        this.request = request;
+    }
 
     @Override
     public UserInfoDTO login(String data) {
@@ -78,7 +83,9 @@ public abstract class AbstractSocialLoginStrategyImpl implements SocialLoginStra
             throw new BizException("账号已被禁用");
         }
         // 将登录信息放入springSecurity管理
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetailDTO, null, userDetailDTO.getAuthorities());
+        AuthenticatedUserPrincipal principal = AuthenticatedUserPrincipal.from(userDetailDTO);
+        UsernamePasswordAuthenticationToken auth = UsernamePasswordAuthenticationToken.authenticated(
+                principal, null, principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
         // 返回用户信息
         return BeanCopyUtils.copyObject(userDetailDTO, UserInfoDTO.class);

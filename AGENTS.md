@@ -7,7 +7,7 @@
 - `blog-springboot/`: Java 21 / Spring Boot 4.1 API, default port `8090`.
 - `blog-vue/blog/`: public blog, Vue 3 / Vite, default port `8080`.
 - `blog-vue/admin/`: administrator console, Vue 3 / Vite, default port `8081`.
-- `blog-mysql8.sql`: MySQL 8 schema and sample data.
+- `database/`: database initialization and migration notes; Flyway owns the schema.
 
 Both frontend development servers proxy `/api` to `http://localhost:8090` and remove the `/api` prefix. The production containers use the same reverse-proxy rule.
 
@@ -40,7 +40,7 @@ Use JDK 21 and Node 24.18.0 / npm 11.16.0, as pinned by `.java-version` and `.nv
 
 - `application.yml` contains only environment-variable placeholders and safe defaults. Put local overrides in the ignored `application-local.yml` or environment variables; start from `application-local.example.yml`. Frontend public OAuth/captcha values use `VITE_*` variables and the frontend `.env.example` files.
 - Never commit passwords, tokens, private keys, OAuth secrets, or production endpoints. Rotate any secret that was committed previously.
-- `blog-mysql8.sql` drops and recreates tables. Import it only into a dedicated local database or a newly initialized Docker volume.
+- Flyway owns schema initialization and upgrades. Never import an unreviewed SQL export into a shared or production database.
 - `compose.yaml` is for local integration environments. Copy `.env.example` to `.env` and set non-placeholder values before using it.
 
 ## Before committing

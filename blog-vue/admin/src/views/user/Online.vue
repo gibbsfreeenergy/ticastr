@@ -65,7 +65,7 @@
             style="margin-left:10px"
             @confirm="removeOnlineUser(scope.row)"
           >
-            <template #reference><el-button size="mini" type="text">
+            <template #reference><el-button size="mini" type="link">
               <i class="el-icon-delete" /> 下线
             </el-button></template>
           </el-popconfirm>
@@ -78,8 +78,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -106,15 +106,15 @@ export default {
   },
   methods: {
     listOnlineUsers() {
-      this.$http
-        .get("/api/admin/users/online", {
+      this.$api.admin
+        .onlineUsers({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.userList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -129,9 +129,9 @@ export default {
       this.listOnlineUsers();
     },
     removeOnlineUser(user) {
-      this.$http
-        .delete("/api/admin/users/" + user.userInfoId + "/online")
-        .then(({ data }) => {
+      this.$api.admin
+        .removeOnlineUser(user.userInfoId)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -149,7 +149,7 @@ export default {
   },
   computed: {
     tagType() {
-      return function(type) {
+      return type => {
         switch (type) {
           case "GET":
             return "";

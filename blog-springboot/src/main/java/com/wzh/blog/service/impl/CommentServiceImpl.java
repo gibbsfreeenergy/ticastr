@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -15,10 +13,10 @@ import com.wzh.blog.service.CommentValidationService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.RedisService;
+import com.wzh.blog.security.CurrentUser;
 import com.wzh.blog.util.HTMLUtils;
-import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,26 +39,35 @@ import static com.wzh.blog.enums.CommentTypeEnum.*;
 @Service
 public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> implements CommentService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private CommentDao commentDao;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private EngagementService engagementService;
-    @Autowired
-    private BlogInfoService blogInfoService;
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    @Autowired
-    private CommentValidationService commentValidationService;
+    private final CommentDao commentDao;
+    private final RedisService redisService;
+    private final EngagementService engagementService;
+    private final BlogInfoService blogInfoService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final CommentValidationService commentValidationService;
+    private final CurrentUser currentUser;
+
+    public CommentServiceImpl(CommentDao commentDao,
+                              RedisService redisService,
+                              EngagementService engagementService,
+                              BlogInfoService blogInfoService,
+                              ApplicationEventPublisher eventPublisher,
+                              CommentValidationService commentValidationService,
+                              CurrentUser currentUser) {
+        this.commentDao = commentDao;
+        this.redisService = redisService;
+        this.engagementService = engagementService;
+        this.blogInfoService = blogInfoService;
+        this.eventPublisher = eventPublisher;
+        this.commentValidationService = commentValidationService;
+        this.currentUser = currentUser;
+    }
 
 
 
 
     @Override
-    public PageResult<CommentDTO> listComments(CommentVO commentVO) {
+    public PageResult<CommentDTO> listComments(CommentVO commentVO, PageQuery pageQuery) {
         // 查询评论量
         Long commentCount = commentDao.selectCount(new LambdaQueryWrapper<Comment>()
                 .eq(Objects.nonNull(commentVO.getTopicId()), Comment::getTopicId, commentVO.getTopicId())
@@ -71,7 +78,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
             return new PageResult<>();
         }
         // 分页查询评论数据
-        List<CommentDTO> commentDTOList = commentDao.listComments(paginationContext.getOffset(), paginationContext.getSize(), commentVO);
+        List<CommentDTO> commentDTOList = commentDao.listComments(pageQuery.offset(), pageQuery.size(), commentVO);
         if (CollectionUtils.isEmpty(commentDTOList)) {
             return new PageResult<>();
         }
@@ -103,9 +110,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
 
     @Override
-    public List<ReplyDTO> listRepliesByCommentId(Integer commentId) {
+    public List<ReplyDTO> listRepliesByCommentId(Integer commentId, PageQuery pageQuery) {
         // 转换页码查询评论下的回复
-        List<ReplyDTO> replyDTOList = commentDao.listRepliesByCommentId(paginationContext.getOffset(), paginationContext.getSize(), commentId);
+        List<ReplyDTO> replyDTOList = commentDao.listRepliesByCommentId(pageQuery.offset(), pageQuery.size(), commentId);
         // 查询redis的评论点赞数据
         Map<String, Object> likeCountMap = redisService.hGetAll(COMMENT_LIKE_COUNT);
         // 封装点赞数据
@@ -125,7 +132,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
         // 过滤标签
         commentVO.setCommentContent(HTMLUtils.filter(commentVO.getCommentContent()));
         Comment comment = Comment.builder()
-                .userId(UserUtils.getLoginUser().getUserInfoId())
+                .userId(currentUser.id())
                 .replyUserId(commentVO.getReplyUserId())
                 .topicId(commentVO.getTopicId())
                 .commentContent(commentVO.getCommentContent())
@@ -144,7 +151,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
     @Override
     public void saveCommentLike(Integer commentId) {
-        engagementService.toggleCommentLike(UserUtils.getLoginUser().getUserInfoId(), commentId);
+        engagementService.toggleCommentLike(currentUser.id(), commentId);
     }
 
 
@@ -163,14 +170,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentDao, Comment> impleme
 
 
     @Override
-    public PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition) {
+    public PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition, PageQuery pageQuery) {
         // 统计后台评论量
         Integer count = commentDao.countCommentDTO(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 查询后台评论集合
-        List<CommentBackDTO> commentBackDTOList = commentDao.listCommentBackDTO(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<CommentBackDTO> commentBackDTOList = commentDao.listCommentBackDTO(pageQuery.offset(), pageQuery.size(), condition);
         return new PageResult<>(commentBackDTOList, count);
     }
 

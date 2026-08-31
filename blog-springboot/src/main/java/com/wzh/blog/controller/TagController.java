@@ -9,7 +9,6 @@ import com.wzh.blog.service.TagService;
 import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -28,8 +27,11 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
 @Tag(name = "标签模块")
 @RestController
 public class TagController {
-    @Autowired
-    private TagService tagService;
+    private final TagService tagService;
+
+    public TagController(TagService tagService) {
+        this.tagService = tagService;
+    }
 
     /**
      * 查询标签列表
@@ -51,7 +53,7 @@ public class TagController {
     @Operation(summary = "查询后台标签列表")
     @GetMapping("/admin/tags")
     public Result<PageResult<TagBackDTO>> listTagBackDTO(SearchQueryVO condition) {
-        return Result.ok(tagService.listTagBackDTO(condition));
+        return Result.ok(tagService.listTagBackDTO(condition, condition.toPageQuery()));
     }
 
     /**

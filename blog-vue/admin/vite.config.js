@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import { createDevProxy } from "../shared/vite/createDevProxy";
 
 export default defineConfig({
   plugins: [vue()],
@@ -9,14 +10,7 @@ export default defineConfig({
     }
   },
   server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8090",
-        changeOrigin: true,
-        rewrite: path => path.replace(/^\/api/, ""),
-        ws: true
-      }
-    }
+    proxy: createDevProxy()
   },
   build: {
     sourcemap: false,

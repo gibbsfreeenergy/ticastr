@@ -12,6 +12,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ChatTypeEnum {
+    /** Invalid frame or application-level error. */
+    CHAT_ERROR(0, "聊天错误"),
     /**
      * 在线人数
      */
@@ -35,7 +37,11 @@ public enum ChatTypeEnum {
     /**
      * 心跳消息
      */
-    HEART_BEAT(6,"心跳消息");
+    HEART_BEAT(6,"心跳消息"),
+    /** Client-visible acknowledgement for an idempotent send. */
+    MESSAGE_ACK(7, "消息确认"),
+    /** Bounded history page request. */
+    HISTORY_REQUEST(8, "历史请求");
 
     /**
      * 类型

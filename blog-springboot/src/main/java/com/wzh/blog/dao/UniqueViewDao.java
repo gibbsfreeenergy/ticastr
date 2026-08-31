@@ -30,4 +30,11 @@ public interface UniqueViewDao extends BaseMapper<UniqueView> {
 
     void upsertDailyUniqueView(UniqueView uniqueView);
 
+    int insertVisitor(@Param("visitorHash") String visitorHash,
+                      @Param("area") String area);
+
+    int incrementDailyUniqueView();
+
+    long totalViews();
+
 }

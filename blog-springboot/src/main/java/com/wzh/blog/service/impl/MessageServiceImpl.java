@@ -1,6 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -19,11 +18,10 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.vo.ReviewVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
@@ -41,14 +39,17 @@ import static com.wzh.blog.constant.CommonConst.TRUE;
 @Service
 public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> implements MessageService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private MessageDao messageDao;
-    @Resource
-    private HttpServletRequest request;
-    @Autowired
-    private BlogInfoService blogInfoService;
+    private final MessageDao messageDao;
+    private final HttpServletRequest request;
+    private final BlogInfoService blogInfoService;
+
+    public MessageServiceImpl(MessageDao messageDao,
+                              HttpServletRequest request,
+                              BlogInfoService blogInfoService) {
+        this.messageDao = messageDao;
+        this.request = request;
+        this.blogInfoService = blogInfoService;
+    }
 
     @Transactional(rollbackFor = Exception.class)
 
@@ -97,9 +98,9 @@ public class MessageServiceImpl extends ServiceImpl<MessageDao, Message> impleme
 
 
     @Override
-    public PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition) {
+    public PageResult<MessageBackDTO> listMessageBackDTO(ModerationQueryVO condition, PageQuery pageQuery) {
         // 分页查询留言列表
-        Page<Message> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+        Page<Message> page = new Page<>(pageQuery.current(), pageQuery.size());
         LambdaQueryWrapper<Message> messageLambdaQueryWrapper = new LambdaQueryWrapper<Message>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), Message::getNickname, condition.getKeywords())
                 .eq(Objects.nonNull(condition.getIsReview()), Message::getIsReview, condition.getIsReview())

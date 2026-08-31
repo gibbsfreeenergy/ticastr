@@ -66,6 +66,9 @@ public class ChatRecord {
     @JSONField(serialize = false)
     private String clientToken;
 
+    @JSONField(serialize = false)
+    private String clientMessageId;
+
     @TableField(exist = false)
     private Boolean owner;
 

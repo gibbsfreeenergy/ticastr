@@ -4,12 +4,15 @@ import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.dao.UserAuthDao;
 import com.wzh.blog.dto.UserInfoDTO;
 import com.wzh.blog.entity.UserAuth;
+import com.wzh.blog.dto.UserDetailDTO;
+import com.wzh.blog.security.AuthenticatedUserPrincipal;
+import com.wzh.blog.security.CurrentUser;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.Result;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
@@ -28,29 +31,41 @@ import static com.wzh.blog.constant.CommonConst.APPLICATION_JSON;
  */
 @Component
 public class AuthenticationSuccessHandlerImpl implements AuthenticationSuccessHandler {
-    @Autowired
-    private UserAuthDao userAuthDao;
+    private final UserAuthDao userAuthDao;
+    private final CurrentUser currentUser;
+
+    public AuthenticationSuccessHandlerImpl(UserAuthDao userAuthDao, CurrentUser currentUser) {
+        this.userAuthDao = userAuthDao;
+        this.currentUser = currentUser;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) throws IOException {
-        // 返回登录信息
-        UserInfoDTO userLoginDTO = BeanCopyUtils.copyObject(UserUtils.getLoginUser(), UserInfoDTO.class);
+        UserDetailDTO credentialedUser = authentication.getPrincipal() instanceof UserDetailDTO user
+                ? user : null;
+        AuthenticatedUserPrincipal loginUser = credentialedUser == null
+                ? currentUser.require()
+                : AuthenticatedUserPrincipal.from(credentialedUser);
+        Authentication passwordFreeAuthentication = UsernamePasswordAuthenticationToken.authenticated(
+                loginUser, null, loginUser.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(passwordFreeAuthentication);
+        UserInfoDTO userLoginDTO = BeanCopyUtils.copyObject(loginUser, UserInfoDTO.class);
         httpServletResponse.setContentType(APPLICATION_JSON);
         httpServletResponse.getWriter().write(JSON.toJSONString(Result.ok(userLoginDTO)));
         // 更新用户ip，最近登录时间
-        updateUserInfo();
+        updateUserInfo(loginUser);
     }
 
     /**
      * 更新用户信息
      */
     @Async
-    public void updateUserInfo() {
+    public void updateUserInfo(AuthenticatedUserPrincipal loginUser) {
         UserAuth userAuth = UserAuth.builder()
-                .id(UserUtils.getLoginUser().getId())
-                .ipAddress(UserUtils.getLoginUser().getIpAddress())
-                .ipSource(UserUtils.getLoginUser().getIpSource())
-                .lastLoginTime(UserUtils.getLoginUser().getLastLoginTime())
+                .id(loginUser.getId())
+                .ipAddress(loginUser.getIpAddress())
+                .ipSource(loginUser.getIpSource())
+                .lastLoginTime(loginUser.getLastLoginTime())
                 .build();
         userAuthDao.updateById(userAuth);
     }

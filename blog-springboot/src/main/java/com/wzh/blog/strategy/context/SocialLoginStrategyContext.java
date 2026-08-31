@@ -3,7 +3,6 @@ package com.wzh.blog.strategy.context;
 import com.wzh.blog.dto.UserInfoDTO;
 import com.wzh.blog.enums.LoginTypeEnum;
 import com.wzh.blog.strategy.SocialLoginStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -18,8 +17,11 @@ import java.util.Map;
 @Service
 public class SocialLoginStrategyContext {
 
-    @Autowired
-    private Map<String, SocialLoginStrategy> socialLoginStrategyMap;
+    private final Map<String, SocialLoginStrategy> socialLoginStrategyMap;
+
+    public SocialLoginStrategyContext(Map<String, SocialLoginStrategy> socialLoginStrategyMap) {
+        this.socialLoginStrategyMap = socialLoginStrategyMap;
+    }
 
     /**
      * 执行第三方登录策略

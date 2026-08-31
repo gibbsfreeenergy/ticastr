@@ -1,0 +1,14 @@
+package com.wzh.blog.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ArticleEngagementCountDTO {
+    private Integer articleId;
+    private Long viewsCount;
+    private Long likesCount;
+}

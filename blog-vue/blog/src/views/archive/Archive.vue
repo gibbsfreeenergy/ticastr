@@ -7,7 +7,7 @@
     <!-- 归档列表 -->
     <v-card class="blog-container">
       <section class="archive-timeline" aria-label="文章归档">
-        <h2 class="archive-timeline__title">目前共计{{ count }}篇文章，继续加油</h2>
+        <h2 class="archive-timeline__title">文章归档</h2>
         <article class="archive-timeline__item" v-for="item of archiveList" :key="item.id">
           <!-- 日期 -->
           <span class="time">{{ date(item.createTime) }}</span>
@@ -20,13 +20,11 @@
           </router-link>
         </article>
       </section>
-      <!-- 分页按钮 -->
-      <v-pagination
-        color="#00C4B6"
-        v-model="current"
-        :length="Math.ceil(count / 10)"
-        total-visible="7"
-      />
+      <div class="archive-load-more" v-if="!archivesComplete">
+        <v-btn color="#00C4B6" variant="tonal" :loading="loading" @click="loadMoreArchives">
+          加载更多
+        </v-btn>
+      </div>
     </v-card>
   </div>
 </template>
@@ -38,21 +36,31 @@ export default {
   },
   data: function() {
     return {
-      current: 1,
-      count: 0,
-      archiveList: []
+      archiveList: [],
+      nextCursor: null,
+      loading: false,
+      archivesComplete: false
     };
   },
   methods: {
-    listArchives() {
-      this.$http
-        .get("/api/articles/archives", {
-          params: { current: this.current }
-        })
-        .then(({ data }) => {
-          this.archiveList = data.data.recordList;
-          this.count = data.data.count;
+    async listArchives() {
+      if (this.loading || this.archivesComplete) return;
+      this.loading = true;
+      try {
+        const response = await this.$api.article.archives({
+          params: { cursor: this.nextCursor || undefined, size: 20 }
         });
+        const page = response.data || {};
+        const items = Array.isArray(page.items) ? page.items : [];
+        this.archiveList.push(...items);
+        this.nextCursor = page.nextCursor || null;
+        this.archivesComplete = items.length === 0 || !page.hasNext;
+      } finally {
+        this.loading = false;
+      }
+    },
+    loadMoreArchives() {
+      return this.listArchives();
     }
   },
   computed: {
@@ -64,18 +72,6 @@ export default {
         }
       });
       return "background: url(" + cover + ") center center / cover no-repeat";
-    }
-  },
-  watch: {
-    current(value) {
-      this.$http
-        .get("/api/articles/archives", {
-          params: { current: value }
-        })
-        .then(({ data }) => {
-          this.archiveList = data.data.recordList;
-          this.count = data.data.count;
-        });
     }
   }
 };
@@ -113,5 +109,11 @@ export default {
   position: absolute;
   top: 0.35rem;
   width: 0.625rem;
+}
+
+.archive-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 2rem;
 }
 </style>

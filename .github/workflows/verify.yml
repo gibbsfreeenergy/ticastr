@@ -8,8 +8,52 @@ permissions:
   contents: read
 
 jobs:
+  repository-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check patch whitespace
+        shell: bash
+        run: git diff --check
+      - name: Reject tracked database exports and embedded infrastructure addresses
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          unexpected_sql="$(git ls-files '*.sql' | grep -Ev '^(blog-springboot/src/main/resources/db/migration/|blog-springboot/src/test/resources/db/legacy-schema\.sql$)' || true)"
+          if [[ -n "$unexpected_sql" ]]; then
+            echo "Unexpected tracked SQL export(s):"
+            echo "$unexpected_sql"
+            exit 1
+          fi
+
+          if git grep -n -E 'Source (Host|Server)|DROP TABLE IF EXISTS|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|14\.103\.129\.219|81\.68\.228\.31' -- ':!docs/ARCHITECTURE-ROADMAP.md'; then
+            echo "Tracked files contain database-export metadata or known infrastructure addresses."
+            exit 1
+          fi
+
+          if git grep -n -E '"destination"[[:space:]]*:[[:space:]]*"https?://' -- 'blog-vue/*/vercel.json'; then
+            echo "Vercel static config must not contain an external hard-coded destination."
+            exit 1
+          fi
+      - name: Verify architecture boundaries and proxy contract
+        shell: bash
+        run: |
+          bash scripts/verify-architecture.sh
+          bash scripts/verify-proxy-contract.sh
+          bash scripts/verify-compose-contract.sh
+
   backend:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        redis_enabled: [false, true]
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
     defaults:
       run:
         working-directory: blog-springboot
@@ -20,7 +64,14 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - run: mvn -B test
+      - name: Configure optional Redis mode
+        shell: bash
+        run: |
+          echo "APP_REDIS_ENABLED=${{ matrix.redis_enabled }}" >> "$GITHUB_ENV"
+          echo "REDIS_HOST=127.0.0.1" >> "$GITHUB_ENV"
+      - name: Require Docker for integration coverage
+        run: docker info
+      - run: mvn -B clean test
       - run: mvn -B -DskipTests package
 
   frontend:
@@ -40,4 +91,14 @@ jobs:
           cache: npm
           cache-dependency-path: blog-vue/${{ matrix.app }}/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - run: npm run test:run
+      - name: Verify SEO scripts
+        if: matrix.app == 'blog'
+        run: npm run test:seo
       - run: npm run build
+      - name: Verify public static contract
+        if: matrix.app == 'blog'
+        run: npm run verify:static
+      - name: Verify bundle budget
+        run: npm run verify:budget

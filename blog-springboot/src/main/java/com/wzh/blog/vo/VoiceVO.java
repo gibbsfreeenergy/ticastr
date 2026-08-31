@@ -79,4 +79,7 @@ public class VoiceVO {
     @Schema(description = "匿名客户端身份")
     private String clientId;
 
+    @Schema(description = "客户端消息幂等标识")
+    private String clientMessageId;
+
 }

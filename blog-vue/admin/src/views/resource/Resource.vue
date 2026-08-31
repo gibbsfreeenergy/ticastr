@@ -42,10 +42,10 @@
       <el-table-column prop="resourceName" label="资源名" width="220" />
       <el-table-column prop="url" label="资源路径" width="300" />
       <el-table-column prop="requetMethod" label="请求方式">
-        <template #default="scope" v-if="scope.row.requestMethod">
-          <el-tag :type="tagType(scope.row.requestMethod)">
-            {{ scope.row.requestMethod }}
-          </el-tag>
+          <template #default="scope">
+            <el-tag v-if="scope.row && scope.row.requestMethod" :type="tagType(scope.row.requestMethod)">
+              {{ scope.row.requestMethod }}
+            </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="isAnonymous" label="匿名访问" align="center">
@@ -70,7 +70,7 @@
       <el-table-column label="操作" align="center" width="200">
         <template #default="scope">
           <el-button
-            type="text"
+            type="link"
             size="mini"
             @click="openAddResourceModel(scope.row)"
             v-if="scope.row.children"
@@ -78,7 +78,7 @@
             <i class="el-icon-plus" /> 新增
           </el-button>
           <el-button
-            type="text"
+            type="link"
             size="mini"
             @click="openEditResourceModel(scope.row)"
           >
@@ -89,7 +89,7 @@
             style="margin-left:10px"
             @confirm="deleteResource(scope.row.id)"
           >
-            <template #reference><el-button size="mini" type="text">
+            <template #reference><el-button size="mini" type="link">
               <i class="el-icon-delete" /> 删除
             </el-button></template>
           </el-popconfirm>
@@ -98,7 +98,7 @@
     </el-table>
     <!-- 新增模态框 -->
     <el-dialog v-model="addModule" width="30%">
-      <template #header><div class="dialog-title-container" ref="moduleTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ moduleTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="resourceForm">
         <el-form-item label="模块名">
           <el-input v-model="resourceForm.resourceName" style="width:220px" />
@@ -113,7 +113,7 @@
     </el-dialog>
     <!-- 新增模态框 -->
     <el-dialog v-model="addResource" width="30%">
-      <template #header><div class="dialog-title-container" ref="resourceTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ resourceTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="resourceForm">
         <el-form-item label="资源名">
           <el-input v-model="resourceForm.resourceName" style="width:220px" />
@@ -123,10 +123,10 @@
         </el-form-item>
         <el-form-item label="请求方式">
           <el-radio-group v-model="resourceForm.requestMethod">
-            <el-radio :label="'GET'">GET</el-radio>
-            <el-radio :label="'POST'">POST</el-radio>
-            <el-radio :label="'PUT'">PUT</el-radio>
-            <el-radio :label="'DELETE'">DELETE</el-radio>
+            <el-radio value="GET">GET</el-radio>
+            <el-radio value="POST">POST</el-radio>
+            <el-radio value="PUT">PUT</el-radio>
+            <el-radio value="DELETE">DELETE</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -152,24 +152,26 @@ export default {
       resourceList: [],
       addModule: false,
       addResource: false,
+      moduleTitle: "添加模块",
+      resourceTitle: "添加资源",
       resourceForm: {}
     };
   },
   methods: {
     listResources() {
-      this.$http
-        .get("/api/admin/resources", {
+      this.$api.admin
+        .resources({
           params: {
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.resourceList = data.data;
           this.loading = false;
         });
     },
     changeResource(resource) {
-      this.$http.post("/api/admin/resources", resource).then(({ data }) => {
+      this.$api.admin.saveResource(resource).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -187,10 +189,10 @@ export default {
     openModel(resource) {
       if (resource != null) {
         this.resourceForm = JSON.parse(JSON.stringify(resource));
-        this.$refs.moduleTitle.innerHTML = "修改模块";
+        this.moduleTitle = "修改模块";
       } else {
         this.resourceForm = {};
-        this.$refs.moduleTitle.innerHTML = "添加模块";
+        this.moduleTitle = "添加模块";
       }
       this.addModule = true;
     },
@@ -200,17 +202,17 @@ export default {
         return false;
       }
       this.resourceForm = JSON.parse(JSON.stringify(resource));
-      this.$refs.resourceTitle.innerHTML = "修改资源";
+      this.resourceTitle = "修改资源";
       this.addResource = true;
     },
     openAddResourceModel(resource) {
       this.resourceForm = {};
       this.resourceForm.parentId = resource.id;
-      this.$refs.resourceTitle.innerHTML = "添加资源";
+      this.resourceTitle = "添加资源";
       this.addResource = true;
     },
     deleteResource(id) {
-      this.$http.delete("/api/admin/resources/" + id).then(({ data }) => {
+      this.$api.admin.removeResource(id).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -226,13 +228,13 @@ export default {
       });
     },
     addOrEditResource() {
-      if (this.resourceForm.resourceName.trim() == "") {
+      if (String(this.resourceForm.resourceName || "").trim() == "") {
         this.$message.error("资源名不能为空");
         return false;
       }
-      this.$http
-        .post("/api/admin/resources", this.resourceForm)
-        .then(({ data }) => {
+      this.$api.admin
+        .saveResource(this.resourceForm)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -252,7 +254,7 @@ export default {
   },
   computed: {
     tagType() {
-      return function(type) {
+      return type => {
         switch (type) {
           case "GET":
             return "";

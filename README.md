@@ -1,103 +1,106 @@
 # ticastr
 
-Personal blog system with a Spring Boot REST API, a public blog, and an administrator console.
+个人博客系统：一个 Spring Boot API、一个公共博客 SPA 和一个管理后台 SPA。
 
-## Technology baseline
+## 架构概要
 
-- API: Java 21, Spring Boot 4.1, Spring Security 7, MyBatis-Plus, Springdoc OpenAPI, WebSocket.
-- Services: MySQL 8, Redis, RabbitMQ, Elasticsearch, mail, and object storage.
-- Web apps: Node.js 24, Vite 8, Vue 3.5, Vue Router 5, Vuex 4, Axios 1.
-- UI migration: the public site retains a Vuetify 2 compatibility layer and the console retains a small number of legacy Vue plug-ins through `@vue/compat`. This keeps the existing views working while the runtime, bundler, routing, and state APIs run on Vue 3.
+- API：Java 21、Spring Boot 4.1、Spring Security 7、MyBatis-Plus、Flyway、WebSocket。
+- 事实源：MySQL 8。文章正文是 UTF-8 Markdown 对象，MySQL 只保存内容资产指针、版本、校验和及对象 provider。
+- 异步：MySQL transactional outbox；Redis Streams 是可选加速传输，关闭或故障时由数据库 worker 执行同一组幂等 handler。
+- 缓存/限流/锁/Session：Redis 可选；默认关闭时使用有界本地 fallback，不能绕过安全策略。
+- 搜索：可重建的本地 Lucene 索引，不把正文重新存回 MySQL，也不依赖 Elasticsearch。
+- 对象存储：同一时间只激活一个 provider，可选 local、阿里 OSS、腾讯 COS、火山 TOS；切换由后台完成验证，已有资产保留原 provider。
+- 前端：Vue 3/Vite，公共站点默认 `8080`，管理后台默认 `8081`，API 默认 `8090`。
 
-The repository pins its runtime expectations in [`.java-version`](.java-version) and [`.nvmrc`](.nvmrc). Use a JDK 21 distribution and Node 24.18.0 (npm 11.16.0) before installing dependencies.
+完整设计见 [`docs/ARCHITECTURE-ROADMAP.md`](docs/ARCHITECTURE-ROADMAP.md) 和已批准的实现计划 [`docs/superpowers/plans/`](docs/superpowers/plans/)。
 
-## Layout
+## 目录
 
 ```text
 .
-|- blog-springboot/    Spring Boot API (port 8090)
-|- blog-vue/blog/      public blog Vite application
-|- blog-vue/admin/     administrator Vite application
-|- blog-mysql8.sql     MySQL 8 schema and sample data
-`- AGENTS.md           contribution instructions
+|- blog-springboot/    Spring Boot API
+|- blog-vue/blog/      公共博客
+|- blog-vue/admin/     管理后台
+|- blog-vue/shared/    两个 SPA 共用的 HTTP、内容、实时通信契约
+|- database/           数据库初始化和迁移说明
+`- docs/               API、部署、运维和架构契约
 ```
 
-## Local setup
+## 本地启动
 
-1. Create a dedicated local MySQL database and import the schema. The script drops and recreates its tables, so never import it into production.
-
-   ```bash
-   mysql -u <user> -p <database> < blog-mysql8.sql
-   ```
-
-   Existing installations are upgraded automatically by Flyway when the API starts. The first run baselines the legacy schema at version `0` and applies versioned migrations from `blog-springboot/src/main/resources/db/migration`; do not manually import the destructive seed file.
-
-2. Configure local services with environment variables or an ignored `application-local.yml`. Start from [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml); the committed `application.yml` intentionally contains no credentials. For local OAuth and captcha site keys, copy the relevant frontend `.env.example` file to `.env.local`.
-
-3. Start the API:
+1. 准备一个空的 MySQL 数据库，或运行默认 Compose。API 启动时由 Flyway 创建/升级 schema，不要导入未经审核的 SQL 导出。
+2. 从 [`application-local.example.yml`](blog-springboot/src/main/resources/application-local.example.yml) 或 `.env.example` 复制本地配置到未跟踪文件。不要把密码、token、密钥写进提交文件。
+3. 启动 API：
 
    ```bash
    cd blog-springboot
    mvn spring-boot:run
    ```
 
-   The API listens on `http://localhost:8090` by default. Local uploads are served from `http://localhost:8090/uploads/`.
-
-   A new database contains roles and safe defaults but no hard-coded administrator credentials. To create the first administrator, set `BOOTSTRAP_ADMIN_ENABLED=true`, provide `BOOTSTRAP_ADMIN_USERNAME` and a non-placeholder `BOOTSTRAP_ADMIN_PASSWORD` of at least 12 characters, then start the API once. Disable the bootstrap flag after the account has been created; subsequent starts are idempotent for the same email address.
-
-4. Install and start either frontend:
+4. 启动前端：
 
    ```bash
-   cd blog-vue/blog       # or blog-vue/admin
+   cd blog-vue/blog       # 或 blog-vue/admin
    npm ci
    npm run dev
    ```
 
-   Use a second port when running both applications, for example `npm run dev -- --port 8081` in `blog-vue/admin`. Both Vite configurations proxy `/api` to the backend and remove the `/api` prefix.
+两个 Vite 应用都只使用相对 `/api`、`/uploads` 和 `/websocket` 路径；开发代理会转发到 API。
 
-## Verification
+首次初始化管理员时临时设置 `BOOTSTRAP_ADMIN_ENABLED=true`、用户名和至少 12 位密码，成功后立即关闭 bootstrap。
 
-```bash
-# API, from blog-springboot
-mvn test
-mvn package
+## Compose 模式
 
-# Each frontend, from its own directory
-npm run lint
-npm run test:run
-npm run build
-```
-
-## Containers
-
-For a complete local stack, copy [`.env.example`](.env.example) to `.env`, replace every placeholder, then run:
+默认栈只启动 MySQL、API、公共站点和管理后台，Redis 不在默认依赖图中：
 
 ```bash
 docker compose up --build
 ```
 
-This starts MySQL, Redis, RabbitMQ, the API, the public site on `http://localhost:8080`, and the console on `http://localhost:8081`. The SQL initialization script runs only when the named MySQL volume is first created; it drops and recreates its tables, so never reuse a production data volume.
+需要 Redis 缓存、共享 Session、跨实例广播和 Redis Streams 时，显式叠加 Redis profile：
 
-For a resource-bounded remote API host, package the API with `mvn package`, copy the resulting JAR to the ignored path `deploy/backend/app.jar`, and use `deploy/backend/compose.yaml` with an untracked `deploy/backend/.env` copied from its example. It runs only MySQL, Redis, RabbitMQ, and the API, applies explicit memory limits, and exposes only the API on port `8090`.
+```bash
+docker compose -f compose.yaml -f compose.redis.yaml up --build
+```
 
-Uploads are persisted in the `uploads` volume and served through `/uploads/` on both frontend hosts. Redis state is persisted in the `redis-data` volume; use a managed Redis backup strategy in production.
+Redis 仍不是文章、评论、点赞、访客、聊天历史或 Outbox 的事实源。Redis 停止后，核心读写和可恢复异步任务继续使用 MySQL/本地 fallback；多实例生产部署应启用 Redis 并使用共享 Session store。
 
-Chat delivery, message recalls, and the online count are distributed through the Redis channel `ticastr:chat:events`. All API replicas must use the same Redis instance; WebSocket sessions are local to each replica and Redis fans events out to every replica. Online-session entries expire after 90 seconds without a heartbeat, so a failed node does not leave a permanent count behind.
+production-like API 部署契约位于 [`deploy/backend/`](deploy/backend/)；启用 Redis 时同样叠加 `deploy/backend/compose.redis.yaml`。
 
-HTTP sessions are stored in Redis under the configurable `ticastr:session` namespace. Authorization changes publish a Redis invalidation event so every API replica reloads its URL-role map. Short scheduled jobs use ownership-token locks, which prevents duplicate daily statistics when several API replicas are running.
+## 验证
 
-The API exposes unauthenticated liveness/readiness checks at `/actuator/health` and `/actuator/health/**`; detailed health information remains private.
+```bash
+# API
+cd blog-springboot
+mvn -B test
+mvn -B package
 
-For metrics, set a non-empty `MONITORING_TOKEN` and scrape the API directly at `/actuator/prometheus` with the `X-Monitoring-Token` request header. The two frontend Nginx instances intentionally return `404` for this path, so a collector must reach the API through its private service network. The endpoint includes application-tagged JVM, process, HTTP server, datasource, and custom application metrics; HTTP request histograms include 100 ms, 500 ms, 1 s, and 5 s SLO buckets.
+# 两个前端分别执行
+npm run lint
+npm run test:run
+npm run build
 
-Configure the collector to send the `X-Monitoring-Token` header from its secret store. Keep the token out of this repository and do not substitute an `Authorization` header; the API intentionally accepts only the dedicated monitoring header.
+# 管理后台和公共站点 bundle 检查
+cd ../blog-vue/admin && npm run verify:budget
+cd ../blog && npm run verify:budget
+```
 
-## Development notes
+Docker 不可用时，Testcontainers 集成测试会明确标记 skipped；这不等同于完成 MySQL/Redis 集成验证。
 
-- Keep frontend API calls relative (`/api/...`); do not hardcode `localhost:8090` in components.
-- Backend follows `controller -> service -> dao`; update the corresponding mapper XML when adding persistence queries.
-- Runtime configuration, CORS origins, and all service credentials are supplied through environment variables. Do not restore secrets to `application.yml`.
-- See [AGENTS.md](AGENTS.md) for full collaboration, configuration, and commit rules.
+## 生产交付
+
+公共站点构建时可通过 `PRERENDER_API_URL` 获取公开文章，`PUBLIC_SITE_ORIGIN` 生成 `robots.txt`、sitemap 和 feed，并生成文章静态 HTML。浏览器仍使用相对路径，provider endpoint/credentials 不会进入 HTML 或前端状态。
+
+反向代理必须保留 `/api`、`/uploads`、`/websocket` 规则和 WebSocket upgrade 头。监控通过 API 的 `/actuator/prometheus`，使用独立的 `X-Monitoring-Token` 请求头。
+
+更多契约：[API-CONTRACT.md](docs/API-CONTRACT.md)、[CONFIGURATION.md](docs/CONFIGURATION.md)、[DEPENDENCY-MATRIX.md](docs/DEPENDENCY-MATRIX.md)、[REDIS-CONTRACT.md](docs/REDIS-CONTRACT.md)、[MESSAGE-RELIABILITY.md](docs/MESSAGE-RELIABILITY.md)、[MEDIA-LIFECYCLE.md](docs/MEDIA-LIFECYCLE.md)、[DEPLOYMENT-CONTRACT.md](docs/DEPLOYMENT-CONTRACT.md)、[OPERATIONS-RUNBOOK.md](docs/OPERATIONS-RUNBOOK.md)。
+
+## 约定
+
+- 后端遵循 `controller -> service -> dao`，DAO 接口和 MyBatis XML 必须同步。
+- Entity、DTO、VO 分离；公共文章列表不得拉取 Markdown 正文。
+- 新代码通过 shared API/port 使用外部能力，不在 Vue 中构造云 provider URL。
+- 参见 [AGENTS.md](AGENTS.md) 获取完整贡献和安全规则。
 
 ## License
 

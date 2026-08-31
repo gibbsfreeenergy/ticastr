@@ -16,6 +16,9 @@ public final class ChatIdentityUtils {
     }
 
     public static boolean isValidClientId(String clientId) {
+        if (clientId == null || clientId.isBlank()) {
+            return false;
+        }
         try {
             UUID.fromString(clientId);
             return true;

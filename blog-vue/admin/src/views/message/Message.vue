@@ -143,8 +143,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -209,7 +209,7 @@ export default {
       } else {
         param = { data: this.messageIdList };
       }
-      this.$http.delete("/api/admin/messages", param).then(({ data }) => {
+      this.$api.admin.removeMessages(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -233,7 +233,7 @@ export default {
         param.idList = this.messageIdList;
       }
       param.isReview = 1;
-      this.$http.put("/api/admin/messages/review", param).then(({ data }) => {
+      this.$api.admin.reviewMessages(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -252,8 +252,8 @@ export default {
       this.isReview = review;
     },
     listMessages() {
-      this.$http
-        .get("/api/admin/messages", {
+      this.$api.admin
+        .messages({
           params: {
             current: this.current,
             size: this.size,
@@ -261,7 +261,7 @@ export default {
             isReview: this.isReview
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.messageList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;

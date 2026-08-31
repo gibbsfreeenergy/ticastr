@@ -1,6 +1,7 @@
 package com.wzh.blog.controller;
 
 import com.wzh.blog.annotation.OptLog;
+import com.wzh.blog.annotation.AccessLimit;
 import com.wzh.blog.dto.CommentBackDTO;
 import com.wzh.blog.dto.CommentDTO;
 import com.wzh.blog.vo.PageResult;
@@ -10,7 +11,6 @@ import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -27,8 +27,11 @@ import static com.wzh.blog.constant.OptTypeConst.*;
 @Tag(name = "评论模块")
 @RestController
 public class CommentController {
-    @Autowired
-    private CommentService commentService;
+    private final CommentService commentService;
+
+    public CommentController(CommentService commentService) {
+        this.commentService = commentService;
+    }
 
     /**
      * 查询评论
@@ -38,8 +41,8 @@ public class CommentController {
      */
     @Operation(summary = "查询评论")
     @GetMapping("/comments")
-    public Result<PageResult<CommentDTO>> listComments(CommentVO commentVO) {
-        return Result.ok(commentService.listComments(commentVO));
+    public Result<PageResult<CommentDTO>> listComments(CommentVO commentVO, PageQueryVO pageQueryVO) {
+        return Result.ok(commentService.listComments(commentVO, pageQueryVO.toPageQuery()));
     }
 
     /**
@@ -49,6 +52,7 @@ public class CommentController {
      * @return {@link Result<>}
      */
     @Operation(summary = "添加评论")
+    @AccessLimit(seconds = 60, maxCount = 5)
     @PostMapping("/comments")
     public Result<?> saveComment(@Valid @RequestBody CommentVO commentVO) {
         commentService.saveComment(commentVO);
@@ -64,8 +68,9 @@ public class CommentController {
     @Operation(summary = "查询评论下的回复")
     @Parameter(name = "commentId", description = "评论id", required = true)
     @GetMapping("/comments/{commentId}/replies")
-    public Result<List<ReplyDTO>> listRepliesByCommentId(@PathVariable("commentId") Integer commentId) {
-        return Result.ok(commentService.listRepliesByCommentId(commentId));
+    public Result<List<ReplyDTO>> listRepliesByCommentId(@PathVariable("commentId") Integer commentId,
+                                                         PageQueryVO pageQueryVO) {
+        return Result.ok(commentService.listRepliesByCommentId(commentId, pageQueryVO.toPageQuery()));
     }
 
     /**
@@ -75,6 +80,7 @@ public class CommentController {
      * @return {@link Result<>}
      */
     @Operation(summary = "评论点赞")
+    @AccessLimit(seconds = 60, maxCount = 10)
     @PostMapping("/comments/{commentId}/like")
     public Result<?> saveCommentLike(@PathVariable("commentId") Integer commentId) {
         commentService.saveCommentLike(commentId);
@@ -118,7 +124,7 @@ public class CommentController {
     @Operation(summary = "查询后台评论")
     @GetMapping("/admin/comments")
     public Result<PageResult<CommentBackDTO>> listCommentBackDTO(CommentQueryVO condition) {
-        return Result.ok(commentService.listCommentBackDTO(condition));
+        return Result.ok(commentService.listCommentBackDTO(condition, condition.toPageQuery()));
     }
 
 }

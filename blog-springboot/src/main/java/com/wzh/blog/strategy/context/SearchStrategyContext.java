@@ -1,15 +1,13 @@
 package com.wzh.blog.strategy.context;
 
 import com.wzh.blog.dto.ArticleSearchDTO;
-import com.wzh.blog.strategy.SearchStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import com.wzh.blog.search.ArticleSearchApplicationService;
+import com.wzh.blog.web.PageQuery;
+import com.wzh.blog.web.CursorPageQuery;
+import com.wzh.blog.web.CursorPageResult;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
-
-import static com.wzh.blog.enums.SearchModeEnum.getStrategy;
 
 /**
  * 搜索策略上下文
@@ -19,14 +17,11 @@ import static com.wzh.blog.enums.SearchModeEnum.getStrategy;
  */
 @Service
 public class SearchStrategyContext {
-    /**
-     * 搜索模式
-     */
-    @Value("${search.mode}")
-    private String searchMode;
+    private final ArticleSearchApplicationService searchService;
 
-    @Autowired
-    private Map<String, SearchStrategy> searchStrategyMap;
+    public SearchStrategyContext(ArticleSearchApplicationService searchService) {
+        this.searchService = searchService;
+    }
 
     /**
      * 执行搜索策略
@@ -34,8 +29,12 @@ public class SearchStrategyContext {
      * @param keywords 关键字
      * @return {@link List<ArticleSearchDTO>} 搜索文章
      */
-    public List<ArticleSearchDTO> executeSearchStrategy(String keywords) {
-        return searchStrategyMap.get(getStrategy(searchMode)).searchArticle(keywords);
+    public List<ArticleSearchDTO> executeSearchStrategy(String keywords, PageQuery pageQuery) {
+        return searchService.search(keywords, pageQuery);
+    }
+
+    public CursorPageResult<ArticleSearchDTO> executeSearchStrategy(String keywords, CursorPageQuery pageQuery) {
+        return searchService.search(keywords, pageQuery);
     }
 
 }

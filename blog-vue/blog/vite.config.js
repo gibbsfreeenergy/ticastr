@@ -1,16 +1,19 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import { createDevProxy } from "../shared/vite/createDevProxy";
 
 export default defineConfig({
   plugins: [vue()],
+  define: {
+    global: "globalThis"
+  },
   resolve: {
     alias: { "@": "/src" },
     extensions: [".mjs", ".js", ".mts", ".ts", ".jsx", ".tsx", ".json", ".vue"]
   },
   server: {
-    proxy: {
-      "/api": { target: "http://localhost:8090", changeOrigin: true, rewrite: path => path.replace(/^\/api/, ""), ws: true }
-    }
+    port: 8080,
+    proxy: createDevProxy()
   },
   build: {
     sourcemap: false,

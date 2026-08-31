@@ -7,7 +7,6 @@ import com.wzh.blog.service.OperationLogService;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,8 +23,11 @@ import java.util.List;
 @Tag(name = "日志模块")
 @RestController
 public class LogController {
-    @Autowired
-    private OperationLogService operationLogService;
+    private final OperationLogService operationLogService;
+
+    public LogController(OperationLogService operationLogService) {
+        this.operationLogService = operationLogService;
+    }
 
     /**
      * 查看操作日志
@@ -36,7 +38,7 @@ public class LogController {
     @Operation(summary = "查看操作日志")
     @GetMapping("/admin/operation/logs")
     public Result<PageResult<OperationLogDTO>> listOperationLogs(SearchQueryVO conditionVO) {
-        return Result.ok(operationLogService.listOperationLogs(conditionVO));
+        return Result.ok(operationLogService.listOperationLogs(conditionVO, conditionVO.toPageQuery()));
     }
 
     /**

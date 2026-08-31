@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">本地默认图片</title>
+  <desc id="desc">用于图片加载失败时显示的渐变占位图</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#dbeafe" stop-opacity=".78"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="24" fill="url(#bg)"/>
+  <circle cx="530" cy="70" r="86" fill="#ffffff" opacity=".12"/>
+  <circle cx="92" cy="300" r="120" fill="#ffffff" opacity=".08"/>
+  <rect x="220" y="86" width="200" height="150" rx="18" fill="url(#card)"/>
+  <circle cx="278" cy="136" r="18" fill="#60a5fa"/>
+  <path d="m238 211 43-45 31 31 24-25 46 39H238Z" fill="#2563eb" opacity=".78"/>
+</svg>

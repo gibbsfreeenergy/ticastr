@@ -11,7 +11,6 @@ import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -26,8 +25,11 @@ import java.util.List;
 @Tag(name = "用户账号模块")
 @RestController
 public class UserAuthController {
-    @Autowired
-    private UserAuthService userAuthService;
+    private final UserAuthService userAuthService;
+
+    public UserAuthController(UserAuthService userAuthService) {
+        this.userAuthService = userAuthService;
+    }
 
     /**
      * 发送邮箱验证码
@@ -65,7 +67,7 @@ public class UserAuthController {
     @Operation(summary = "查询后台用户列表")
     @GetMapping("/admin/users")
     public Result<PageResult<UserBackDTO>> listUsers(UserQueryVO condition) {
-        return Result.ok(userAuthService.listUserBackDTO(condition));
+        return Result.ok(userAuthService.listUserBackDTO(condition, condition.toPageQuery()));
     }
 
     /**

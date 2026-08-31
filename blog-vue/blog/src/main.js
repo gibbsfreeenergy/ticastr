@@ -12,11 +12,11 @@ import { loadSocialSdk } from "./plugins/socialSdk";
 import dayjs from "dayjs";
 import { installHttp } from "./api/http";
 import { installSafeHtml } from "./plugins/safeHtml";
-import InfiniteLoading from "v3-infinite-loading";
-import "v3-infinite-loading/lib/style.css";
+import { installImageFallback } from "./plugins/imageFallback";
 import Toast from "./components/toast/index";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
+import { applySeo } from "./utils/seo";
 
 const app = createApp(App);
 loadSocialSdk(config);
@@ -29,15 +29,19 @@ app.config.globalProperties.num = value => value >= 1000 ? (value / 1000).toFixe
 app.config.globalProperties.$imagePreview = ({ images, index = 0 }) => {
   window.dispatchEvent(new CustomEvent("image-preview", { detail: { images, index } }));
 };
-app.component("InfiniteLoading", InfiniteLoading);
 app.use(store).use(router).use(vuetify).use(Toast);
 installHttp(app, store);
 installSafeHtml(app);
+installImageFallback();
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(to => {
   NProgress.start();
   if (to.meta.title) document.title = to.meta.title;
-  next();
+  applySeo({
+    articleTitle: to.meta.title || "Ticastr",
+    articleSummary: "记录生活，分享技术"
+  }, { siteName: "Ticastr" });
+  return true;
 });
 router.afterEach(() => {
   window.scrollTo({ top: 0, behavior: "instant" });

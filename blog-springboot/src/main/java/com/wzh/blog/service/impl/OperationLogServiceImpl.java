@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -16,6 +14,7 @@ import com.wzh.blog.util.BeanCopyUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import com.wzh.blog.web.PageQuery;
 
 /**
  * 操作日志服务
@@ -26,15 +25,13 @@ import java.util.List;
 @Service
 public class OperationLogServiceImpl extends ServiceImpl<OperationLogDao, OperationLog> implements OperationLogService {
 
-    @Resource
-    private PaginationContext paginationContext;
 
 
 
 
     @Override
-    public PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO) {
-        Page<OperationLog> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+    public PageResult<OperationLogDTO> listOperationLogs(SearchQueryVO conditionVO, PageQuery pageQuery) {
+        Page<OperationLog> page = new Page<>(pageQuery.current(), pageQuery.size());
         // 查询日志列表
         Page<OperationLog> operationLogPage = this.page(page, new LambdaQueryWrapper<OperationLog>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), OperationLog::getOptModule, conditionVO.getKeywords())

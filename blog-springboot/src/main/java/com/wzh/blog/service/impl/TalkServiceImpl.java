@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -16,11 +14,12 @@ import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.EngagementService;
 import com.wzh.blog.service.TalkService;
 import com.wzh.blog.dao.TalkDao;
+import com.wzh.blog.security.CurrentUser;
 import com.wzh.blog.util.*;
 import com.wzh.blog.vo.StatusQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.TalkVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,16 +39,23 @@ import static com.wzh.blog.enums.TalkStatusEnum.PUBLIC;
 @Service
 public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private TalkDao talkDao;
-    @Autowired
-    private CommentDao commentDao;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private EngagementService engagementService;
+    private final TalkDao talkDao;
+    private final CommentDao commentDao;
+    private final RedisService redisService;
+    private final EngagementService engagementService;
+    private final CurrentUser currentUser;
+
+    public TalkServiceImpl(TalkDao talkDao,
+                           CommentDao commentDao,
+                           RedisService redisService,
+                           EngagementService engagementService,
+                           CurrentUser currentUser) {
+        this.talkDao = talkDao;
+        this.commentDao = commentDao;
+        this.redisService = redisService;
+        this.engagementService = engagementService;
+        this.currentUser = currentUser;
+    }
 
 
 
@@ -70,7 +76,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
 
     @Override
-    public PageResult<TalkDTO> listTalks() {
+    public PageResult<TalkDTO> listTalks(PageQuery pageQuery) {
         // 查询说说总量
         Long count = talkDao.selectCount((new LambdaQueryWrapper<Talk>()
                 .eq(Talk::getStatus, PUBLIC.getStatus())));
@@ -78,7 +84,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
             return new PageResult<>();
         }
         // 分页查询说说
-        List<TalkDTO> talkDTOList = talkDao.listTalks(paginationContext.getOffset(), paginationContext.getSize());
+        List<TalkDTO> talkDTOList = talkDao.listTalks(pageQuery.offset(), pageQuery.size());
         // 查询说说评论量
         List<Integer> talkIdList = talkDTOList.stream()
                 .map(TalkDTO::getId)
@@ -121,7 +127,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
     @Override
     public void saveTalkLike(Integer talkId) {
-        engagementService.toggleTalkLike(UserUtils.getLoginUser().getUserInfoId(), talkId);
+        engagementService.toggleTalkLike(currentUser.id(), talkId);
     }
 
 
@@ -130,7 +136,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
     public void saveOrUpdateTalk(TalkVO talkVO) {
         talkVO.setContent(HTMLUtils.sanitizeRichText(talkVO.getContent()));
         Talk talk = BeanCopyUtils.copyObject(talkVO, Talk.class);
-        talk.setUserId(UserUtils.getLoginUser().getUserInfoId());
+        talk.setUserId(currentUser.id());
         this.saveOrUpdate(talk);
     }
 
@@ -144,7 +150,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
 
 
     @Override
-    public PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO) {
+    public PageResult<TalkBackDTO> listBackTalks(StatusQueryVO conditionVO, PageQuery pageQuery) {
         // 查询说说总量
         Long count = talkDao.selectCount(new LambdaQueryWrapper<Talk>()
                 .eq(Objects.nonNull(conditionVO.getStatus()), Talk::getStatus, conditionVO.getStatus()));
@@ -152,7 +158,7 @@ public class TalkServiceImpl extends ServiceImpl<TalkDao, Talk> implements TalkS
             return new PageResult<>();
         }
         // 分页查询说说
-        List<TalkBackDTO> talkDTOList = talkDao.listBackTalks(paginationContext.getOffset(), paginationContext.getSize(), conditionVO);
+        List<TalkBackDTO> talkDTOList = talkDao.listBackTalks(pageQuery.offset(), pageQuery.size(), conditionVO);
         talkDTOList.forEach(item -> {
             // 转换图片格式
             if (Objects.nonNull(item.getImages())) {

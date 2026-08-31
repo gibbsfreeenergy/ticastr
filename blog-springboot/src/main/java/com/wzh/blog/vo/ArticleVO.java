@@ -37,14 +37,6 @@ public class ArticleVO {
     private String articleTitle;
 
     /**
-     * 内容
-     */
-    @NotBlank(message = "文章内容不能为空")
-    @Size(max = 100000, message = "文章内容不能超过100000个字符")
-    @Schema(description = "文章内容")
-    private String articleContent;
-
-    /**
      * 文章封面
      */
     @Schema(description = "文章缩略图")
@@ -85,5 +77,9 @@ public class ArticleVO {
      */
     @Schema(description = "文章状态")
     private Integer status;
+
+    /** Current Markdown version used for optimistic content updates. */
+    @Schema(description = "当前文章内容版本")
+    private Integer contentVersion;
 
 }

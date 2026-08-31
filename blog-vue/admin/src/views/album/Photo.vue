@@ -65,7 +65,7 @@
         @change="handleCheckedPhotoChange"
       >
         <el-col :md="4" v-for="item of photoList" :key="item.id">
-          <el-checkbox :label="item.id">
+          <el-checkbox :value="item.id">
             <div class="photo-item">
               <!-- 照片操作 -->
               <div class="photo-opreation">
@@ -96,8 +96,8 @@
       class="pagination-container"
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       layout="prev, pager, next"
     />
@@ -110,7 +110,7 @@
       <div class="upload-container">
         <el-upload
           v-show="uploadList.length > 0"
-          action="/api/admin/photos/albums/cover"
+          :action="$api.admin.uploadAlbumCoverUrl"
           list-type="picture-card"
           :file-list="uploadList"
           multiple
@@ -124,7 +124,7 @@
           <el-upload
             v-show="uploadList.length == 0"
             drag
-            action="/api/admin/photos/albums/cover"
+          :action="$api.admin.uploadAlbumCoverUrl"
             multiple
             :before-upload="beforeUpload"
             :on-success="upload"
@@ -203,7 +203,7 @@
               <el-radio
                 v-if="item.id != albumInfo.id"
                 :key="item.id"
-                :label="item.id"
+                :value="item.id"
                 style="margin-bottom:1rem"
               >
                 <div class="album-check">
@@ -275,20 +275,20 @@ export default {
   },
   methods: {
     getAlbumInfo() {
-      this.$http
-        .get("/api/admin/photos/albums/" + this.$route.params.albumId + "/info")
-        .then(({ data }) => {
+      this.$api.album
+        .adminInfo(this.$route.params.albumId)
+        .then(data => {
           this.albumInfo = data.data;
         });
     },
     listAlbums() {
-      this.$http.get("/api/admin/photos/albums/info").then(({ data }) => {
+      this.$api.album.adminOptions().then(data => {
         this.albumList = data.data;
       });
     },
     listPhotos() {
-      this.$http
-        .get("/api/admin/photos", {
+      this.$api.album
+        .listPhotos({
           params: {
             current: this.current,
             size: this.size,
@@ -296,7 +296,7 @@ export default {
             isDelete: 0
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.photoList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -315,12 +315,12 @@ export default {
       this.uploadList.forEach(item => {
         photoUrlList.push(item.url);
       });
-      this.$http
-        .post("/api/admin/photos", {
+      this.$api.album
+        .savePhotos({
           albumId: this.$route.params.albumId,
           photoUrlList: photoUrlList
         })
-        .then(({ data }) => {
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -342,7 +342,7 @@ export default {
         this.$message.error("照片名称不能为空");
         return false;
       }
-      this.$http.put("/api/admin/photos", this.photoForm).then(({ data }) => {
+      this.$api.album.updatePhoto(this.photoForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -359,12 +359,12 @@ export default {
       });
     },
     updatePhotoAlbum() {
-      this.$http
-        .put("/api/admin/photos/album", {
+      this.$api.album
+        .movePhotos({
           albumId: this.albumId,
           photoIdList: this.selectPhotoIdList
         })
-        .then(({ data }) => {
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -425,7 +425,7 @@ export default {
       } else {
         param = { idList: [id], isDelete: 1 };
       }
-      this.$http.put("/api/admin/photos/delete", param).then(({ data }) => {
+      this.$api.album.updateDelete(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

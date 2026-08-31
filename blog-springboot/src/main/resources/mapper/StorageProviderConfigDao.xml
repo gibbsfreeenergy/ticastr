@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.StorageProviderConfigDao">
+    <select id="selectSingleton" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT id, active_provider, updated_at, updated_by
+        FROM tb_storage_provider_config
+        WHERE id = 1
+    </select>
+
+    <update id="updateActive">
+        UPDATE tb_storage_provider_config
+        SET active_provider = #{provider},
+            updated_by = #{updatedBy},
+            updated_at = #{updatedAt}
+        WHERE id = 1
+    </update>
+</mapper>

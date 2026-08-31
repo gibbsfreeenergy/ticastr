@@ -24,7 +24,7 @@
             <!-- 文章内容 -->
             <p
               class="search-reslut-content text-justify"
-              v-safe-html="item.articleContent"
+              v-safe-html="item.snippet"
             />
           </li>
         </ul>
@@ -42,11 +42,16 @@
 
 <script>
 export default {
+  unmounted() {
+    clearTimeout(this.searchTimer);
+  },
   data: function() {
     return {
       keywords: "",
       articleList: [],
-      flag: false
+      flag: false,
+      searchTimer: null,
+      searchRequestId: 0
     };
   },
   methods: {
@@ -75,13 +80,23 @@ export default {
   watch: {
     keywords(value) {
       this.flag = value.trim() != "" ? true : false;
-      this.$http
-        .get("/api/articles/search", {
-          params: { current: 1, keywords: value }
-        })
-        .then(({ data }) => {
-          this.articleList = data.data;
-        });
+      clearTimeout(this.searchTimer);
+      const requestId = ++this.searchRequestId;
+      if (!this.flag) {
+        this.articleList = [];
+        return;
+      }
+      this.searchTimer = setTimeout(() => {
+        this.$api.article
+          .search({
+            params: { size: 10, keywords: value }
+          })
+          .then(data => {
+            if (requestId === this.searchRequestId) {
+              this.articleList = data.data?.items || [];
+            }
+          });
+      }, 240);
     }
   }
 };

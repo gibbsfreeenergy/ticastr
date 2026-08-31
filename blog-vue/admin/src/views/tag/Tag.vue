@@ -90,8 +90,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -111,7 +111,7 @@
     </el-dialog>
     <!-- 编辑对话框 -->
     <el-dialog v-model="addOrEdit" width="30%">
-      <template #header><div class="dialog-title-container" ref="tagTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="tagForm">
         <el-form-item label="标签名">
           <el-input style="width:220px" v-model="tagForm.tagName" />
@@ -137,6 +137,7 @@ export default {
       isDelete: false,
       loading: true,
       addOrEdit: false,
+      dialogTitle: "添加标签",
       keywords: null,
       tagList: [],
       tagIdList: [],
@@ -175,7 +176,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/tags", param).then(({ data }) => {
+      this.$api.catalog.removeTags(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -192,15 +193,15 @@ export default {
       this.isDelete = false;
     },
     listTags() {
-      this.$http
-        .get("/api/admin/tags", {
+      this.$api.catalog
+        .adminTags({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.tagList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -209,11 +210,11 @@ export default {
     openModel(tag) {
       if (tag != null) {
         this.tagForm = JSON.parse(JSON.stringify(tag));
-        this.$refs.tagTitle.innerHTML = "修改标签";
+        this.dialogTitle = "修改标签";
       } else {
         this.tagForm.id = null;
         this.tagForm.tagName = "";
-        this.$refs.tagTitle.innerHTML = "添加标签";
+        this.dialogTitle = "添加标签";
       }
       this.addOrEdit = true;
     },
@@ -222,7 +223,7 @@ export default {
         this.$message.error("标签名不能为空");
         return false;
       }
-      this.$http.post("/api/admin/tags", this.tagForm).then(({ data }) => {
+      this.$api.catalog.saveTag(this.tagForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

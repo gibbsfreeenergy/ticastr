@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.ArticleEngagementDao">
+    <insert id="ensureRow">
+        INSERT INTO tb_article_engagement (article_id, views_count, likes_count, created_at, updated_at)
+        VALUES (#{articleId}, 0, 0, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE article_id = article_id
+    </insert>
+
+    <update id="incrementViews">
+        UPDATE tb_article_engagement
+        SET views_count = views_count + 1, updated_at = NOW()
+        WHERE article_id = #{articleId}
+    </update>
+
+    <update id="incrementLikes">
+        UPDATE tb_article_engagement
+        SET likes_count = likes_count + 1, updated_at = NOW()
+        WHERE article_id = #{articleId}
+    </update>
+
+    <update id="decrementLikes">
+        UPDATE tb_article_engagement
+        SET likes_count = GREATEST(likes_count - 1, 0), updated_at = NOW()
+        WHERE article_id = #{articleId}
+    </update>
+
+    <select id="listCounts" resultType="com.wzh.blog.dto.ArticleEngagementCountDTO">
+        SELECT article_id, views_count, likes_count
+        FROM tb_article_engagement
+        WHERE article_id IN
+        <foreach collection="articleIds" item="articleId" open="(" separator="," close=")">
+            #{articleId}
+        </foreach>
+    </select>
+
+    <select id="listTopByViews" resultType="com.wzh.blog.dto.ArticleRankDTO">
+        SELECT a.article_title, e.views_count
+        FROM tb_article_engagement e
+        JOIN tb_article a ON a.id = e.article_id
+        WHERE a.is_delete = 0
+        ORDER BY e.views_count DESC, a.id DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

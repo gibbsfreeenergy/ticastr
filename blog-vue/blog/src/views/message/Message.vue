@@ -63,7 +63,7 @@ export default {
         time: Math.floor(Math.random() * (10 - 7)) + 7
       };
       this.messageContent = "";
-      this.$http.post("/api/messages", message).then(({ data }) => {
+      this.$api.public.createMessage(message).then(data => {
         if (data.flag) {
           this.barrageList.push(message);
           this.$toast({ type: "success", message: "留言成功" });
@@ -73,7 +73,7 @@ export default {
       });
     },
     listMessage() {
-      this.$http.get("/api/messages").then(({ data }) => {
+      this.$api.public.messages().then(data => {
         if (data.flag) {
           this.barrageList = data.data;
         }

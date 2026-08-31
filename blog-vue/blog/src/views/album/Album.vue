@@ -33,7 +33,7 @@ export default {
   },
   methods: {
     listPhotoAlbums() {
-      this.$http.get("/api/photos/albums").then(({ data }) => {
+      this.$api.album.list().then(data => {
         this.photoAlbumList = data.data;
       });
     }

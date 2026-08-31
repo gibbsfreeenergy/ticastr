@@ -1,6 +1,7 @@
 package com.wzh.blog.service.impl;
 
 import com.wzh.blog.config.RedisConfig;
+import com.wzh.blog.infrastructure.redis.RedisLockStore;
 import com.wzh.blog.service.DistributedLockService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,9 +35,8 @@ class RedisServiceImplIntegrationTest {
         connectionFactory.afterPropertiesSet();
         connectionFactory.start();
         redisTemplate = new RedisConfig().redisTemplate(connectionFactory);
-        redisService = new RedisServiceImpl();
-        ReflectionTestUtils.setField(redisService, "redisTemplate", redisTemplate);
-        lockService = new DistributedLockService(new StringRedisTemplate(connectionFactory));
+        redisService = new RedisServiceImpl(redisTemplate);
+        lockService = new DistributedLockService(new RedisLockStore(new StringRedisTemplate(connectionFactory)));
     }
 
     @AfterAll

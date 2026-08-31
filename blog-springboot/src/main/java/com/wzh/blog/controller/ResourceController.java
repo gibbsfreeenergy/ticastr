@@ -8,7 +8,6 @@ import com.wzh.blog.vo.ResourceVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -23,8 +22,11 @@ import java.util.List;
 @Tag(name = "资源模块")
 @RestController
 public class ResourceController {
-    @Autowired
-    private ResourceService resourceService;
+    private final ResourceService resourceService;
+
+    public ResourceController(ResourceService resourceService) {
+        this.resourceService = resourceService;
+    }
 
     /**
      * 查看资源列表

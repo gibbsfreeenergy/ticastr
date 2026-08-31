@@ -9,7 +9,6 @@ import com.wzh.blog.vo.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +27,11 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
 @Tag(name = "用户信息模块")
 @RestController
 public class UserInfoController {
-    @Autowired
-    private UserInfoService userInfoService;
+    private final UserInfoService userInfoService;
+
+    public UserInfoController(UserInfoService userInfoService) {
+        this.userInfoService = userInfoService;
+    }
 
     /**
      * 更新用户信息
@@ -107,7 +109,7 @@ public class UserInfoController {
     @Operation(summary = "查看在线用户")
     @GetMapping("/admin/users/online")
     public Result<PageResult<UserOnlineDTO>> listOnlineUsers(SearchQueryVO conditionVO) {
-        return Result.ok(userInfoService.listOnlineUsers(conditionVO));
+        return Result.ok(userInfoService.listOnlineUsers(conditionVO, conditionVO.toPageQuery()));
     }
 
     /**

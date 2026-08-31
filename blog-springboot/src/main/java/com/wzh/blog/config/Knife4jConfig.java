@@ -4,6 +4,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,19 +18,16 @@ import java.util.List;
 public class Knife4jConfig {
 
     @Bean
-    public OpenAPI openAPI() {
+    public OpenAPI openAPI(@Value("${app.public-api-url}") String publicApiUrl) {
         return new OpenAPI()
                 .info(new Info()
                         .title("Blog API")
                         .description("Ticastr blog service API")
                         .version("1.0")
-                        .termsOfService("https://ticastr.com/api")
                         .contact(new Contact()
-                                .name("Ticstar")
-                                .url("https://github.com/gibbsfreeenergy")
-                                .email("1036421779@qq.com")))
+                                .name("Blog maintainers")))
                 .servers(List.of(new Server()
-                        .url("https://ticastr.com")
-                        .description("Production")));
+                        .url(publicApiUrl)
+                        .description("Configured API origin")));
     }
 }

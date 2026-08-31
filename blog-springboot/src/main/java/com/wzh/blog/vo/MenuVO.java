@@ -35,12 +35,21 @@ public class MenuVO {
     @Schema(description = "菜单名")
     private String name;
 
+    @Schema(description = "稳定菜单编码")
+    private String code;
+
     /**
      * icon
      */
     @NotBlank(message = "菜单icon不能为空")
     @Schema(description = "菜单icon")
     private String icon;
+
+    @Schema(description = "稳定图标编码")
+    private String iconKey;
+
+    @Schema(description = "稳定导航分组编码")
+    private String section;
 
     /**
      * 路径
@@ -55,6 +64,9 @@ public class MenuVO {
     @NotBlank(message = "组件不能为空")
     @Schema(description = "组件")
     private String component;
+
+    @Schema(description = "前端路由注册表编码")
+    private String routeKey;
 
     /**
      * 排序

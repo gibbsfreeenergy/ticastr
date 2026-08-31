@@ -37,11 +37,6 @@ public class ArticleHomeDTO {
     private String articleTitle;
 
     /**
-     * 内容
-     */
-    private String articleContent;
-
-    /**
      * 发表时间
      */
     private LocalDateTime createTime;

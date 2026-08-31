@@ -12,7 +12,8 @@ import com.wzh.blog.entity.WebsiteConfig;
 import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.PageService;
-import com.wzh.blog.service.RedisService;
+import com.wzh.blog.infrastructure.cache.CacheKeyFactory;
+import com.wzh.blog.infrastructure.cache.CacheStore;
 import com.wzh.blog.service.UniqueViewService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.util.IpUtils;
@@ -22,18 +23,14 @@ import com.wzh.blog.vo.WebsiteConfigVO;
 import eu.bitwalker.useragentutils.Browser;
 import eu.bitwalker.useragentutils.OperatingSystem;
 import eu.bitwalker.useragentutils.UserAgent;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
-import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.*;
-import static com.wzh.blog.constant.RedisPrefixConst.*;
 import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
 
 /**
@@ -45,28 +42,46 @@ import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
  */
 @Service
 public class BlogInfoServiceImpl implements BlogInfoService {
-    @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private ArticleDao articleDao;
-    @Autowired
-    private CategoryDao categoryDao;
-    @Autowired
-    private TagDao tagDao;
-    @Autowired
-    private MessageDao messageDao;
-    @Autowired
-    private UniqueViewService uniqueViewService;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private WebsiteConfigDao websiteConfigDao;
-    @Resource
-    private HttpServletRequest request;
-    @Autowired
-    private PageService pageService;
-    @Autowired
-    private AboutDao aboutDao;
+    private final UserInfoDao userInfoDao;
+    private final ArticleDao articleDao;
+    private final CategoryDao categoryDao;
+    private final TagDao tagDao;
+    private final MessageDao messageDao;
+    private final UniqueViewService uniqueViewService;
+    private final ArticleEngagementDao articleEngagementDao;
+    private final CacheStore cacheStore;
+    private final CacheKeyFactory cacheKeyFactory;
+    private final WebsiteConfigDao websiteConfigDao;
+    private final HttpServletRequest request;
+    private final PageService pageService;
+    private final AboutDao aboutDao;
+
+    public BlogInfoServiceImpl(UserInfoDao userInfoDao,
+                               ArticleDao articleDao,
+                               CategoryDao categoryDao,
+                               TagDao tagDao,
+                               MessageDao messageDao,
+                               UniqueViewService uniqueViewService,
+                               ArticleEngagementDao articleEngagementDao,
+                               CacheStore cacheStore,
+                               WebsiteConfigDao websiteConfigDao,
+                               HttpServletRequest request,
+                               PageService pageService,
+                               AboutDao aboutDao) {
+        this.userInfoDao = userInfoDao;
+        this.articleDao = articleDao;
+        this.categoryDao = categoryDao;
+        this.tagDao = tagDao;
+        this.messageDao = messageDao;
+        this.uniqueViewService = uniqueViewService;
+        this.articleEngagementDao = articleEngagementDao;
+        this.cacheStore = cacheStore;
+        this.cacheKeyFactory = new CacheKeyFactory();
+        this.websiteConfigDao = websiteConfigDao;
+        this.request = request;
+        this.pageService = pageService;
+        this.aboutDao = aboutDao;
+    }
 
     @Override
     public BlogHomeInfoDTO getBlogHomeInfo() {
@@ -79,8 +94,7 @@ public class BlogInfoServiceImpl implements BlogInfoService {
         // 查询标签数量
         Long tagCount = tagDao.selectCount(null);
         // 查询访问量
-        Object count = redisService.get(BLOG_VIEWS_COUNT);
-        String viewsCount = Optional.ofNullable(count).orElse(0).toString();
+        String viewsCount = String.valueOf(uniqueViewService.totalViews());
         // 查询网站配置
         WebsiteConfigVO websiteConfig = this.getWebsiteConfig();
         // 查询页面图片
@@ -99,8 +113,7 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     @Override
     public BlogBackInfoDTO getBlogBackInfo() {
         // 查询访问量
-        Object count = redisService.get(BLOG_VIEWS_COUNT);
-        Integer viewsCount = Integer.parseInt(Optional.ofNullable(count).orElse(0).toString());
+        Integer viewsCount = Math.toIntExact(Math.min(Integer.MAX_VALUE, uniqueViewService.totalViews()));
         // 查询留言量
         Long messageCount = messageDao.selectCount(null);
         // 查询用户量
@@ -116,8 +129,8 @@ public class BlogInfoServiceImpl implements BlogInfoService {
         List<CategoryDTO> categoryDTOList = categoryDao.listCategoryDTO();
         // 查询标签数据
         List<TagDTO> tagDTOList = BeanCopyUtils.copyList(tagDao.selectList(null), TagDTO.class);
-        // 查询redis访问量前五的文章
-        Map<Object, Double> articleMap = redisService.zReverseRangeWithScore(ARTICLE_VIEWS_COUNT, 0, 4);
+        // 文章浏览量来自 MySQL 事实表，Redis 关闭时仍保持一致。
+        List<ArticleRankDTO> articleRankDTOList = articleEngagementDao.listTopByViews(5);
         BlogBackInfoDTO blogBackInfoDTO = BlogBackInfoDTO.builder()
                 .articleStatisticsList(articleStatisticsList)
                 .tagDTOList(tagDTOList)
@@ -128,9 +141,7 @@ public class BlogInfoServiceImpl implements BlogInfoService {
                 .categoryDTOList(categoryDTOList)
                 .uniqueViewDTOList(uniqueViewList)
                 .build();
-        if (CollectionUtils.isNotEmpty(articleMap)) {
-            // 查询文章排行
-            List<ArticleRankDTO> articleRankDTOList = listArticleRank(articleMap);
+        if (CollectionUtils.isNotEmpty(articleRankDTOList)) {
             blogBackInfoDTO.setArticleRankDTOList(articleRankDTOList);
         }
         return blogBackInfoDTO;
@@ -145,16 +156,18 @@ public class BlogInfoServiceImpl implements BlogInfoService {
                 .build();
         websiteConfigDao.updateById(websiteConfig);
         // 删除缓存
-        redisService.del(WEBSITE_CONFIG);
+        cacheStore.evict(cacheKeyFactory.websiteConfig());
     }
 
     @Override
     public WebsiteConfigVO getWebsiteConfig() {
         WebsiteConfigVO websiteConfigVO;
         // 获取缓存数据
-        Object websiteConfig = redisService.get(WEBSITE_CONFIG);
-        if (Objects.nonNull(websiteConfig)) {
-            websiteConfigVO = JSON.parseObject(websiteConfig.toString(), WebsiteConfigVO.class);
+        Object websiteConfig = cacheStore.get(cacheKeyFactory.websiteConfig());
+        if (websiteConfig instanceof WebsiteConfigVO cached) {
+            websiteConfigVO = cached;
+        } else if (websiteConfig instanceof String cached) {
+            websiteConfigVO = JSON.parseObject(cached, WebsiteConfigVO.class);
         } else {
             // 从数据库中加载
             WebsiteConfig storedConfig = websiteConfigDao.selectById(DEFAULT_CONFIG_ID);
@@ -163,25 +176,20 @@ public class BlogInfoServiceImpl implements BlogInfoService {
             }
             String config = storedConfig.getConfig();
             websiteConfigVO = JSON.parseObject(config, WebsiteConfigVO.class);
-            redisService.set(WEBSITE_CONFIG, config);
+            cacheStore.put(cacheKeyFactory.websiteConfig(), websiteConfigVO, java.time.Duration.ofMinutes(5));
         }
         return websiteConfigVO;
     }
 
     @Override
     public String getAbout() {
-        Object value = redisService.get(ABOUT);
-        if (Objects.nonNull(value)) {
-            String content = value.toString();
-            About about = aboutDao.selectById(DEFAULT_CONFIG_ID);
-            if (about == null || about.getContent() == null || about.getContent().isBlank()) {
-                persistAbout(content);
-            }
+        Object value = cacheStore.get(cacheKeyFactory.about());
+        if (value instanceof String content) {
             return content;
         }
         About about = aboutDao.selectById(DEFAULT_CONFIG_ID);
         String content = about == null ? "" : about.getContent();
-        redisService.set(ABOUT, content);
+        cacheStore.put(cacheKeyFactory.about(), content, java.time.Duration.ofMinutes(5));
         return content;
     }
 
@@ -189,7 +197,7 @@ public class BlogInfoServiceImpl implements BlogInfoService {
     @Transactional(rollbackFor = Exception.class)
     public void updateAbout(BlogInfoVO blogInfoVO) {
         persistAbout(blogInfoVO.getAboutContent());
-        redisService.set(ABOUT, blogInfoVO.getAboutContent());
+        cacheStore.put(cacheKeyFactory.about(), blogInfoVO.getAboutContent(), java.time.Duration.ofMinutes(5));
     }
 
     private void persistAbout(String content) {
@@ -219,29 +227,7 @@ public class BlogInfoServiceImpl implements BlogInfoService {
                     .replaceAll(PROVINCE, "")
                     .replaceAll(CITY, "")
                 : UNKNOWN;
-        redisService.recordUniqueVisitor(UNIQUE_VISITOR, md5, BLOG_VIEWS_COUNT, VISITOR_AREA, area);
-    }
-
-    /**
-     * 查询文章排行
-     *
-     * @param articleMap 文章信息
-     * @return {@link List<ArticleRankDTO>} 文章排行
-     */
-    private List<ArticleRankDTO> listArticleRank(Map<Object, Double> articleMap) {
-        // 提取文章id
-        List<Integer> articleIdList = new ArrayList<>(articleMap.size());
-        articleMap.forEach((key, value) -> articleIdList.add((Integer) key));
-        // 查询文章信息
-        return articleDao.selectList(new LambdaQueryWrapper<Article>()
-                        .select(Article::getId, Article::getArticleTitle)
-                        .in(Article::getId, articleIdList))
-                .stream().map(article -> ArticleRankDTO.builder()
-                        .articleTitle(article.getArticleTitle())
-                        .viewsCount(articleMap.get(article.getId()).intValue())
-                        .build())
-                .sorted(Comparator.comparingInt(ArticleRankDTO::getViewsCount).reversed())
-                .collect(Collectors.toList());
+        uniqueViewService.recordVisitor(md5, area);
     }
 
 }

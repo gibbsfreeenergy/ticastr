@@ -92,7 +92,7 @@ export default {
       return this.$store.state.blogInfo.websiteConfig.socialLoginList;
     },
     showLogin() {
-      return function(type) {
+      return type => {
         return this.socialLoginList.indexOf(type) != -1;
       };
     }
@@ -116,33 +116,43 @@ export default {
         this.$toast({ type: "error", message: "密码不能为空" });
         return false;
       }
-      const that = this;
-
-      var captcha = new TencentCaptcha(this.config.TENCENT_CAPTCHA, function(
-        res
-      ) {
-        if (res.ret === 0) {
-          //发送登录请求
-          let param = new URLSearchParams();
-          param.append("username", that.username);
-          param.append("password", that.password);
-          that.$http.post("/api/login", param).then(({ data }) => {
-            if (data.flag) {
-              that.username = "";
-              that.password = "";
-              that.$store.commit("login", data.data);
-              that.$store.commit("closeModel");
-              that.$toast({ type: "success", message: "登录成功" });
-            } else {
-              that.$toast({ type: "error", message: data.message });
-            }
-          });
+      const submitLogin = () => {
+        let param = new URLSearchParams();
+        param.append("username", this.username);
+        param.append("password", this.password);
+      this.$api.auth.login(param).then(data => {
+          if (data.flag) {
+            this.username = "";
+            this.password = "";
+            this.$store.commit("login", data.data);
+            this.$store.commit("closeModel");
+            this.$toast({ type: "success", message: "登录成功" });
+          } else {
+            this.$toast({ type: "error", message: data.message });
+          }
+        });
+      };
+      if (!this.config.TENCENT_CAPTCHA) {
+        submitLogin();
+        return;
+      }
+      if (typeof window.TencentCaptcha !== "function") {
+        this.$toast({ type: "error", message: "验证码服务不可用" });
+        return;
+      }
+      const captcha = new window.TencentCaptcha(
+        this.config.TENCENT_CAPTCHA,
+        res => {
+          if (res.ret === 0) submitLogin();
         }
-      });
-      // 显示验证码
+      );
       captcha.show();
     },
     qqLogin() {
+      if (!this.config.QQ_APP_ID) {
+        this.$toast({ type: "warnning", message: "QQ登录未配置" });
+        return;
+      }
       //保留当前路径
       this.$store.commit("saveLoginUrl", this.$route.path);
       if (
@@ -151,30 +161,37 @@ export default {
         )
       ) {
 
-        QC.Login.showPopup({
+        if (!window.QC || !window.QC.Login) {
+          this.$toast({ type: "error", message: "QQ登录服务尚未加载" });
+          return;
+        }
+        window.QC.Login.showPopup({
           appId: this.config.QQ_APP_ID,
           redirectURI: this.config.QQ_REDIRECT_URI
         });
       } else {
         window.open(
           "https://graph.qq.com/oauth2.0/show?which=Login&display=pc&client_id=" +
-            +this.config.QQ_APP_ID +
+            encodeURIComponent(this.config.QQ_APP_ID) +
             "&response_type=token&scope=all&redirect_uri=" +
-            this.config.QQ_REDIRECT_URI,
+            encodeURIComponent(this.config.QQ_REDIRECT_URI),
           "_self"
         );
       }
     },
     weiboLogin() {
+      if (!this.config.WEIBO_APP_ID) {
+        this.$toast({ type: "warnning", message: "微博登录未配置" });
+        return;
+      }
       //保留当前路径
       this.$store.commit("saveLoginUrl", this.$route.path);
-      window.open(
-        "https://api.weibo.com/oauth2/authorize?client_id=" +
-          this.config.WEIBO_APP_ID +
-          "&response_type=code&redirect_uri=" +
-          this.config.WEIBO_REDIRECT_URI,
-        "_self"
-      );
+      const params = new URLSearchParams({
+        client_id: this.config.WEIBO_APP_ID,
+        response_type: "code",
+        redirect_uri: this.config.WEIBO_REDIRECT_URI
+      });
+      window.open("https://api.weibo.com/oauth2/authorize?" + params, "_self");
     }
   }
 };

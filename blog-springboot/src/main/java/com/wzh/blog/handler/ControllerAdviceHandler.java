@@ -80,6 +80,12 @@ public class ControllerAdviceHandler {
                 .body(Result.fail(VALID_ERROR.getCode(), VALID_ERROR.getDesc()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Result<?>> errorHandler(IllegalArgumentException exception) {
+        String message = exception.getMessage() == null ? VALID_ERROR.getDesc() : exception.getMessage();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.fail(VALID_ERROR.getCode(), message));
+    }
+
     /**
      * 处理系统异常
      *

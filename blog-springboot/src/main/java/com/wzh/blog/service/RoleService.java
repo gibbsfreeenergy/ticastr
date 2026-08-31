@@ -7,6 +7,7 @@ import com.wzh.blog.dto.UserRoleDTO;
 import com.wzh.blog.entity.Role;
 import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.RoleVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ public interface RoleService extends IService<Role> {
      * @param conditionVO 条件
      * @return 角色列表
      */
-    PageResult<RoleDTO> listRoles(SearchQueryVO conditionVO);
+    PageResult<RoleDTO> listRoles(SearchQueryVO conditionVO, PageQuery pageQuery);
 
     /**
      * 保存或更新角色

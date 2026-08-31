@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Service
 public class AuditLogService {
 
-    private static final String RETENTION_LOCK = "ticastr:lock:audit-log:retention";
+    private static final String RETENTION_LOCK = "audit-log:retention";
 
     private final OperationLogDao operationLogDao;
     private final DistributedLockService distributedLockService;

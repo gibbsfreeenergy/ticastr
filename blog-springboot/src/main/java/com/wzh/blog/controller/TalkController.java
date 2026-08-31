@@ -4,15 +4,15 @@ import com.wzh.blog.dto.TalkBackDTO;
 import com.wzh.blog.dto.TalkDTO;
 import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.TalkService;
-import com.wzh.blog.strategy.context.UploadStrategyContext;
+import com.wzh.blog.media.MediaAssetStore;
 import com.wzh.blog.vo.StatusQueryVO;
+import com.wzh.blog.vo.PageQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.TalkVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,10 +28,13 @@ import java.util.List;
 @Tag(name = "说说模块")
 @RestController
 public class TalkController {
-    @Autowired
-    private TalkService talkService;
-    @Autowired
-    private UploadStrategyContext uploadStrategyContext;
+    private final TalkService talkService;
+    private final MediaAssetStore mediaAssetStore;
+
+    public TalkController(TalkService talkService, MediaAssetStore mediaAssetStore) {
+        this.talkService = talkService;
+        this.mediaAssetStore = mediaAssetStore;
+    }
 
     /**
      * 查看首页说说
@@ -51,8 +54,8 @@ public class TalkController {
      */
     @Operation(summary = "查看说说列表")
     @GetMapping("/talks")
-    public Result<PageResult<TalkDTO>> listTalks() {
-        return Result.ok(talkService.listTalks());
+    public Result<PageResult<TalkDTO>> listTalks(PageQueryVO pageQueryVO) {
+        return Result.ok(talkService.listTalks(pageQueryVO.toPageQuery()));
     }
 
     /**
@@ -92,7 +95,7 @@ public class TalkController {
     @Parameter(name = "file", description = "说说图片", required = true)
     @PostMapping("/admin/talks/images")
     public Result<String> saveTalkImages(MultipartFile file) {
-        return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.TALK.getPath()));
+        return Result.ok(mediaAssetStore.upload(file, FilePathEnum.TALK.getPath()));
     }
 
     /**
@@ -130,7 +133,7 @@ public class TalkController {
     @Operation(summary = "查看后台说说")
     @GetMapping("/admin/talks")
     public Result<PageResult<TalkBackDTO>> listBackTalks(StatusQueryVO conditionVO) {
-        return Result.ok(talkService.listBackTalks(conditionVO));
+        return Result.ok(talkService.listBackTalks(conditionVO, conditionVO.toPageQuery()));
     }
 
     /**

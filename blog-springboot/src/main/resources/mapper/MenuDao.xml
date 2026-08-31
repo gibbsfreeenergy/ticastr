@@ -7,9 +7,13 @@
         SELECT DISTINCT
             m.id,
             `name`,
+            code,
             `path`,
             component,
+            route_key,
             icon,
+            icon_key,
+            section,
             is_hidden,
             parent_id,
             order_num

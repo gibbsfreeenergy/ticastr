@@ -1,22 +1,19 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.dao.PageDao;
 import com.wzh.blog.entity.Page;
+import com.wzh.blog.infrastructure.cache.CacheKeyFactory;
+import com.wzh.blog.infrastructure.cache.CacheStore;
 import com.wzh.blog.service.PageService;
-import com.wzh.blog.service.RedisService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.PageVO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
-import java.util.Objects;
-
-import static com.wzh.blog.constant.RedisPrefixConst.PAGE_COVER;
+import java.time.Duration;
 
 /**
  * 页面服务
@@ -26,10 +23,15 @@ import static com.wzh.blog.constant.RedisPrefixConst.PAGE_COVER;
  */
 @Service
 public class PageServiceImpl extends ServiceImpl<PageDao, Page> implements PageService {
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private PageDao pageDao;
+    private final CacheStore cacheStore;
+    private final CacheKeyFactory cacheKeyFactory;
+    private final PageDao pageDao;
+
+    public PageServiceImpl(CacheStore cacheStore, PageDao pageDao) {
+        this.cacheStore = cacheStore;
+        this.cacheKeyFactory = new CacheKeyFactory();
+        this.pageDao = pageDao;
+    }
 
     @Transactional(rollbackFor = Exception.class)
 
@@ -40,7 +42,7 @@ public class PageServiceImpl extends ServiceImpl<PageDao, Page> implements PageS
         Page page = BeanCopyUtils.copyObject(pageVO, Page.class);
         this.saveOrUpdate(page);
         // 删除缓存
-        redisService.del(PAGE_COVER);
+        cacheStore.evict(cacheKeyFactory.pageCover());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -50,7 +52,7 @@ public class PageServiceImpl extends ServiceImpl<PageDao, Page> implements PageS
     public void deletePage(Integer pageId) {
         pageDao.deleteById(pageId);
         // 删除缓存
-        redisService.del(PAGE_COVER);
+        cacheStore.evict(cacheKeyFactory.pageCover());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -60,12 +62,12 @@ public class PageServiceImpl extends ServiceImpl<PageDao, Page> implements PageS
     public List<PageVO> listPages() {
         List<PageVO> pageVOList;
         // 查找缓存信息，不存在则从mysql读取，更新缓存
-        Object pageList = redisService.get(PAGE_COVER);
-        if (Objects.nonNull(pageList)) {
-            pageVOList = JSON.parseArray(pageList.toString(), PageVO.class);
+        Object pageList = cacheStore.get(cacheKeyFactory.pageCover());
+        if (pageList instanceof List<?> cached) {
+            pageVOList = (List<PageVO>) cached;
         } else {
             pageVOList = BeanCopyUtils.copyList(pageDao.selectList(null), PageVO.class);
-            redisService.set(PAGE_COVER, JSON.toJSONString(pageVOList));
+            cacheStore.put(cacheKeyFactory.pageCover(), pageVOList, Duration.ofMinutes(5));
         }
         return pageVOList;
     }

@@ -5,7 +5,7 @@ import com.wzh.blog.dto.PhotoAlbumBackDTO;
 import com.wzh.blog.dto.PhotoAlbumDTO;
 import com.wzh.blog.enums.FilePathEnum;
 import com.wzh.blog.service.PhotoAlbumService;
-import com.wzh.blog.strategy.context.UploadStrategyContext;
+import com.wzh.blog.media.MediaAssetStore;
 import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
@@ -13,7 +13,6 @@ import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,10 +31,13 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
 @Tag(name = "相册模块")
 @RestController
 public class PhotoAlbumController {
-    @Autowired
-    private UploadStrategyContext uploadStrategyContext;
-    @Autowired
-    private PhotoAlbumService photoAlbumService;
+    private final MediaAssetStore mediaAssetStore;
+    private final PhotoAlbumService photoAlbumService;
+
+    public PhotoAlbumController(MediaAssetStore mediaAssetStore, PhotoAlbumService photoAlbumService) {
+        this.mediaAssetStore = mediaAssetStore;
+        this.photoAlbumService = photoAlbumService;
+    }
 
     /**
      * 上传相册封面
@@ -47,7 +49,7 @@ public class PhotoAlbumController {
     @Parameter(name = "file", description = "相册封面", required = true)
     @PostMapping("/admin/photos/albums/cover")
     public Result<String> savePhotoAlbumCover(MultipartFile file) {
-        return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.PHOTO.getPath()));
+        return Result.ok(mediaAssetStore.upload(file, FilePathEnum.PHOTO.getPath()));
     }
 
     /**
@@ -73,7 +75,7 @@ public class PhotoAlbumController {
     @Operation(summary = "查看后台相册列表")
     @GetMapping("/admin/photos/albums")
     public Result<PageResult<PhotoAlbumBackDTO>> listPhotoAlbumBacks(SearchQueryVO condition) {
-        return Result.ok(photoAlbumService.listPhotoAlbumBacks(condition));
+        return Result.ok(photoAlbumService.listPhotoAlbumBacks(condition, condition.toPageQuery()));
     }
 
     /**

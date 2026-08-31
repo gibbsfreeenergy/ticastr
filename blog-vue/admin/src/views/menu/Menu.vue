@@ -87,14 +87,14 @@
       <el-table-column label="操作" align="center" width="200">
         <template #default="scope">
           <el-button
-            type="text"
+            type="link"
             size="mini"
             @click="openModel(scope.row, 1)"
             v-if="scope.row.children"
           >
             <i class="el-icon-plus" /> 新增
           </el-button>
-          <el-button type="text" size="mini" @click="openModel(scope.row, 2)">
+          <el-button type="link" size="mini" @click="openModel(scope.row, 2)">
             <i class="el-icon-edit" /> 修改
           </el-button>
           <el-popconfirm
@@ -102,7 +102,7 @@
             style="margin-left:10px"
             @confirm="deleteMenu(scope.row.id)"
           >
-            <template #reference><el-button size="mini" type="text">
+            <template #reference><el-button size="mini" type="link">
               <i class="el-icon-delete" /> 删除
             </el-button></template>
           </el-popconfirm>
@@ -111,13 +111,13 @@
     </el-table>
     <!-- 新增模态框 -->
     <el-dialog v-model="addMenu" width="30%" top="12vh">
-      <template #header><div class="dialog-title-container" ref="menuTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="menuForm">
         <!-- 菜单类型 -->
         <el-form-item label="菜单类型" v-if="show">
           <el-radio-group v-model="isCatalog">
-            <el-radio :label="true">目录</el-radio>
-            <el-radio :label="false">一级菜单</el-radio>
+            <el-radio :value="true">目录</el-radio>
+            <el-radio :value="false">一级菜单</el-radio>
           </el-radio-group>
         </el-form-item>
         <!-- 菜单名称 -->
@@ -141,7 +141,6 @@
             </el-row>
             <template #reference>
               <el-input
-                :prefix-icon="'iconfont ' + menuForm.icon"
                 v-model="menuForm.icon"
                 style="width:220px"
               />
@@ -168,8 +167,8 @@
         <!-- 显示状态 -->
         <el-form-item label="显示状态">
           <el-radio-group v-model="menuForm.isHidden">
-            <el-radio :label="0">显示</el-radio>
-            <el-radio :label="1">隐藏</el-radio>
+            <el-radio :value="0">显示</el-radio>
+            <el-radio :value="1">隐藏</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -193,6 +192,7 @@ export default {
       keywords: "",
       loading: true,
       addMenu: false,
+      dialogTitle: "新增菜单",
       isCatalog: true,
       show: true,
       menuList: [],
@@ -222,13 +222,13 @@ export default {
   },
   methods: {
     listMenus() {
-      this.$http
-        .get("/api/admin/menus", {
+      this.$api.admin
+        .menuList({
           params: {
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.menuList = data.data;
           this.loading = false;
         });
@@ -249,16 +249,16 @@ export default {
               parentId: null,
               isHidden: 0
             };
-            this.$refs.menuTitle.innerHTML = "新增菜单";
+            this.dialogTitle = "新增菜单";
             this.menuForm.parentId = JSON.parse(JSON.stringify(menu.id));
             break;
           case 2:
-            this.$refs.menuTitle.innerHTML = "修改菜单";
+            this.dialogTitle = "修改菜单";
             this.menuForm = JSON.parse(JSON.stringify(menu));
             break;
         }
       } else {
-        this.$refs.menuTitle.innerHTML = "新增菜单";
+        this.dialogTitle = "新增菜单";
         this.show = true;
         this.menuForm = {
           id: null,
@@ -293,7 +293,7 @@ export default {
         this.$message.error("菜单访问路径不能为空");
         return false;
       }
-      this.$http.post("/api/admin/menus", this.menuForm).then(({ data }) => {
+      this.$api.admin.saveMenu(this.menuForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -310,7 +310,7 @@ export default {
       });
     },
     deleteMenu(id) {
-      this.$http.delete("/api/admin/menus/" + id).then(({ data }) => {
+      this.$api.admin.removeMenu(id).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

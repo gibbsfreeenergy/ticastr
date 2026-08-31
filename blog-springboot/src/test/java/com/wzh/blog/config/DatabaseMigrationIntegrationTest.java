@@ -2,13 +2,12 @@ package com.wzh.blog.config;
 
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -45,11 +44,45 @@ class DatabaseMigrationIntegrationTest {
     }
 
     @Test
+    void installsTheContentAssetEngagementAndProviderContracts() throws Exception {
+        createDatabase("phase_one_blog");
+
+        migrate("phase_one_blog", false);
+
+        try (Connection connection = connection("phase_one_blog")) {
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article' "
+                            + "AND column_name = 'article_content'"))
+                    .isZero();
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article' "
+                            + "AND column_name = 'content_asset_id'"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                            + "WHERE table_schema = DATABASE() AND table_name IN "
+                            + "('tb_content_asset', 'tb_article_engagement', 'tb_article_like', "
+                            + "'tb_storage_provider_config')"))
+                    .isEqualTo(4);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.statistics "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article_like' "
+                            + "AND index_name = 'PRIMARY' AND seq_in_index = 2"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_storage_provider_config WHERE id = 1 AND active_provider = 'local'"))
+                    .isEqualTo(1);
+        }
+    }
+
+    @Test
     void upgradesTheLegacySeedDatabase() throws Exception {
         createDatabase("legacy_blog");
         try (Connection connection = connection("legacy_blog")) {
             ScriptUtils.executeSqlScript(connection,
-                    new FileSystemResource(Path.of("..", "blog-mysql8.sql")));
+                    new ClassPathResource("db/legacy-schema.sql"));
         }
 
         migrate("legacy_blog", true);

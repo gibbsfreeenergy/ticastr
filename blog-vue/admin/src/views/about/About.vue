@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     getAbout() {
-      this.$http.get("/api/about").then(({ data }) => {
+      this.$api.admin.about().then(data => {
         this.aboutContent = data.data;
       });
     },
@@ -50,14 +50,14 @@ export default {
         uploadFile = new window.File([compressedFile], file.name, { type: file.type });
       }
       formdata.append("file", uploadFile);
-      const { data } = await this.$http.post("/api/admin/articles/images", formdata);
+      const data = await this.$api.admin.uploadImage(formdata);
       return data.data;
     },    updateAbout() {
-      this.$http
-        .put("/api/admin/about", {
+      this.$api.admin
+        .updateAbout({
           aboutContent: this.aboutContent
         })
-        .then(({ data }) => {
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",

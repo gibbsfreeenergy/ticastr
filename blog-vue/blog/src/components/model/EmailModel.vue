@@ -63,11 +63,9 @@ export default {
         if (res.ret === 0) {
           //发送邮件
           that.countDown();
-          that.$http
-            .get("/api/users/code", {
-              params: { username: that.email }
-            })
-            .then(({ data }) => {
+          that.$api.auth
+            .sendCode(that.email)
+            .then(data => {
               if (data.flag) {
                 that.$toast({ type: "success", message: data.message });
               } else {
@@ -106,7 +104,7 @@ export default {
         email: this.email,
         code: this.code
       };
-      this.$http.post("/api/users/email", user).then(({ data }) => {
+      this.$api.auth.sendEmailCode(user).then(data => {
         if (data.flag) {
           this.$store.commit("saveEmail", this.email);
           this.email = "";

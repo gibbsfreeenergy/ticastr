@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -22,14 +20,10 @@ import com.wzh.blog.service.BlogInfoService;
 import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.RoleLookupService;
 import com.wzh.blog.service.UserAuthService;
+import com.wzh.blog.security.CurrentUser;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.strategy.context.SocialLoginStrategyContext;
-import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,7 +33,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.*;
-import static com.wzh.blog.constant.MQPrefixConst.EMAIL_EXCHANGE;
 import static com.wzh.blog.constant.RedisPrefixConst.*;
 import static com.wzh.blog.enums.UserAreaTypeEnum.getUserAreaType;
 import static com.wzh.blog.util.CommonUtils.checkEmail;
@@ -55,26 +48,38 @@ import static com.wzh.blog.util.CommonUtils.getRandomCode;
 @Service
 public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> implements UserAuthService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private UserAuthDao userAuthDao;
-    @Autowired
-    private UserRoleDao userRoleDao;
-    @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private BlogInfoService blogInfoService;
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-    @Autowired
-    private SocialLoginStrategyContext socialLoginStrategyContext;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private RoleLookupService roleLookupService;
+    private final RedisService redisService;
+    private final UserAuthDao userAuthDao;
+    private final UserRoleDao userRoleDao;
+    private final UserInfoDao userInfoDao;
+    private final BlogInfoService blogInfoService;
+    private final com.wzh.blog.service.DurableEventPublisher durableEventPublisher;
+    private final SocialLoginStrategyContext socialLoginStrategyContext;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleLookupService roleLookupService;
+    private final CurrentUser currentUser;
+
+    public UserAuthServiceImpl(RedisService redisService,
+                               UserAuthDao userAuthDao,
+                               UserRoleDao userRoleDao,
+                               UserInfoDao userInfoDao,
+                               BlogInfoService blogInfoService,
+                               com.wzh.blog.service.DurableEventPublisher durableEventPublisher,
+                               SocialLoginStrategyContext socialLoginStrategyContext,
+                               PasswordEncoder passwordEncoder,
+                               RoleLookupService roleLookupService,
+                               CurrentUser currentUser) {
+        this.redisService = redisService;
+        this.userAuthDao = userAuthDao;
+        this.userRoleDao = userRoleDao;
+        this.userInfoDao = userInfoDao;
+        this.blogInfoService = blogInfoService;
+        this.durableEventPublisher = durableEventPublisher;
+        this.socialLoginStrategyContext = socialLoginStrategyContext;
+        this.passwordEncoder = passwordEncoder;
+        this.roleLookupService = roleLookupService;
+        this.currentUser = currentUser;
+    }
 
 
 
@@ -97,7 +102,7 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
                 .subject("验证码")
                 .content("您的验证码为 " + code + " 有效期15分钟，请不要告诉他人哦！")
                 .build();
-        rabbitTemplate.convertAndSend(EMAIL_EXCHANGE, "*", new Message(JSON.toJSONBytes(emailDTO), new MessageProperties()));
+        durableEventPublisher.publishEmail(emailDTO, "verification-code:" + username);
         // 将验证码存入redis，设置过期时间为15分钟
         redisService.set(USER_CODE_KEY + username, code, CODE_EXPIRE_TIME);
     }
@@ -185,11 +190,11 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
     public void updateAdminPassword(PasswordVO passwordVO) {
         // 查询旧密码是否正确
         UserAuth user = userAuthDao.selectOne(new LambdaQueryWrapper<UserAuth>()
-                .eq(UserAuth::getId, UserUtils.getLoginUser().getId()));
+                .eq(UserAuth::getId, currentUser.require().getId()));
         // 正确则修改密码，错误则提示不正确
         if (Objects.nonNull(user) && passwordEncoder.matches(passwordVO.getOldPassword(), user.getPassword())) {
             UserAuth userAuth = UserAuth.builder()
-                    .id(UserUtils.getLoginUser().getId())
+                    .id(currentUser.require().getId())
                     .password(passwordEncoder.encode(passwordVO.getNewPassword()))
                     .build();
             userAuthDao.updateById(userAuth);
@@ -201,14 +206,14 @@ public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> impl
 
 
     @Override
-    public PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition) {
+    public PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition, com.wzh.blog.web.PageQuery pageQuery) {
         // 获取后台用户数量
         Integer count = userAuthDao.countUser(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 获取后台用户列表
-        List<UserBackDTO> userBackDTOList = userAuthDao.listUsers(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<UserBackDTO> userBackDTOList = userAuthDao.listUsers(pageQuery.offset(), pageQuery.size(), condition);
         return new PageResult<>(userBackDTOList, count);
     }
 

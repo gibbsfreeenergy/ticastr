@@ -1,0 +1,6 @@
+# Raw exports and local database fixtures must stay outside the repository.
+exports/
+local/
+*.dump
+*.dump.sql
+*.sql.gz

@@ -12,7 +12,6 @@ import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -31,8 +30,11 @@ import static com.wzh.blog.constant.OptTypeConst.REMOVE;
 @Tag(name = "分类模块")
 @RestController
 public class CategoryController {
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
+
+    public CategoryController(CategoryService categoryService) {
+        this.categoryService = categoryService;
+    }
 
     /**
      * 查看分类列表
@@ -54,7 +56,7 @@ public class CategoryController {
     @Operation(summary = "查看后台分类列表")
     @GetMapping("/admin/categories")
     public Result<PageResult<CategoryBackDTO>> listBackCategories(SearchQueryVO condition) {
-        return Result.ok(categoryService.listBackCategories(condition));
+        return Result.ok(categoryService.listBackCategories(condition, condition.toPageQuery()));
     }
 
     /**

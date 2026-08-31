@@ -84,11 +84,11 @@
       <!-- 列操作 -->
       <el-table-column label="操作" align="center" width="220">
         <template #default="scope">
-          <el-button type="text" size="mini" @click="openMenuModel(scope.row)">
+          <el-button type="link" size="mini" @click="openMenuModel(scope.row)">
             <i class="el-icon-edit" /> 菜单权限
           </el-button>
           <el-button
-            type="text"
+            type="link"
             size="mini"
             @click="openResourceModel(scope.row)"
           >
@@ -99,7 +99,7 @@
             style="margin-left:10px"
             @confirm="deleteRoles(scope.row.id)"
           >
-            <template #reference><el-button size="mini" type="text">
+            <template #reference><el-button size="mini" type="link">
               <i class="el-icon-delete" /> 删除
             </el-button></template>
           </el-popconfirm>
@@ -112,15 +112,15 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
     />
     <!-- 菜单对话框 -->
     <el-dialog v-model="roleMenu" width="30%">
-      <template #header><div class="dialog-title-container" ref="roleTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="roleForm">
         <el-form-item label="角色名">
           <el-input v-model="roleForm.roleName" style="width:250px" />
@@ -206,6 +206,7 @@ export default {
       count: 0,
       roleMenu: false,
       roleResource: false,
+      dialogTitle: "新增角色",
       resourceList: [],
       menuList: [],
       roleForm: {
@@ -236,23 +237,23 @@ export default {
       });
     },
     listRoles() {
-      this.$http
-        .get("/api/admin/roles", {
+      this.$api.admin
+        .roles({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.roleList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
         });
-      this.$http.get("/api/admin/role/resources").then(({ data }) => {
+      this.$api.admin.roleResources().then(data => {
         this.resourceList = data.data;
       });
-      this.$http.get("/api/admin/role/menus").then(({ data }) => {
+      this.$api.admin.roleMenus().then(data => {
         this.menuList = data.data;
       });
     },
@@ -263,7 +264,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/roles", param).then(({ data }) => {
+      this.$api.admin.removeRoles(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -283,7 +284,7 @@ export default {
       this.$nextTick(function() {
         this.$refs.menuTree.setCheckedKeys([]);
       });
-      this.$refs.roleTitle.innerHTML = role ? "修改角色" : "新增角色";
+      this.dialogTitle = role ? "修改角色" : "新增角色";
       if (role != null) {
         this.roleForm = JSON.parse(JSON.stringify(role));
       } else {
@@ -306,7 +307,7 @@ export default {
     saveOrUpdateRoleResource() {
       this.roleForm.menuIdList = null;
       this.roleForm.resourceIdList = this.$refs.resourceTree.getCheckedKeys();
-      this.$http.post("/api/admin/role", this.roleForm).then(({ data }) => {
+      this.$api.admin.saveRole(this.roleForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -335,7 +336,7 @@ export default {
       this.roleForm.menuIdList = this.$refs.menuTree
         .getCheckedKeys()
         .concat(this.$refs.menuTree.getHalfCheckedKeys());
-      this.$http.post("/api/admin/role", this.roleForm).then(({ data }) => {
+      this.$api.admin.saveRole(this.roleForm).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",

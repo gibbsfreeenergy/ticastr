@@ -19,4 +19,18 @@ public interface UploadStrategy {
      */
     String uploadFile(MultipartFile file, String path);
 
+    /** Builds the public reference for a provider-relative object key. */
+    default String getFileAccessUrl(String filePath) {
+        return filePath;
+    }
+
+    /** Deletes an object by its provider-relative path when supported. */
+    default void deleteFile(String filePath) {
+        // Legacy providers may opt in; the context exposes one lifecycle API.
+    }
+
+    default Boolean exists(String filePath) {
+        return false;
+    }
+
 }

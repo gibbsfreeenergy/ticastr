@@ -83,11 +83,9 @@ export default {
         if (res.ret === 0) {
           //发送邮件
           that.countDown();
-          that.$http
-            .get("/api/users/code", {
-              params: { username: that.username }
-            })
-            .then(({ data }) => {
+          that.$api.auth
+            .sendCode(that.username)
+            .then(data => {
               if (data.flag) {
                 that.$toast({ type: "success", message: "发送成功" });
               } else {
@@ -131,12 +129,12 @@ export default {
         password: this.password,
         code: this.code
       };
-      this.$http.post("/api/register", user).then(({ data }) => {
+      this.$api.auth.register(user).then(data => {
         if (data.flag) {
           let param = new URLSearchParams();
           param.append("username", user.username);
           param.append("password", user.password);
-          this.$http.post("/api/login", param).then(({ data }) => {
+          this.$api.auth.login(param).then(data => {
             this.username = "";
             this.password = "";
             this.$store.commit("login", data.data);

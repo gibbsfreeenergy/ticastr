@@ -24,6 +24,8 @@ public class UserMenuDTO {
      */
     private String name;
 
+    private String code;
+
     /**
      * 路径
      */
@@ -34,10 +36,16 @@ public class UserMenuDTO {
      */
     private String component;
 
+    private String routeKey;
+
     /**
      * icon
      */
     private String icon;
+
+    private String iconKey;
+
+    private String section;
 
     /**
      * 是否隐藏

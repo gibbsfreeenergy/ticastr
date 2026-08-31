@@ -2,12 +2,14 @@ package com.wzh.blog.controller;
 
 
 import com.wzh.blog.annotation.OptLog;
+import com.wzh.blog.annotation.AccessLimit;
 import com.wzh.blog.dto.BlogBackInfoDTO;
 import com.wzh.blog.dto.BlogHomeInfoDTO;
 import com.wzh.blog.enums.FilePathEnum;
+import com.wzh.blog.security.CurrentUser;
 import com.wzh.blog.service.BlogInfoService;
-import com.wzh.blog.service.impl.WebSocketServiceImpl;
-import com.wzh.blog.strategy.context.UploadStrategyContext;
+import com.wzh.blog.service.ChatApplicationService;
+import com.wzh.blog.media.MediaAssetStore;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.vo.BlogInfoVO;
 import com.wzh.blog.vo.Result;
@@ -16,9 +18,6 @@ import com.wzh.blog.vo.WebsiteConfigVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,7 +26,6 @@ import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static com.wzh.blog.constant.OptTypeConst.UPDATE;
-import com.wzh.blog.dto.UserDetailDTO;
 
 /**
  * 博客信息控制器
@@ -38,14 +36,23 @@ import com.wzh.blog.dto.UserDetailDTO;
 @Tag(name = "博客信息模块")
 @RestController
 public class BlogInfoController {
-    @Autowired
-    private BlogInfoService blogInfoService;
-    @Autowired
-    private WebSocketServiceImpl webSocketService;
-    @Autowired
-    private UploadStrategyContext uploadStrategyContext;
-    @Autowired
-    private HttpServletRequest request;
+    private final BlogInfoService blogInfoService;
+    private final ChatApplicationService chatApplicationService;
+    private final MediaAssetStore mediaAssetStore;
+    private final HttpServletRequest request;
+    private final CurrentUser currentUser;
+
+    public BlogInfoController(BlogInfoService blogInfoService,
+                              ChatApplicationService chatApplicationService,
+                              MediaAssetStore mediaAssetStore,
+                              HttpServletRequest request,
+                              CurrentUser currentUser) {
+        this.blogInfoService = blogInfoService;
+        this.chatApplicationService = chatApplicationService;
+        this.mediaAssetStore = mediaAssetStore;
+        this.request = request;
+        this.currentUser = currentUser;
+    }
 
     /**
      * 查看博客信息
@@ -79,7 +86,7 @@ public class BlogInfoController {
     @Parameter(name = "file", description = "图片", required = true)
     @PostMapping("/admin/config/images")
     public Result<String> savePhotoAlbumCover(MultipartFile file) {
-        return Result.ok(uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.CONFIG.getPath()));
+        return Result.ok(mediaAssetStore.upload(file, FilePathEnum.CONFIG.getPath()));
     }
 
     /**
@@ -138,28 +145,27 @@ public class BlogInfoController {
      * @return {@link Result<String>} 语音地址
      */
     @Operation(summary = "上传语音")
+    @AccessLimit(seconds = 60, maxCount = 10)
     @PostMapping("/voice")
     public Result<String> sendVoice(VoiceVO voiceVO) {
         String ipAddress = IpUtils.getIpAddress(request);
         applyVoiceSender(voiceVO);
         voiceVO.setIpAddress(ipAddress);
         voiceVO.setIpSource(IpUtils.getIpSource(ipAddress));
-        webSocketService.sendVoice(voiceVO);
+        chatApplicationService.sendVoice(voiceVO);
         return Result.ok();
     }
 
     private void applyVoiceSender(VoiceVO voiceVO) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-                && authentication.getPrincipal() instanceof UserDetailDTO userDetail) {
+        currentUser.find().ifPresentOrElse(userDetail -> {
             voiceVO.setUserId(userDetail.getUserInfoId());
             voiceVO.setNickname(userDetail.getNickname());
             voiceVO.setAvatar(userDetail.getAvatar());
-            return;
-        }
-        voiceVO.setUserId(null);
-        voiceVO.setNickname("游客");
-        voiceVO.setAvatar(blogInfoService.getWebsiteConfig().getTouristAvatar());
+        }, () -> {
+            voiceVO.setUserId(null);
+            voiceVO.setNickname("游客");
+            voiceVO.setAvatar(blogInfoService.getWebsiteConfig().getTouristAvatar());
+        });
     }
 
     /**
@@ -168,6 +174,7 @@ public class BlogInfoController {
      * @return {@link Result}
      */
     @PostMapping("/report")
+    @AccessLimit(seconds = 60, maxCount = 20)
     public Result<?> report() {
         blogInfoService.report();
         return Result.ok();

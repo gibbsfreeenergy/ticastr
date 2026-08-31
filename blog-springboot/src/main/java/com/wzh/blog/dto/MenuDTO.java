@@ -30,6 +30,8 @@ public class MenuDTO {
      */
     private String name;
 
+    private String code;
+
     /**
      * 路径
      */
@@ -40,10 +42,16 @@ public class MenuDTO {
      */
     private String component;
 
+    private String routeKey;
+
     /**
      * icon
      */
     private String icon;
+
+    private String iconKey;
+
+    private String section;
 
     /**
      * 创建时间

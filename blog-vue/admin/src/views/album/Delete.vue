@@ -42,7 +42,7 @@
         @change="handleCheckedPhotoChange"
       >
         <el-col :md="4" v-for="item of photoList" :key="item.id">
-          <el-checkbox :label="item.id">
+          <el-checkbox :value="item.id">
             <div class="photo-item">
               <el-image
                 fit="cover"
@@ -62,8 +62,8 @@
       class="pagination-container"
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       layout="prev, pager, next"
     />
@@ -104,15 +104,15 @@ export default {
   },
   methods: {
     listPhotos() {
-      this.$http
-        .get("/api/admin/photos", {
+      this.$api.album
+        .listPhotos({
           params: {
             current: this.current,
             size: this.size,
             isDelete: 1
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.photoList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -133,7 +133,7 @@ export default {
       } else {
         param = { idList: [id], isDelete: 0 };
       }
-      this.$http.put("/api/admin/photos/delete", param).then(({ data }) => {
+      this.$api.album.updateDelete(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -150,9 +150,9 @@ export default {
       this.batchDeletePhoto = false;
     },
     deletePhotos() {
-      this.$http
-        .delete("/api/admin/photos", { data: this.selectPhotoIdList })
-        .then(({ data }) => {
+      this.$api.album
+        .removePhotos({ data: this.selectPhotoIdList })
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",

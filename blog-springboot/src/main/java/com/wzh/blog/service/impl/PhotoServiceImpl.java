@@ -1,8 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
-
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -16,9 +13,9 @@ import com.wzh.blog.exception.BizException;
 import com.wzh.blog.exception.NotFoundException;
 import com.wzh.blog.service.PhotoAlbumService;
 import com.wzh.blog.service.PhotoService;
+import com.wzh.blog.media.AssetLifecycleService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,20 +35,25 @@ import static com.wzh.blog.enums.PhotoAlbumStatusEnum.PUBLIC;
 @Service
 public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements PhotoService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private PhotoDao photoDao;
-    @Autowired
-    private PhotoAlbumService photoAlbumService;
+    private final PhotoDao photoDao;
+    private final PhotoAlbumService photoAlbumService;
+    private final AssetLifecycleService assetLifecycleService;
+
+    public PhotoServiceImpl(PhotoDao photoDao,
+                            PhotoAlbumService photoAlbumService,
+                            AssetLifecycleService assetLifecycleService) {
+        this.photoDao = photoDao;
+        this.photoAlbumService = photoAlbumService;
+        this.assetLifecycleService = assetLifecycleService;
+    }
 
 
 
 
     @Override
-    public PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition) {
+    public PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition, com.wzh.blog.web.PageQuery pageQuery) {
         // 查询照片列表
-        Page<Photo> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+        Page<Photo> page = new Page<>(pageQuery.current(), pageQuery.size());
         Page<Photo> photoPage = photoDao.selectPage(page, new LambdaQueryWrapper<Photo>()
                 .eq(Objects.nonNull(condition.getAlbumId()), Photo::getAlbumId, condition.getAlbumId())
                 .eq(Photo::getIsDelete, condition.getIsDelete())
@@ -130,13 +132,21 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
 
     @Override
     public void deletePhotos(List<Integer> photoIdList) {
+        List<String> fileReferences = photoDao.selectList(new LambdaQueryWrapper<Photo>()
+                        .select(Photo::getPhotoSrc)
+                        .in(Photo::getId, photoIdList))
+                .stream()
+                .map(Photo::getPhotoSrc)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         photoDao.deleteByIds(photoIdList);
+        assetLifecycleService.deleteAfterCommit(fileReferences);
     }
 
 
 
     @Override
-    public PhotoDTO listPhotosByAlbumId(Integer albumId) {
+    public PhotoDTO listPhotosByAlbumId(Integer albumId, com.wzh.blog.web.PageQuery pageQuery) {
         // 查询相册信息
         PhotoAlbum photoAlbum = photoAlbumService.getOne(new LambdaQueryWrapper<PhotoAlbum>()
                 .eq(PhotoAlbum::getId, albumId)
@@ -146,7 +156,7 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoDao, Photo> implements Ph
             throw new NotFoundException("相册不存在");
         }
         // 查询照片列表
-        Page<Photo> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+        Page<Photo> page = new Page<>(pageQuery.current(), pageQuery.size());
         List<String> photoList = photoDao.selectPage(page, new LambdaQueryWrapper<Photo>()
                         .select(Photo::getPhotoSrc)
                         .eq(Photo::getAlbumId, albumId)

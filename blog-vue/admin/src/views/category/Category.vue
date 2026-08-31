@@ -84,8 +84,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -105,7 +105,7 @@
     </el-dialog>
     <!-- 添加编辑对话框 -->
     <el-dialog v-model="addOrEdit" width="30%">
-      <template #header><div class="dialog-title-container" ref="categoryTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="categoryForm">
         <el-form-item label="分类名">
           <el-input v-model="categoryForm.categoryName" style="width:220px" />
@@ -131,6 +131,7 @@ export default {
       isDelete: false,
       loading: true,
       addOrEdit: false,
+      dialogTitle: "添加分类",
       keywords: null,
       categoryIdList: [],
       categoryList: [],
@@ -169,7 +170,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/categories", param).then(({ data }) => {
+      this.$api.catalog.removeCategories(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -186,15 +187,15 @@ export default {
       });
     },
     listCategories() {
-      this.$http
-        .get("/api/admin/categories", {
+      this.$api.catalog
+        .adminCategories({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.categoryList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -203,11 +204,11 @@ export default {
     openModel(category) {
       if (category != null) {
         this.categoryForm = JSON.parse(JSON.stringify(category));
-        this.$refs.categoryTitle.innerHTML = "修改分类";
+        this.dialogTitle = "修改分类";
       } else {
         this.categoryForm.id = null;
         this.categoryForm.categoryName = "";
-        this.$refs.categoryTitle.innerHTML = "添加分类";
+        this.dialogTitle = "添加分类";
       }
       this.addOrEdit = true;
     },
@@ -216,9 +217,9 @@ export default {
         this.$message.error("分类名不能为空");
         return false;
       }
-      this.$http
-        .post("/api/admin/categories", this.categoryForm)
-        .then(({ data }) => {
+      this.$api.catalog
+        .saveCategory(this.categoryForm)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",

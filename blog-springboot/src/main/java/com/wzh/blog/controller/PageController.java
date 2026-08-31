@@ -7,7 +7,6 @@ import com.wzh.blog.vo.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -25,8 +24,11 @@ import static com.wzh.blog.constant.OptTypeConst.SAVE_OR_UPDATE;
 @Tag(name = "页面模块")
 @RestController
 public class PageController {
-    @Autowired
-    private PageService pageService;
+    private final PageService pageService;
+
+    public PageController(PageService pageService) {
+        this.pageService = pageService;
+    }
 
     /**
      * 删除页面

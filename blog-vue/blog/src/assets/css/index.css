@@ -1,9 +1,9 @@
 
 body {
-  cursor: url(https://static.talkxj.com/css/default.cur),default;
+  cursor: default;
 }
 a, button, img {
-  cursor: url(https://static.talkxj.com/css/pointer.cur),default;
+  cursor: pointer;
 }
 ul{
   padding:0 !important; 
@@ -326,7 +326,7 @@ p {
   resize: none;
   width: 100%;
   border-radius: 4px;
-  background: url(https://static.talkxj.com/config/commentBack.webp) 100% 100% no-repeat;
+  background: #fff;
 }
 
 .upload-btn{

@@ -8,6 +8,7 @@ import com.wzh.blog.entity.UserAuth;
 import com.baomidou.mybatisplus.spring.service.IService;
 
 import java.util.List;
+import com.wzh.blog.web.PageQuery;
 
 
 /**
@@ -76,6 +77,6 @@ public interface UserAuthService extends IService<UserAuth> {
      * @param condition 条件
      * @return 用户列表
      */
-    PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition);
+    PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition, PageQuery pageQuery);
 
 }

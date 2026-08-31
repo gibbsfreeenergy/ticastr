@@ -15,23 +15,32 @@
           @click="preview(index)"
         />
       </div>
-      <!-- 无限加载 -->
-      <infinite-loading @infinite="infiniteHandler">
-        <template #complete><div /></template>
-      </infinite-loading>
+      <div class="photo-list-status" role="status">
+        <span v-if="loading">加载中...</span>
+        <button v-else-if="loadError || hasMore" type="button" @click="loadMore">
+          {{ loadError ? "重试" : "加载更多" }}
+        </button>
+        <span v-else>{{ photoList.length ? "没有更多照片" : "暂无照片" }}</span>
+      </div>
     </v-card>
   </div>
 </template>
 
 <script>
 export default {
+  created() {
+    this.loadMore();
+  },
   data: function() {
     return {
       photoAlbumName: "",
       photoAlbumCover: "",
       photoList: [],
       current: 1,
-      size: 10
+      size: 10,
+      loading: false,
+      hasMore: true,
+      loadError: false
     };
   },
   methods: {
@@ -41,24 +50,32 @@ export default {
         index: index
       });
     },
-    infiniteHandler($state) {
-      this.$http
-        .get("/api/albums/" + this.$route.params.albumId + "/photos", {
+    loadMore() {
+      if (this.loading || (!this.hasMore && !this.loadError)) return;
+      this.loading = true;
+      this.loadError = false;
+      this.$api.album
+        .photos(this.$route.params.albumId, {
           params: {
             current: this.current,
             size: this.size
           }
         })
-        .then(({ data }) => {
-          this.photoAlbumCover = data.data.photoAlbumCover;
-          this.photoAlbumName = data.data.photoAlbumName;
-          if (data.data.photoList.length) {
-            this.current++;
-            this.photoList.push(...data.data.photoList);
-            $state.loaded();
-          } else {
-            $state.complete();
-          }
+        .then(data => {
+          const result = data.data || {};
+          const photoList = result.photoList || [];
+          this.photoAlbumCover = result.photoAlbumCover || "";
+          this.photoAlbumName = result.photoAlbumName || "相册照片";
+          this.current++;
+          this.photoList.push(...photoList);
+          this.hasMore = photoList.length >= this.size;
+        })
+        .catch(() => {
+          this.loadError = true;
+          this.hasMore = true;
+        })
+        .finally(() => {
+          this.loading = false;
         });
     }
   },
@@ -90,6 +107,19 @@ export default {
   content: "";
   display: block;
   flex-grow: 9999;
+}
+.photo-list-status {
+  padding: 1.25rem;
+  color: #8a8a8a;
+  text-align: center;
+}
+.photo-list-status button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 1.25rem;
+  color: #fff;
+  background: linear-gradient(135deg, #49b1f5, #8e8cd8);
+  cursor: pointer;
 }
 @media (max-width: 759px) {
   .photo {

@@ -24,5 +24,23 @@
             update_time = NOW()
     </insert>
 
+    <insert id="insertVisitor">
+        INSERT IGNORE INTO tb_site_visitor (view_date, visitor_hash, area, created_at)
+        VALUES (CURRENT_DATE, #{visitorHash}, #{area}, NOW())
+    </insert>
+
+    <insert id="incrementDailyUniqueView">
+        INSERT INTO tb_unique_view (views_count, create_time)
+        VALUES (1, CURRENT_DATE) AS new
+        ON DUPLICATE KEY UPDATE
+            views_count = views_count + 1,
+            update_time = NOW()
+    </insert>
+
+    <select id="totalViews" resultType="long">
+        SELECT COALESCE(SUM(views_count), 0)
+        FROM tb_unique_view
+    </select>
+
 
 </mapper>

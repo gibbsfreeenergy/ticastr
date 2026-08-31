@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
+import com.wzh.blog.web.PageQuery;
 
 @Data
 public class PageQueryVO {
@@ -16,4 +17,8 @@ public class PageQueryVO {
     @Min(value = 1, message = "Page size must be greater than zero")
     @Max(value = 100, message = "Page size cannot exceed 100")
     private Long size;
+
+    public PageQuery toPageQuery() {
+        return PageQuery.of(current, size);
+    }
 }

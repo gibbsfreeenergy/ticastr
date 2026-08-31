@@ -1,10 +1,10 @@
 import Layout from "@/layout/index.vue";
 import router from "../../router";
 import store from "../../store";
-import http from "../../api/http";
+import { api } from "../../api/http";
 import { ElMessage } from "element-plus";
-
-const views = import.meta.glob("/src/views/**/*.vue");
+import { decorateMenuEntry } from "./menuMetadata";
+import { loadView, resolveRouteKey } from "./routeRegistry";
 let menuPromise;
 let menuReady = false;
 
@@ -20,30 +20,37 @@ export function generaMenu() {
 }
 
 async function loadMenus() {
-  const { data } = await http.get("/api/admin/user/menus");
+  const data = await api.admin.menus();
   if (!data.flag) {
     ElMessage.error(data.message);
     throw new Error(data.message);
   }
   const userMenuList = data.data;
-  userMenuList.forEach(item => {
-    if (item.icon != null) item.icon = "iconfont " + item.icon;
-    if (item.component === "Layout") item.component = Layout;
-    item.children?.forEach(route => {
-      route.icon = "iconfont " + route.icon;
-      route.component = loadView(route.component);
-      if (!route.component) {
-        throw new Error(`Unknown menu component: ${route.path}`);
+  const normalizedMenuList = userMenuList.map(item => {
+    const routeKey = item.routeKey || item.code || resolveRouteKey(null, item.component);
+    const normalizedItem = decorateMenuEntry(item, routeKey);
+    normalizedItem.icon = `iconfont ${normalizedItem.iconKey}`;
+    normalizedItem.component = normalizedItem.component === "Layout" || !normalizedItem.component
+      ? Layout
+      : normalizedItem.component;
+    normalizedItem.children = (item.children || []).map(route => {
+      const childRouteKey = route.routeKey || route.code || resolveRouteKey(null, route.component);
+      const component = loadView(childRouteKey, route.component);
+      if (!component) {
+        throw new Error(`Unknown menu route key: ${childRouteKey || route.path}`);
       }
+      const normalizedRoute = decorateMenuEntry(route, childRouteKey);
+      normalizedRoute.icon = `iconfont ${normalizedRoute.iconKey}`;
+      normalizedRoute.component = component;
+      return normalizedRoute;
     });
-    router.addRoute(item);
+    router.addRoute(normalizedItem);
+    return normalizedItem;
   });
-  store.commit("saveUserMenuList", userMenuList);
+  store.commit("saveUserMenuList", normalizedMenuList);
   menuReady = true;
-  return userMenuList;
+  return normalizedMenuList;
 }
-
-export const loadView = view => views[`/src/views${view}`];
 
 export const isMenuReady = () => menuReady;
 

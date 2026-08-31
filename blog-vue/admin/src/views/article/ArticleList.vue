@@ -286,8 +286,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -385,7 +385,7 @@ export default {
         param.idList = this.articleIdList;
       }
       param.isDelete = this.isDelete == 0 ? 1 : 0;
-      this.$http.put("/api/admin/articles", param).then(({ data }) => {
+      this.$api.article.updateDelete(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -408,7 +408,7 @@ export default {
       } else {
         param = { data: [id] };
       }
-      this.$http.delete("/api/admin/articles", param).then(({ data }) => {
+      this.$api.article.remove(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -459,12 +459,12 @@ export default {
       this.activeStatus = status;
     },
     changeTop(article) {
-      this.$http
-        .put("/api/admin/articles/top", {
+      this.$api.article
+        .updateTop({
           id: article.id,
           isTop: article.isTop
         })
-        .then(({ data }) => {
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -480,8 +480,8 @@ export default {
         });
     },
     listArticles() {
-      this.$http
-        .get("/api/admin/articles", {
+      this.$api.article
+        .adminList({
           params: {
             current: this.current,
             size: this.size,
@@ -493,19 +493,19 @@ export default {
             isDelete: this.isDelete
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.articleList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
         });
     },
     listCategories() {
-      this.$http.get("/api/admin/categories/search").then(({ data }) => {
+      this.$api.catalog.categorySearch().then(data => {
         this.categoryList = data.data;
       });
     },
     listTags() {
-      this.$http.get("/api/admin/tags/search").then(({ data }) => {
+      this.$api.catalog.tagSearch().then(data => {
         this.tagList = data.data;
       });
     }
@@ -534,7 +534,7 @@ export default {
   },
   computed: {
     articleType() {
-      return function(type) {
+      return type => {
         var tagType = "";
         var name = "";
         switch (type) {
@@ -558,7 +558,7 @@ export default {
       };
     },
     isActive() {
-      return function(status) {
+      return status => {
         return this.activeStatus == status ? "active-status" : "status";
       };
     }

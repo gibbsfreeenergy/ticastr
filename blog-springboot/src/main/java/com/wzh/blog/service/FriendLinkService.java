@@ -7,6 +7,7 @@ import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.entity.FriendLink;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.FriendLinkVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ public interface FriendLinkService extends IService<FriendLink> {
      * @param condition 条件
      * @return 友链列表
      */
-    PageResult<FriendLinkBackDTO> listFriendLinkDTO(SearchQueryVO condition);
+    PageResult<FriendLinkBackDTO> listFriendLinkDTO(SearchQueryVO condition, PageQuery pageQuery);
 
     /**
      * 保存或更新友链

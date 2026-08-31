@@ -1,78 +1,101 @@
 <template>
   <div class="oauth-background">
-    <div id="preloader_1">
+    <div v-if="loading" id="preloader_1">
       <span></span>
       <span></span>
       <span></span>
       <span></span>
       <span></span>
     </div>
+    <div v-else class="oauth-card">
+      <div class="oauth-title">登录状态</div>
+      <p>{{ message }}</p>
+      <button type="button" @click="backToBlog">返回博客</button>
+    </div>
   </div>
 </template>
 
 <script>
-
 export default {
+  data: function() {
+    return {
+      loading: true,
+      message: "正在处理登录..."
+    };
+  },
   created() {
-    const that = this;
-    //关闭登录框
-    that.$store.state.loginFlag = false;
-    //通过路径判断是微博登录还是qq登录
-    if (that.$route.path == "/oauth/login/qq") {
-      // 拿到openId，accessToken传入后台
-      if (QC.Login.check()) {
-        QC.Login.getMe(function(openId, accessToken) {
-          that.$http
-            .post("/api/users/oauth/qq", {
-              openId: openId,
-              accessToken: accessToken
-            })
-            .then(({ data }) => {
-              if (data.flag) {
-                //保存登录状态
-                that.$store.commit("login", data.data);
-                if (data.data.email == null) {
-                  that.$toast({
-                    type: "warnning",
-                    message: "请绑定邮箱以便及时收到回复"
-                  });
-                } else {
-                  that.$toast({ type: "success", message: data.message });
-                }
-              } else {
-                that.$toast({ type: "error", message: data.message });
-              }
-            });
-        });
-      } else {
-        that.$toast({ type: "error", message: data.message });
-      }
+    this.$store.state.loginFlag = false;
+    if (this.$route.path == "/oauth/login/qq") {
+      this.handleQQLogin();
     } else {
-      that.$http
-        .post("/api/users/oauth/weibo", { code: this.$route.query.code })
-        .then(({ data }) => {
-          if (data.flag) {
-            //保存登录状态
-            that.$store.commit("login", data.data);
-            if (data.data.email == null) {
-              that.$toast({
-                type: "warnning",
-                message: "请绑定邮箱以便及时收到回复"
-              });
-            } else {
-              that.$toast({ type: "success", message: data.message });
-            }
-          } else {
-            that.$toast({ type: "error", message: data.message });
-          }
-        });
+      this.handleWeiboLogin();
     }
-    // 跳转回原页面
-    const loginUrl = that.$store.state.loginUrl;
-    if (loginUrl != null && loginUrl != "") {
-      that.$router.push({ path: loginUrl });
-    } else {
-      that.$router.push({ path: "/" });
+  },
+  methods: {
+    backToBlog() {
+      const loginUrl = this.$store.state.loginUrl;
+      this.$router.push({ path: loginUrl || "/" });
+    },
+    finish(type, message, redirect = false) {
+      this.loading = false;
+      this.message = message;
+      this.$toast({ type: type, message: message });
+      if (redirect) {
+        window.setTimeout(() => this.backToBlog(), 400);
+      }
+    },
+    completeLogin(data, message) {
+      this.$store.commit("login", data);
+      if (data.email == null) {
+        this.finish("warnning", "请绑定邮箱以便及时收到回复", true);
+      } else {
+        this.finish("success", message || "登录成功", true);
+      }
+    },
+    submitOAuth(request, payload) {
+      request(payload)
+        .then(data => {
+          if (data.flag) {
+            this.completeLogin(data.data, data.message);
+          } else {
+            this.finish("error", data.message || "登录失败");
+          }
+        })
+        .catch(() => {
+          this.finish("error", "登录服务暂不可用，请稍后重试");
+        });
+    },
+    handleQQLogin() {
+      if (!this.config.QQ_APP_ID || !window.QC || !window.QC.Login) {
+        this.finish("warnning", "QQ登录未配置，请使用邮箱登录");
+        return;
+      }
+      try {
+        if (!window.QC.Login.check()) {
+          this.finish("error", "QQ授权状态无效，请重新登录");
+          return;
+        }
+        window.QC.Login.getMe((openId, accessToken) => {
+          this.submitOAuth(this.$api.auth.oauthQQ, {
+            openId: openId,
+            accessToken: accessToken
+          });
+        });
+      } catch {
+        this.finish("error", "QQ登录服务暂不可用，请使用邮箱登录");
+      }
+    },
+    handleWeiboLogin() {
+      if (!this.config.WEIBO_APP_ID) {
+        this.finish("warnning", "微博登录未配置，请使用邮箱登录");
+        return;
+      }
+      const code = this.$route.query.code;
+      if (!code) {
+        this.finish("error", "未检测到微博授权信息，请重新登录");
+        return;
+      }
+      this.submitOAuth(this.$api.auth.oauthWeibo, { code: code });
     }
   }
 };
@@ -117,6 +140,35 @@ export default {
 #preloader_1 span:nth-child(5) {
   left: 44px;
   animation-delay: 0.8s;
+}
+.oauth-card {
+  position: absolute;
+  top: 40vh;
+  left: 50%;
+  width: min(88vw, 360px);
+  padding: 2rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(75, 97, 145, 0.16);
+  text-align: center;
+  transform: translateX(-50%);
+}
+.oauth-title {
+  color: #37474f;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.oauth-card p {
+  color: #607d8b;
+  line-height: 1.7;
+}
+.oauth-card button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.55rem 1.25rem;
+  color: #fff;
+  background: linear-gradient(135deg, #6c63ff, #49b1f5);
+  cursor: pointer;
 }
 @keyframes preloader_1 {
   0% {

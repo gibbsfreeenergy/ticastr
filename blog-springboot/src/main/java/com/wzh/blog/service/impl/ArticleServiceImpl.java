@@ -1,9 +1,10 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
+import com.wzh.blog.web.PageQuery;
+import com.wzh.blog.web.CursorCodec;
+import com.wzh.blog.web.CursorPageQuery;
+import com.wzh.blog.web.CursorPageResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzh.blog.dao.*;
 import com.wzh.blog.dto.*;
@@ -18,21 +19,21 @@ import com.wzh.blog.service.ArticleTaxonomyService;
 import com.wzh.blog.service.EngagementService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.ArticleTagService;
-import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.TagService;
+import com.wzh.blog.media.AssetLifecycleService;
+import com.wzh.blog.content.ContentAsset;
+import com.wzh.blog.content.ContentAssetStore;
+import com.wzh.blog.security.CurrentUser;
+import com.wzh.blog.search.ArticleSearchApplicationService;
 import com.wzh.blog.strategy.context.SearchStrategyContext;
 import com.wzh.blog.util.BeanCopyUtils;
-import com.wzh.blog.util.CommonUtils;
 import com.wzh.blog.util.HTMLUtils;
-import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.*;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -41,7 +42,6 @@ import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.ARTICLE_SET;
 import static com.wzh.blog.constant.CommonConst.FALSE;
-import static com.wzh.blog.constant.RedisPrefixConst.*;
 import static com.wzh.blog.enums.ArticleStatusEnum.DRAFT;
 import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
 
@@ -56,34 +56,52 @@ import static com.wzh.blog.enums.ArticleStatusEnum.PUBLIC;
 @Log4j2
 public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> implements ArticleService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private ArticleDao articleDao;
-    @Autowired
-    private CategoryDao categoryDao;
-    @Autowired
-    private TagDao tagDao;
-    @Autowired
-    private ArticleTagDao articleTagDao;
-    @Autowired
-    private SearchStrategyContext searchStrategyContext;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private ArticleTaxonomyService articleTaxonomyService;
-    @Autowired
-    private EngagementService engagementService;
-    @Autowired
-    @Qualifier("blogTaskExecutor")
-    private Executor taskExecutor;
+    private final ArticleDao articleDao;
+    private final CategoryDao categoryDao;
+    private final TagDao tagDao;
+    private final ArticleTagDao articleTagDao;
+    private final SearchStrategyContext searchStrategyContext;
+    private final ArticleTaxonomyService articleTaxonomyService;
+    private final EngagementService engagementService;
+    private final AssetLifecycleService assetLifecycleService;
+    private final ContentAssetStore contentAssetStore;
+    private final CurrentUser currentUser;
+    private final ArticleSearchApplicationService articleSearchApplicationService;
+    private final Executor taskExecutor;
+    private final CursorCodec cursorCodec;
+
+    public ArticleServiceImpl(ArticleDao articleDao,
+                              CategoryDao categoryDao, TagDao tagDao, ArticleTagDao articleTagDao,
+                              SearchStrategyContext searchStrategyContext,
+                              ArticleTaxonomyService articleTaxonomyService,
+                              EngagementService engagementService,
+                              AssetLifecycleService assetLifecycleService,
+                              ContentAssetStore contentAssetStore,
+                              CurrentUser currentUser,
+                              ArticleSearchApplicationService articleSearchApplicationService,
+                              @Qualifier("blogTaskExecutor") Executor taskExecutor,
+                              CursorCodec cursorCodec) {
+        this.articleDao = articleDao;
+        this.categoryDao = categoryDao;
+        this.tagDao = tagDao;
+        this.articleTagDao = articleTagDao;
+        this.searchStrategyContext = searchStrategyContext;
+        this.articleTaxonomyService = articleTaxonomyService;
+        this.engagementService = engagementService;
+        this.assetLifecycleService = assetLifecycleService;
+        this.contentAssetStore = contentAssetStore;
+        this.currentUser = currentUser;
+        this.articleSearchApplicationService = articleSearchApplicationService;
+        this.taskExecutor = taskExecutor;
+        this.cursorCodec = cursorCodec;
+    }
 
 
 
 
     @Override
-    public PageResult<ArchiveDTO> listArchives() {
-        Page<Article> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+    public PageResult<ArchiveDTO> listArchives(PageQuery pageQuery) {
+        Page<Article> page = new Page<>(pageQuery.current(), pageQuery.size());
         // 获取分页数据
         Page<Article> articlePage = articleDao.selectPage(page, new LambdaQueryWrapper<Article>()
                 .select(Article::getId, Article::getArticleTitle, Article::getCreateTime)
@@ -94,27 +112,50 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         return new PageResult<>(archiveDTOList, (int) articlePage.getTotal());
     }
 
+    @Override
+    public CursorPageResult<ArchiveDTO> listArchives(CursorPageQuery pageQuery) {
+        String fingerprint = cursorCodec.fingerprint("archives");
+        CursorCodec.Cursor cursor = pageQuery.cursor() == null
+                ? null : cursorCodec.decode(pageQuery.cursor(), fingerprint);
+        List<ArchiveDTO> rows = articleDao.listPublicArchivesAfter(
+                cursor == null ? null : cursor.createTime(),
+                cursor == null ? null : cursor.id(),
+                pageQuery.size() + 1);
+        boolean hasNext = rows.size() > pageQuery.size();
+        List<ArchiveDTO> items = hasNext ? rows.subList(0, pageQuery.size()) : rows;
+        String nextCursor = hasNext && !items.isEmpty()
+                ? cursorCodec.encode(items.get(items.size() - 1).getCreateTime(),
+                items.get(items.size() - 1).getId(), fingerprint)
+                : null;
+        return new CursorPageResult<>(items, nextCursor, hasNext);
+    }
+
 
 
     @Override
-    public PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition) {
+    public PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition, PageQuery pageQuery) {
         // 查询文章总量
         Integer count = articleDao.countArticleBacks(condition);
         if (count == 0) {
             return new PageResult<>();
         }
         // 查询后台文章
-        List<ArticleBackDTO> articleBackDTOList = articleDao.listArticleBacks(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<ArticleBackDTO> articleBackDTOList = articleDao.listArticleBacks(pageQuery.offset(), pageQuery.size(), condition);
         // 查询文章点赞量和浏览量
-        Map<Object, Double> viewsCountMap = redisService.zAllScore(ARTICLE_VIEWS_COUNT);
-        Map<String, Object> likeCountMap = redisService.hGetAll(ARTICLE_LIKE_COUNT);
-        // 封装点赞量和浏览量
+        Map<Integer, ArticleEngagementCountDTO> engagementCounts = engagementService.articleCounts(
+                articleBackDTOList.stream().map(ArticleBackDTO::getId).toList());
+        // 封装点赞量和浏览量，计数来自 MySQL 事实表；单次批量查询避免 N+1。
         articleBackDTOList.forEach(item -> {
-            Double viewsCount = viewsCountMap.get(item.getId());
-            if (Objects.nonNull(viewsCount)) {
-                item.setViewsCount(viewsCount.intValue());
+            ArticleEngagementCountDTO counts = engagementCounts.get(item.getId());
+            if (counts != null) {
+                item.setViewsCount(Math.toIntExact(Math.min(Integer.MAX_VALUE,
+                        counts.getViewsCount() == null ? 0L : counts.getViewsCount())));
+                item.setLikeCount(Math.toIntExact(Math.min(Integer.MAX_VALUE,
+                        counts.getLikesCount() == null ? 0L : counts.getLikesCount())));
+            } else {
+                item.setViewsCount(0);
+                item.setLikeCount(0);
             }
-            item.setLikeCount((Integer) likeCountMap.get(item.getId().toString()));
         });
         return new PageResult<>(articleBackDTOList, count);
     }
@@ -122,16 +163,34 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
 
     @Override
-    public List<ArticleHomeDTO> listArticles() {
-        return articleDao.listArticles(paginationContext.getOffset(), paginationContext.getSize());
+    public List<ArticleHomeDTO> listArticles(PageQuery pageQuery) {
+        return articleDao.listArticles(pageQuery.offset(), pageQuery.size());
+    }
+
+    @Override
+    public CursorPageResult<ArticleHomeDTO> listArticles(CursorPageQuery pageQuery) {
+        String fingerprint = cursorCodec.fingerprint("articles");
+        CursorCodec.Cursor cursor = pageQuery.cursor() == null
+                ? null : cursorCodec.decode(pageQuery.cursor(), fingerprint);
+        List<ArticleHomeDTO> rows = articleDao.listPublicArticlesAfter(
+                cursor == null ? null : cursor.createTime(),
+                cursor == null ? null : cursor.id(),
+                pageQuery.size() + 1);
+        boolean hasNext = rows.size() > pageQuery.size();
+        List<ArticleHomeDTO> items = hasNext ? rows.subList(0, pageQuery.size()) : rows;
+        String nextCursor = hasNext && !items.isEmpty()
+                ? cursorCodec.encode(items.get(items.size() - 1).getCreateTime(),
+                items.get(items.size() - 1).getId(), fingerprint)
+                : null;
+        return new CursorPageResult<>(items, nextCursor, hasNext);
     }
 
 
 
     @Override
-    public ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition) {
+    public ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition, PageQuery pageQuery) {
         // 查询文章
-        List<ArticlePreviewDTO> articlePreviewDTOList = articleDao.listArticlesByCondition(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<ArticlePreviewDTO> articlePreviewDTOList = articleDao.listArticlesByCondition(pageQuery.offset(), pageQuery.size(), condition);
         // 搜索条件对应名(标签或分类名)
         String name;
         if (Objects.nonNull(condition.getCategoryId())) {
@@ -163,6 +222,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public ArticleDTO getArticleById(Integer articleId) {
+        // Validate visibility before starting any related/recommendation query.
+        ArticleDTO article = articleDao.getArticleById(articleId);
+        if (Objects.isNull(article)) {
+            throw new NotFoundException("文章不存在");
+        }
         // 查询推荐文章
         CompletableFuture<List<ArticleRecommendDTO>> recommendArticleList = CompletableFuture
                 .supplyAsync(() -> articleDao.listRecommendArticles(articleId), taskExecutor);
@@ -177,10 +241,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
                             .last("limit 5"));
                     return BeanCopyUtils.copyList(articleList, ArticleRecommendDTO.class);
                 }, taskExecutor);
-        // 查询id对应文章
-        ArticleDTO article = articleDao.getArticleById(articleId);
-        if (Objects.isNull(article)) {
-            throw new NotFoundException("文章不存在");
+        if (article.getContentVersion() != null) {
+            article.setContentUrl("/articles/" + articleId + "/content");
         }
         // 更新文章浏览量
         engagementService.recordArticleView(articleId);
@@ -202,11 +264,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         article.setLastArticle(BeanCopyUtils.copyObject(lastArticle, ArticlePaginationDTO.class));
         article.setNextArticle(BeanCopyUtils.copyObject(nextArticle, ArticlePaginationDTO.class));
         // 封装点赞量和浏览量
-        Double score = redisService.zScore(ARTICLE_VIEWS_COUNT, articleId);
-        if (Objects.nonNull(score)) {
-            article.setViewsCount(score.intValue());
-        }
-        article.setLikeCount((Integer) redisService.hGet(ARTICLE_LIKE_COUNT, articleId.toString()));
+        ArticleEngagementCountDTO counts = engagementService.articleCounts(List.of(articleId)).get(articleId);
+        article.setViewsCount(counts == null || counts.getViewsCount() == null
+                ? 0 : Math.toIntExact(Math.min(Integer.MAX_VALUE, counts.getViewsCount())));
+        article.setLikeCount(counts == null || counts.getLikesCount() == null
+                ? 0 : Math.toIntExact(Math.min(Integer.MAX_VALUE, counts.getLikesCount())));
         // 封装文章信息
         try {
             CompletableFuture.allOf(recommendArticleList, newestArticleList).get(3, TimeUnit.SECONDS);
@@ -225,16 +287,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public void saveArticleLike(Integer articleId) {
-        engagementService.toggleArticleLike(UserUtils.getLoginUser().getUserInfoId(), articleId);
+        engagementService.toggleArticleLike(currentUser.id(), articleId);
     }
 
     @Transactional(rollbackFor = Exception.class)
 
 
     @Override
-    public void saveOrUpdateArticle(ArticleVO articleVO) {
+    public Integer saveOrUpdateArticle(ArticleVO articleVO) {
+        String previousCover = null;
+        if (articleVO.getId() != null) {
+            Article existingArticle = articleDao.selectById(articleVO.getId());
+            previousCover = existingArticle == null ? null : existingArticle.getArticleCover();
+        }
         articleVO.setArticleTitle(HTMLUtils.sanitizePlainText(articleVO.getArticleTitle()));
-        articleVO.setArticleContent(HTMLUtils.sanitizeRichText(articleVO.getArticleContent()));
         // 保存文章分类
         Category category = articleTaxonomyService.resolveCategory(
                 articleVO.getCategoryName(), articleVO.getStatus());
@@ -243,10 +309,17 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         if (Objects.nonNull(category)) {
             article.setCategoryId(category.getId());
         }
-        article.setUserId(UserUtils.getLoginUser().getUserInfoId());
+        article.setUserId(currentUser.id());
         this.saveOrUpdate(article);
+        articleVO.setId(article.getId());
+        engagementService.ensureArticle(article.getId());
         // 保存文章标签
         articleTaxonomyService.replaceTags(article.getId(), articleVO.getTagNameList());
+        articleSearchApplicationService.scheduleIndex(article.getId());
+        if (previousCover != null && !previousCover.equals(article.getArticleCover())) {
+            assetLifecycleService.deleteAfterCommit(List.of(previousCover));
+        }
+        return article.getId();
     }
 
 
@@ -274,6 +347,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
                         .build())
                 .collect(Collectors.toList());
         this.updateBatchById(articleList);
+        articleList.forEach(article -> articleSearchApplicationService.scheduleIndex(article.getId()));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -281,18 +355,32 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
     @Override
     public void deleteArticles(List<Integer> articleIdList) {
+        List<String> fileReferences = articleDao.selectList(new LambdaQueryWrapper<Article>()
+                        .select(Article::getArticleCover)
+                        .in(Article::getId, articleIdList))
+                .stream()
+                .map(Article::getArticleCover)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         // 删除文章标签关联
         articleTagDao.delete(new LambdaQueryWrapper<ArticleTag>()
                 .in(ArticleTag::getArticleId, articleIdList));
         // 删除文章
         articleDao.deleteByIds(articleIdList);
+        articleIdList.forEach(articleSearchApplicationService::scheduleIndex);
+        assetLifecycleService.deleteAfterCommit(fileReferences);
     }
 
 
 
     @Override
-    public List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition) {
-        return searchStrategyContext.executeSearchStrategy(condition.getKeywords());
+    public List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition, PageQuery pageQuery) {
+        return searchStrategyContext.executeSearchStrategy(condition.getKeywords(), pageQuery);
+    }
+
+    @Override
+    public CursorPageResult<ArticleSearchDTO> listArticlesBySearch(String keywords, CursorPageQuery pageQuery) {
+        return searchStrategyContext.executeSearchStrategy(keywords, pageQuery);
     }
 
 
@@ -314,6 +402,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
         List<String> tagNameList = tagDao.listTagNameByArticleId(articleId);
         // 封装数据
         ArticleVO articleVO = BeanCopyUtils.copyObject(article, ArticleVO.class);
+        ContentAsset currentContent = contentAssetStore.findActive(articleId);
+        if (currentContent != null) {
+            articleVO.setContentVersion(currentContent.getVersion());
+        }
         articleVO.setCategoryName(categoryName);
         articleVO.setTagNameList(tagNameList);
         return articleVO;

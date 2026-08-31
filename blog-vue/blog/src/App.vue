@@ -50,8 +50,8 @@ export default {
     // 获取博客信息
     this.getBlogInfo();
     // 上传访客信息
-    this.$http
-      .post("/api/report", null, { suppressErrorToast: true })
+    this.$api.public
+      .report({ suppressErrorToast: true })
       .catch(() => {});
   },
   components: {
@@ -74,7 +74,7 @@ export default {
       for (const delay of retryDelays) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         try {
-          const { data } = await this.$http.get("/api", {
+          const data = await this.$api.public.home({
             suppressErrorToast: true,
             timeout: 5000
           });

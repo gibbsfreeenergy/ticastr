@@ -36,4 +36,9 @@ public class ChatRecordDTO {
      */
     private String ipSource;
 
+    /** Id to send as beforeId when requesting the next older page. */
+    private Integer nextBeforeId;
+
+    private boolean hasMore;
+
 }

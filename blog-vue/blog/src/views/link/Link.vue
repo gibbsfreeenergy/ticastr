@@ -66,7 +66,7 @@ export default {
   },
   methods: {
     listFriendLink() {
-      this.$http.get("/api/links").then(({ data }) => {
+      this.$api.public.links().then(data => {
         this.friendLinkList = data.data;
       });
     }

@@ -6,7 +6,6 @@
         <id column="id" property="id"/>
         <result column="article_cover" property="articleCover"/>
         <result column="article_title" property="articleTitle"/>
-        <result column="article_content" property="articleContent"/>
         <result column="create_time" property="createTime"/>
         <result column="type" property="type"/>
         <result column="is_top" property="isTop"/>
@@ -35,7 +34,7 @@
         <id column="id" property="id"/>
         <result column="article_cover" property="articleCover"/>
         <result column="article_title" property="articleTitle"/>
-        <result column="article_content" property="articleContent"/>
+        <result column="content_version" property="contentVersion"/>
         <result column="type" property="type"/>
         <result column="original_url" property="originalUrl"/>
         <result column="create_time" property="createTime"/>
@@ -69,7 +68,6 @@
 	 a.id,
 	 article_cover,
 	 article_title,
-     SUBSTR( article_content, 1, 500 ) AS article_content,
 	 a.create_time,
      a.type,
 	 a.is_top,
@@ -83,7 +81,6 @@
 		id,
 		article_cover,
 		article_title,
-		article_content,
 	    type,
 		is_top,
 		create_time,
@@ -97,9 +94,9 @@
 		 id DESC
 		LIMIT #{current} , #{size}
 	 ) a
-	 JOIN tb_category c ON a.category_id = c.id
-	 JOIN tb_article_tag atg ON a.id = atg.article_id
-	 JOIN tb_tag t ON t.id = atg.tag_id
+     LEFT JOIN tb_category c ON a.category_id = c.id
+     LEFT JOIN tb_article_tag atg ON a.id = atg.article_id
+     LEFT JOIN tb_tag t ON t.id = atg.tag_id
 	 ORDER BY
 	   a.is_top DESC,
 	   a.id DESC
@@ -121,7 +118,6 @@
         id,
         article_cover,
         article_title,
-        article_content,
         create_time,
         category_id
         FROM
@@ -145,9 +141,9 @@
         ORDER BY id DESC
         LIMIT #{current},#{size}
         ) a
-        JOIN tb_category c ON a.category_id = c.id
-        JOIN tb_article_tag atg ON a.id = atg.article_id
-        JOIN tb_tag t ON t.id = atg.tag_id
+        LEFT JOIN tb_category c ON a.category_id = c.id
+        LEFT JOIN tb_article_tag atg ON a.id = atg.article_id
+        LEFT JOIN tb_tag t ON t.id = atg.tag_id
     </select>
 
     <select id="getArticleById" resultMap="articleResultMap">
@@ -155,25 +151,77 @@
 	 a.id,
 	 article_cover,
 	 article_title,
-	 article_content,
 	 a.type,
 	 a.original_url,
 	 a.create_time,
 	 a.update_time,
 	 a.category_id,
+	 ca.version AS content_version,
 	 category_name,
 	 t.id AS tag_id,
 	 t.tag_name
-     FROM
+    FROM
 	 tb_article a
-	 JOIN tb_category c ON a.category_id = c.id
-	 JOIN tb_article_tag atg ON a.id = atg.article_id
-	 JOIN tb_tag t ON t.id = atg.tag_id
+	 LEFT JOIN tb_category c ON a.category_id = c.id
+	 LEFT JOIN tb_article_tag atg ON a.id = atg.article_id
+	 LEFT JOIN tb_tag t ON t.id = atg.tag_id
+     LEFT JOIN tb_content_asset ca ON ca.asset_id = a.content_asset_id AND ca.status = 'ACTIVE'
      WHERE
 	 a.id = #{articleId}
      AND a.is_delete = 0
      AND a.status = 1
 	</select>
+
+    <select id="selectForUpdate" resultType="com.wzh.blog.entity.Article">
+        SELECT id, user_id, category_id, article_cover, article_title, content_asset_id,
+               type, original_url, is_top, is_delete, status, create_time, update_time
+        FROM tb_article
+        WHERE id = #{articleId}
+        FOR UPDATE
+    </select>
+
+    <select id="listPublicArticlesAfter" resultMap="articleHomeResultMap">
+        SELECT
+        a.id,
+        a.article_cover,
+        a.article_title,
+        a.create_time,
+        a.type,
+        a.is_top,
+        a.category_id,
+        c.category_name,
+        t.id AS tag_id,
+        t.tag_name
+        FROM (
+            SELECT id, article_cover, article_title, create_time, type, is_top, category_id
+            FROM tb_article
+            WHERE is_delete = 0
+              AND status = 1
+              <if test="cursorTime != null">
+              AND (create_time &lt; #{cursorTime}
+                   OR (create_time = #{cursorTime} AND id &lt; #{cursorId}))
+              </if>
+            ORDER BY create_time DESC, id DESC
+            LIMIT #{limit}
+        ) a
+        LEFT JOIN tb_category c ON a.category_id = c.id
+        LEFT JOIN tb_article_tag atg ON a.id = atg.article_id
+        LEFT JOIN tb_tag t ON t.id = atg.tag_id
+        ORDER BY a.create_time DESC, a.id DESC
+    </select>
+
+    <select id="listPublicArchivesAfter" resultType="com.wzh.blog.dto.ArchiveDTO">
+        SELECT id, article_title, create_time
+        FROM tb_article
+        WHERE is_delete = 0
+          AND status = 1
+          <if test="cursorTime != null">
+          AND (create_time &lt; #{cursorTime}
+               OR (create_time = #{cursorTime} AND id &lt; #{cursorId}))
+          </if>
+        ORDER BY create_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
 
     <select id="listArticleBacks" resultMap="articleBackResultMap">
         SELECT
@@ -242,27 +290,29 @@
     </select>
 
     <select id="countArticleBacks" resultType="java.lang.Integer">
-        SELECT
-        count(DISTINCT a.id)
-        from
-        tb_article a
-        LEFT JOIN tb_article_tag tat on  a.id = tat.article_id
+        SELECT COUNT(*)
+        FROM tb_article a
         <where>
-            is_delete = #{condition.isDelete}
+            a.is_delete = #{condition.isDelete}
             <if test="condition.keywords != null">
-                and article_title like concat('%',#{condition.keywords},'%')
+                AND a.article_title LIKE CONCAT('%', #{condition.keywords}, '%')
             </if>
             <if test="condition.status != null">
-                and `status` = #{condition.status}
+                AND a.status = #{condition.status}
             </if>
             <if test="condition.categoryId != null">
-                and category_id = #{condition.categoryId}
+                AND a.category_id = #{condition.categoryId}
             </if>
             <if test="condition.type != null">
-                and type = #{condition.type}
+                AND a.type = #{condition.type}
             </if>
             <if test="condition.tagId != null">
-                and tat.tag_id = #{condition.tagId}
+                AND EXISTS (
+                    SELECT 1
+                    FROM tb_article_tag tat
+                    WHERE tat.article_id = a.id
+                      AND tat.tag_id = #{condition.tagId}
+                )
             </if>
         </where>
     </select>
@@ -289,6 +339,16 @@
            ORDER BY
            is_top DESC,id DESC
            LIMIT 6
+    </select>
+
+    <select id="listPublishedArticlesAfter" resultType="com.wzh.blog.entity.Article">
+        SELECT id, article_title, category_id, is_delete, status
+        FROM tb_article
+        WHERE is_delete = 0
+          AND status = 1
+          AND id &gt; #{afterId}
+        ORDER BY id ASC
+        LIMIT #{limit}
     </select>
 
     <select id="listArticleStatistics" resultType="com.wzh.blog.dto.ArticleStatisticsDTO">

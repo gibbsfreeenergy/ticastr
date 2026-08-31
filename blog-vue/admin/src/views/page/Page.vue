@@ -39,7 +39,7 @@
     </el-row>
     <!-- 新增模态框 -->
     <el-dialog v-model="addOrEdit" width="35%" top="10vh">
-      <template #header><div class="dialog-title-container" ref="pageTitle" /></template>
+      <template #header><div class="dialog-title-container">{{ dialogTitle }}</div></template>
       <el-form label-width="80px" size="medium" :model="pageForum">
         <el-form-item label="页面名称">
           <el-input style="width:220px" v-model="pageForum.pageName" />
@@ -52,7 +52,7 @@
             class="upload-cover"
             drag
             :show-file-list="false"
-            action="/api/admin/config/images"
+            :action="$api.admin.uploadConfigImageUrl"
             multiple
             :before-upload="beforeUpload"
             :on-success="uploadCover"
@@ -108,6 +108,7 @@ export default {
       count: 0,
       isdeletePage: false,
       addOrEdit: false,
+      dialogTitle: "新建页面",
       pageForum: {
         id: null,
         pageName: "",
@@ -121,7 +122,7 @@ export default {
     openModel(item) {
       if (item) {
         this.pageForum = JSON.parse(item);
-        this.$refs.pageTitle.innerHTML = "修改页面";
+        this.dialogTitle = "修改页面";
       } else {
         this.pageForum = {
           id: null,
@@ -129,12 +130,12 @@ export default {
           pageLabel: "",
           pageCover: ""
         };
-        this.$refs.pageTitle.innerHTML = "新建页面";
+        this.dialogTitle = "新建页面";
       }
       this.addOrEdit = true;
     },
     listPages() {
-      this.$http.get("/api/admin/pages").then(({ data }) => {
+      this.$api.admin.pages().then(data => {
         this.pageList = data.data;
         this.loading = false;
       });
@@ -152,7 +153,7 @@ export default {
         this.$message.error("页面封面不能为空");
         return false;
       }
-      this.$http.post("/api/admin/pages", this.pageForum).then(({ data }) => {
+      this.$api.admin.savePage(this.pageForum).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -195,9 +196,9 @@ export default {
       }
     },
     deletePage() {
-      this.$http
-        .delete("/api/admin/pages/" + this.pageForum.id)
-        .then(({ data }) => {
+      this.$api.admin
+        .removePage(this.pageForum.id)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",

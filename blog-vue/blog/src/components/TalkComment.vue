@@ -150,8 +150,7 @@
           <div
             class="mb-3"
             style="font-size:0.75rem;color:#6d757a"
-            v-show="item.replyCount > 3"
-            ref="check"
+            v-show="item.replyCount > 3 && !item.repliesLoaded"
           >
             共
             <b>{{ item.replyCount }}</b>
@@ -166,8 +165,8 @@
           <!-- 回复分页 -->
           <div
             class="mb-3"
-            style="font-size:0.75rem;color:#222;display:none"
-            ref="paging"
+            style="font-size:0.75rem;color:#222"
+            v-show="item.repliesLoaded && Math.ceil(item.replyCount / 5) > 1"
           >
             <span style="padding-right:10px">
               共{{ Math.ceil(item.replyCount / 5) }}页
@@ -230,7 +229,7 @@ export default {
   methods: {
     replyComment(index, item) {
       this.$refs.reply.forEach(item => {
-        item.$el.style.display = "none";
+        item.hide();
       });
       //传值给回复框
       this.$refs.reply[index].commentContent = "";
@@ -239,32 +238,28 @@ export default {
       this.$refs.reply[index].parentId = this.commentList[index].id;
       this.$refs.reply[index].chooseEmoji = false;
       this.$refs.reply[index].index = index;
-      this.$refs.reply[index].$el.style.display = "block";
+      this.$refs.reply[index].show();
     },
     addEmoji(key) {
       this.commentContent += key;
     },
     checkReplies(index, item) {
-      this.$http
-        .get("/api/comments/" + item.id + "/replies", {
+      this.$api.comment
+        .replies(item.id, {
           params: { current: 1, size: 5 }
         })
-        .then(({ data }) => {
-          this.$refs.check[index].style.display = "none";
+        .then(data => {
+          item.repliesLoaded = true;
           item.replyDTOList = data.data;
-          //超过1页才显示分页
-          if (Math.ceil(item.replyCount / 5) > 1) {
-            this.$refs.paging[index].style.display = "flex";
-          }
         });
     },
     changeReplyCurrent(current, index, commentId) {
       //查看下一页回复
-      this.$http
-        .get("/api/comments/" + commentId + "/replies", {
+      this.$api.comment
+        .replies(commentId, {
           params: { current: current, size: 5 }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.commentList[index].replyDTOList = data.data;
         });
     },
@@ -284,11 +279,11 @@ export default {
         default:
           break;
       }
-      this.$http
-        .get("/api/comments", {
+      this.$api.comment
+        .list({
           params: param
         })
-        .then(({ data }) => {
+        .then(data => {
           if (this.current == 1) {
             this.commentList = data.data.recordList;
           } else {
@@ -335,7 +330,7 @@ export default {
           break;
       }
       this.commentContent = "";
-      this.$http.post("/api/comments", comment).then(({ data }) => {
+      this.$api.comment.create(comment).then(data => {
         if (data.flag) {
           // 查询最新评论
           this.current = 1;
@@ -359,9 +354,9 @@ export default {
         return false;
       }
       // 发送请求
-      this.$http
-        .post("/api/comments/" + comment.id + "/like")
-        .then(({ data }) => {
+      this.$api.comment
+        .like(comment.id)
+        .then(data => {
           if (data.flag) {
             // 判断是否点赞
             if (this.$store.state.commentLikeSet.indexOf(comment.id) != -1) {
@@ -374,27 +369,24 @@ export default {
         });
     },
     reloadReply(index) {
-      this.$http
-        .get("/api/comments/" + this.commentList[index].id + "/replies", {
+      this.$api.comment
+        .replies(this.commentList[index].id, {
           params: {
             current: this.$refs.page[index].current
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.commentList[index].replyCount++;
           //回复大于5条展示分页
-          if (this.commentList[index].replyCount > 5) {
-            this.$refs.paging[index].style.display = "flex";
-          }
-          this.$refs.check[index].style.display = "none";
-          this.$refs.reply[index].$el.style.display = "none";
+          this.commentList[index].repliesLoaded = true;
+          this.$refs.reply[index].hide();
           this.commentList[index].replyDTOList = data.data;
         });
     }
   },
   computed: {
     isLike() {
-      return function(commentId) {
+      return commentId => {
         var commentLikeSet = this.$store.state.commentLikeSet;
         return commentLikeSet.indexOf(commentId) != -1 ? "like-active" : "like";
       };

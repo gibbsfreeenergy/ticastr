@@ -146,8 +146,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -166,7 +166,7 @@
             <el-checkbox
               v-for="item of userRoleList"
               :key="item.id"
-              :label="item.id"
+              :value="item.id"
             >
               {{ item.roleName }}
             </el-checkbox>
@@ -235,7 +235,7 @@ export default {
       this.listUsers();
     },
     changeDisable(user) {
-      this.$http.put("/api/admin/users/disable", {
+      this.$api.admin.updateUserDisable({
         id: user.userInfoId,
         isDisable: user.isDisable
       });
@@ -250,9 +250,9 @@ export default {
     },
     editUserRole() {
       this.userForm.roleIdList = this.roleIdList;
-      this.$http
-        .put("/api/admin/users/role", this.userForm)
-        .then(({ data }) => {
+      this.$api.admin
+        .updateUserRole(this.userForm)
+        .then(data => {
           if (data.flag) {
             this.$notify.success({
               title: "成功",
@@ -269,8 +269,8 @@ export default {
         });
     },
     listUsers() {
-      this.$http
-        .get("/api/admin/users", {
+      this.$api.admin
+        .users({
           params: {
             current: this.current,
             size: this.size,
@@ -278,14 +278,14 @@ export default {
             loginType: this.loginType
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.userList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
         });
     },
     listRoles() {
-      this.$http.get("/api/admin/users/role").then(({ data }) => {
+      this.$api.admin.userRoles().then(data => {
         this.userRoleList = data.data;
       });
     }

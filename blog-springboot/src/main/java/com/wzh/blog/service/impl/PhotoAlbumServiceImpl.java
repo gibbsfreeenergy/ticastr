@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -14,11 +12,12 @@ import com.wzh.blog.entity.Photo;
 import com.wzh.blog.entity.PhotoAlbum;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.service.PhotoAlbumService;
+import com.wzh.blog.media.AssetLifecycleService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,12 +38,17 @@ import static com.wzh.blog.enums.PhotoAlbumStatusEnum.PUBLIC;
 @Service
 public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum> implements PhotoAlbumService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private PhotoAlbumDao photoAlbumDao;
-    @Autowired
-    private PhotoDao photoDao;
+    private final PhotoAlbumDao photoAlbumDao;
+    private final PhotoDao photoDao;
+    private final AssetLifecycleService assetLifecycleService;
+
+    public PhotoAlbumServiceImpl(PhotoAlbumDao photoAlbumDao,
+                                 PhotoDao photoDao,
+                                 AssetLifecycleService assetLifecycleService) {
+        this.photoAlbumDao = photoAlbumDao;
+        this.photoDao = photoDao;
+        this.assetLifecycleService = assetLifecycleService;
+    }
 
     @Transactional(rollbackFor = Exception.class)
 
@@ -52,6 +56,11 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
 
     @Override
     public void saveOrUpdatePhotoAlbum(PhotoAlbumVO photoAlbumVO) {
+        String previousCover = null;
+        if (photoAlbumVO.getId() != null) {
+            PhotoAlbum existingAlbum = photoAlbumDao.selectById(photoAlbumVO.getId());
+            previousCover = existingAlbum == null ? null : existingAlbum.getAlbumCover();
+        }
         // 查询相册名是否存在
         PhotoAlbum album = photoAlbumDao.selectOne(new LambdaQueryWrapper<PhotoAlbum>()
                 .select(PhotoAlbum::getId)
@@ -61,21 +70,24 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         }
         PhotoAlbum photoAlbum = BeanCopyUtils.copyObject(photoAlbumVO, PhotoAlbum.class);
         this.saveOrUpdate(photoAlbum);
+        if (previousCover != null && !previousCover.equals(photoAlbum.getAlbumCover())) {
+            assetLifecycleService.deleteAfterCommit(List.of(previousCover));
+        }
     }
 
 
 
     @Override
-    public PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition) {
+    public PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition, PageQuery pageQuery) {
         // 查询相册数量
         Long count = photoAlbumDao.selectCount(new LambdaQueryWrapper<PhotoAlbum>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), PhotoAlbum::getAlbumName, condition.getKeywords())
                 .eq(PhotoAlbum::getIsDelete, FALSE));
         if (count == 0) {
-            return new PageResult<>();
+            return new PageResult<>(List.of(), 0);
         }
         // 查询相册信息
-        List<PhotoAlbumBackDTO> photoAlbumBackList = photoAlbumDao.listPhotoAlbumBacks(paginationContext.getOffset(), paginationContext.getSize(), condition);
+        List<PhotoAlbumBackDTO> photoAlbumBackList = photoAlbumDao.listPhotoAlbumBacks(pageQuery.offset(), pageQuery.size(), condition);
         return new PageResult<>(photoAlbumBackList, count);
     }
 
@@ -107,6 +119,7 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
 
     @Override
     public void deletePhotoAlbumById(Integer albumId) {
+        PhotoAlbum album = photoAlbumDao.selectById(albumId);
         // 查询照片数量
         Long count = photoDao.selectCount(new LambdaQueryWrapper<Photo>()
                 .eq(Photo::getAlbumId, albumId));
@@ -122,6 +135,9 @@ public class PhotoAlbumServiceImpl extends ServiceImpl<PhotoAlbumDao, PhotoAlbum
         } else {
             // 若相册下不存在照片则直接删除
             photoAlbumDao.deleteById(albumId);
+            if (album != null) {
+                assetLifecycleService.deleteAfterCommit(List.of(album.getAlbumCover()));
+            }
         }
     }
 

@@ -16,7 +16,6 @@ import com.wzh.blog.service.ResourceService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.ResourceVO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,12 +31,17 @@ import static com.wzh.blog.constant.CommonConst.FALSE;
  */
 @Service
 public class ResourceServiceImpl extends ServiceImpl<ResourceDao, Resource> implements ResourceService {
-    @Autowired
-    private ResourceDao resourceDao;
-    @Autowired
-    private RoleResourceDao roleResourceDao;
-    @Autowired
-    private AuthorizationCacheService authorizationCacheService;
+    private final ResourceDao resourceDao;
+    private final RoleResourceDao roleResourceDao;
+    private final AuthorizationCacheService authorizationCacheService;
+
+    public ResourceServiceImpl(ResourceDao resourceDao,
+                               RoleResourceDao roleResourceDao,
+                               AuthorizationCacheService authorizationCacheService) {
+        this.resourceDao = resourceDao;
+        this.roleResourceDao = roleResourceDao;
+        this.authorizationCacheService = authorizationCacheService;
+    }
 
 
 

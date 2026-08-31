@@ -2,14 +2,18 @@ package com.wzh.blog.strategy.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.config.WeiboConfigProperties;
+import com.wzh.blog.dao.UserAuthDao;
+import com.wzh.blog.dao.UserInfoDao;
+import com.wzh.blog.dao.UserRoleDao;
 import com.wzh.blog.dto.SocialUserInfoDTO;
 import com.wzh.blog.dto.SocialTokenDTO;
 import com.wzh.blog.dto.WeiboTokenDTO;
 import com.wzh.blog.dto.WeiboUserInfoDTO;
 import com.wzh.blog.enums.LoginTypeEnum;
 import com.wzh.blog.exception.BizException;
+import com.wzh.blog.service.RoleLookupService;
+import com.wzh.blog.service.impl.UserDetailsServiceImpl;
 import com.wzh.blog.vo.WeiboLoginVO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,10 +39,21 @@ import static com.wzh.blog.enums.StatusCodeEnum.WEIBO_LOGIN_ERROR;
  */
 @Service("weiboLoginStrategyImpl")
 public class WeiboLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
-    @Autowired
-    private WeiboConfigProperties weiboConfigProperties;
-    @Autowired
-    private RestTemplate restTemplate;
+    private final WeiboConfigProperties weiboConfigProperties;
+    private final RestTemplate restTemplate;
+
+    public WeiboLoginStrategyImpl(WeiboConfigProperties weiboConfigProperties,
+                                  RestTemplate restTemplate,
+                                  UserAuthDao userAuthDao,
+                                  UserInfoDao userInfoDao,
+                                  UserRoleDao userRoleDao,
+                                  UserDetailsServiceImpl userDetailsService,
+                                  RoleLookupService roleLookupService,
+                                  HttpServletRequest request) {
+        super(userAuthDao, userInfoDao, userRoleDao, userDetailsService, roleLookupService, request);
+        this.weiboConfigProperties = weiboConfigProperties;
+        this.restTemplate = restTemplate;
+    }
 
     @Override
     public SocialTokenDTO getSocialToken(String data) {

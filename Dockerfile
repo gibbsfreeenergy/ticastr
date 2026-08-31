@@ -5,6 +5,9 @@ COPY blog-springboot/pom.xml ./pom.xml
 RUN mvn -B -DskipTests dependency:go-offline
 COPY blog-springboot/src ./src
 RUN mvn -B -DskipTests package
+RUN jar tf target/*.jar | grep -q 'BOOT-INF/lib/spring-data-redis-' \
+    && jar tf target/*.jar | grep -q 'BOOT-INF/lib/lettuce-core-' \
+    || (echo 'Redis-enabled runtime contract failed: client libraries are missing from the executable JAR' >&2 && exit 1)
 
 FROM eclipse-temurin:21-jre
 
@@ -13,6 +16,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system spring && adduser --system --ingroup spring spring
+RUN mkdir -p /data/uploads /data/search && chown -R spring:spring /data
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
 

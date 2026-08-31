@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.SearchQueryVO;
 import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.vo.PhotoAlbumVO;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ public interface PhotoAlbumService extends IService<PhotoAlbum> {
      * @param condition 条件
      * @return {@link PageResult<PhotoAlbumBackDTO>} 相册列表
      */
-    PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition);
+    PageResult<PhotoAlbumBackDTO> listPhotoAlbumBacks(SearchQueryVO condition, PageQuery pageQuery);
 
     /**
      * 获取后台相册列表信息

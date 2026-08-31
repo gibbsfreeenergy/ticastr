@@ -2,11 +2,11 @@ package com.wzh.blog.handler;
 
 import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.annotation.AccessLimit;
-import com.wzh.blog.service.RedisService;
+import com.wzh.blog.service.RateLimitStore;
+import com.wzh.blog.security.BoundedInMemoryRateLimitStore;
 import com.wzh.blog.util.IpUtils;
 import com.wzh.blog.vo.Result;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 
 import static com.wzh.blog.constant.CommonConst.APPLICATION_JSON;
 
@@ -25,26 +27,33 @@ import static com.wzh.blog.constant.CommonConst.APPLICATION_JSON;
  */
 @Log4j2
 public class WebSecurityHandler implements HandlerInterceptor {
-    @Autowired
-    private RedisService redisService;
+    private final RateLimitStore rateLimitStore;
+    private final BoundedInMemoryRateLimitStore fallbackRateLimitStore = new BoundedInMemoryRateLimitStore();
+
+    public WebSecurityHandler(RateLimitStore rateLimitStore) {
+        this.rateLimitStore = rateLimitStore;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object handler) throws Exception {
-        // 如果请求输入方法
-        if (handler instanceof HandlerMethod) {
-            HandlerMethod hm = (HandlerMethod) handler;
-            // 获取方法中的注解,看是否有该注解
-            AccessLimit accessLimit = hm.getMethodAnnotation(AccessLimit.class);
-            if (accessLimit != null) {
+        AccessLimit accessLimit = handler instanceof HandlerMethod hm
+                ? hm.getMethodAnnotation(AccessLimit.class)
+                : null;
+        if (accessLimit == null && "POST".equalsIgnoreCase(httpServletRequest.getMethod())
+                && "/login".equals(httpServletRequest.getRequestURI())) {
+            accessLimit = new FixedAccessLimit(60, 10);
+        }
+        if (accessLimit != null) {
                 long seconds = accessLimit.seconds();
                 int maxCount = accessLimit.maxCount();
                 // 关于key的生成规则可以自己定义 本项目需求是对每个方法都加上限流功能，如果你只是针对ip地址限流，那么key只需要只用ip就好
-                String key = "rate-limit:" + httpServletRequest.getMethod() + ":"
+                String rawKey = httpServletRequest.getMethod() + ":"
                         + httpServletRequest.getRequestURI() + ":" + IpUtils.getIpAddress(httpServletRequest);
+                String key = "rate-limit:" + HexFormat.of().formatHex(sha256(rawKey));
                 // 从redis中获取用户访问的次数
                 try {
                     // 此操作代表获取该key对应的值自增1后的结果
-                    long q = redisService.incrExpire(key, seconds);
+                    long q = rateLimitStore.increment(key, seconds);
                     if (q > maxCount) {
                         render(httpServletResponse, 429,
                                 Result.fail("请求过于频繁，请稍候再试"));
@@ -53,14 +62,33 @@ public class WebSecurityHandler implements HandlerInterceptor {
                     }
                     return true;
                 } catch (DataAccessException e) {
-                    log.error("Rate limiter is unavailable", e);
-                    render(httpServletResponse, HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-                            Result.fail("服务暂时不可用，请稍后重试"));
-                    return false;
+                    long fallbackCount = fallbackRateLimitStore.increment(key, seconds);
+                    log.warn("Distributed rate limiter unavailable; using bounded local fallback");
+                    if (fallbackCount > maxCount) {
+                        render(httpServletResponse, 429,
+                                Result.fail("请求过于频繁，请稍候再试"));
+                        return false;
+                    }
+                    return true;
                 }
-            }
         }
         return true;
+    }
+
+    private record FixedAccessLimit(int seconds, int maxCount) implements AccessLimit {
+        @Override
+        public Class<? extends java.lang.annotation.Annotation> annotationType() {
+            return AccessLimit.class;
+        }
+    }
+
+    private byte[] sha256(String value) {
+        try {
+            return MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
+        } catch (java.security.NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 
     private void render(HttpServletResponse response, int status, Result<?> result) throws Exception {

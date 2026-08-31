@@ -28,6 +28,11 @@ public class PaginationContext {
     }
 
     public long getOffset() {
-        return (current - 1) * size;
+        return toPageQuery().offset();
+    }
+
+    /** Transitional adapter for legacy technical-layer services. */
+    public PageQuery toPageQuery() {
+        return new PageQuery(current, size);
     }
 }

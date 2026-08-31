@@ -6,6 +6,7 @@ import com.wzh.blog.vo.*;
 import com.wzh.blog.dto.ReplyDTO;
 import com.wzh.blog.entity.Comment;
 import com.baomidou.mybatisplus.spring.service.IService;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -23,7 +24,7 @@ public interface CommentService extends IService<Comment> {
      * @param commentVO 评论信息
      * @return 评论列表
      */
-    PageResult<CommentDTO> listComments(CommentVO commentVO);
+    PageResult<CommentDTO> listComments(CommentVO commentVO, PageQuery pageQuery);
 
     /**
      * 查看评论下的回复
@@ -31,7 +32,7 @@ public interface CommentService extends IService<Comment> {
      * @param commentId 评论id
      * @return 回复列表
      */
-    List<ReplyDTO> listRepliesByCommentId(Integer commentId);
+    List<ReplyDTO> listRepliesByCommentId(Integer commentId, PageQuery pageQuery);
 
     /**
      * 添加评论
@@ -60,6 +61,6 @@ public interface CommentService extends IService<Comment> {
      * @param condition 条件
      * @return 评论列表
      */
-    PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition);
+    PageResult<CommentBackDTO> listCommentBackDTO(CommentQueryVO condition, PageQuery pageQuery);
 
 }

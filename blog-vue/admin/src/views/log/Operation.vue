@@ -64,10 +64,10 @@
         align="center"
         width="100"
       >
-        <template #default="scope" v-if="scope.row.requestMethod">
-          <el-tag :type="tagType(scope.row.requestMethod)">
-            {{ scope.row.requestMethod }}
-          </el-tag>
+          <template #default="scope">
+            <el-tag v-if="scope.row && scope.row.requestMethod" :type="tagType(scope.row.requestMethod)">
+              {{ scope.row.requestMethod }}
+            </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="nickname" label="操作人员" align="center" />
@@ -98,7 +98,7 @@
         <template #default="scope">
           <el-button
             size="mini"
-            type="text"
+            type="link"
             @click="check(scope.row)"
           >
             <i class="el-icon-view" /> 查看
@@ -108,7 +108,7 @@
             style="margin-left:10px"
             @confirm="deleteLog(scope.row.id)"
           >
-            <template #reference><el-button size="mini" type="text">
+            <template #reference><el-button size="mini" type="link">
               <i class="el-icon-delete" /> 删除
             </el-button></template>
           </el-popconfirm>
@@ -121,8 +121,8 @@
       background
       @size-change="sizeChange"
       @current-change="currentChange"
-      :current-page="current"
-      :page-size="size"
+      v-model:current-page="current"
+      v-model:page-size="size"
       :total="count"
       :page-sizes="[10, 20]"
       layout="total, sizes, prev, pager, next, jumper"
@@ -214,15 +214,15 @@ export default {
       this.listLogs();
     },
     listLogs() {
-      this.$http
-        .get("/api/admin/operation/logs", {
+      this.$api.admin
+        .operationLogs({
           params: {
             current: this.current,
             size: this.size,
             keywords: this.keywords
           }
         })
-        .then(({ data }) => {
+        .then(data => {
           this.logList = data.data.recordList;
           this.count = data.data.count;
           this.loading = false;
@@ -235,7 +235,7 @@ export default {
       } else {
         param = { data: this.logIdList };
       }
-      this.$http.delete("/api/admin/operation/logs", param).then(({ data }) => {
+      this.$api.admin.removeOperationLogs(param).then(data => {
         if (data.flag) {
           this.$notify.success({
             title: "成功",
@@ -258,7 +258,7 @@ export default {
   },
   computed: {
     tagType() {
-      return function(type) {
+      return type => {
         switch (type) {
           case "GET":
             return "";

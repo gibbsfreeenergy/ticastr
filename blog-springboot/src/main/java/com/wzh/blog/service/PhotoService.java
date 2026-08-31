@@ -5,6 +5,7 @@ import com.wzh.blog.dto.PhotoDTO;
 import com.wzh.blog.entity.Photo;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
@@ -22,7 +23,7 @@ public interface PhotoService extends IService<Photo> {
      * @param condition 条件
      * @return {@link PageResult<PhotoBackDTO>} 照片列表
      */
-    PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition);
+    PageResult<PhotoBackDTO> listPhotos(PhotoQueryVO condition, PageQuery pageQuery);
 
     /**
      * 更新照片信息
@@ -65,6 +66,6 @@ public interface PhotoService extends IService<Photo> {
      * @param albumId 相册id
      * @return {@link List<PhotoDTO>} 照片列表
      */
-    PhotoDTO listPhotosByAlbumId(Integer albumId);
+    PhotoDTO listPhotosByAlbumId(Integer albumId, PageQuery pageQuery);
 
 }

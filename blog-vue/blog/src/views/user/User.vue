@@ -17,7 +17,7 @@
           <avatar-cropper
             v-model="showCropper"
             @uploaded="uploadAvatar"
-            upload-url="/api/users/avatar"
+            :upload-url="$api.auth.avatarUploadUrl"
           />
         </v-col>
         <v-col md="7" cols="12">
@@ -76,7 +76,7 @@ export default {
   },
   methods: {
     updataUserInfo() {
-      this.$http.put("/api/users/info", this.userInfo).then(({ data }) => {
+      this.$api.auth.updateInfo(this.userInfo).then(data => {
         if (data.flag) {
           this.$store.commit("updateUserInfo", this.userInfo);
           this.$toast({ type: "success", message: "修改成功" });

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wzh.blog.dao.ContentAssetDao">
+
+    <sql id="contentAssetColumns">
+        asset_id, article_id, provider, object_key, content_type, format, version,
+        checksum, size_bytes, status, created_at, updated_at, deleted_at, last_error
+    </sql>
+
+    <select id="selectActiveByArticleId" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE article_id = #{articleId}
+          AND status = 'ACTIVE'
+          AND deleted_at IS NULL
+        ORDER BY version DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByIdForUpdate" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE asset_id = #{assetId}
+        FOR UPDATE
+    </select>
+
+    <select id="selectByArticleIdAndVersion" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE article_id = #{articleId}
+          AND version = #{version}
+        LIMIT 1
+    </select>
+
+    <select id="selectMaxVersion" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(version), 0)
+        FROM tb_content_asset
+        WHERE article_id = #{articleId}
+    </select>
+
+    <update id="activate">
+        UPDATE tb_content_asset
+        SET checksum = #{checksum},
+            size_bytes = #{sizeBytes},
+            status = 'ACTIVE',
+            updated_at = #{updatedAt},
+            last_error = NULL
+        WHERE asset_id = #{assetId}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="retire">
+        UPDATE tb_content_asset
+        SET status = 'RETIRED',
+            updated_at = #{updatedAt}
+        WHERE asset_id = #{assetId}
+          AND status = 'ACTIVE'
+    </update>
+
+    <update id="updateStatus">
+        UPDATE tb_content_asset
+        SET status = #{status},
+            last_error = #{lastError},
+            deleted_at = #{deletedAt},
+            updated_at = #{updatedAt}
+        WHERE asset_id = #{assetId}
+    </update>
+
+    <select id="listRetiredForCleanup" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE status IN ('RETIRED', 'DELETE_FAILED')
+          AND deleted_at IS NULL
+        ORDER BY updated_at ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="listVersions" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE article_id = #{articleId}
+          <if test="afterVersion != null">
+          AND version &lt; #{afterVersion}
+          </if>
+        ORDER BY version DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="listCleanupCandidates" resultType="com.wzh.blog.content.ContentAsset">
+        SELECT <include refid="contentAssetColumns"/>
+        FROM tb_content_asset
+        WHERE status IN ('RETIRED', 'DELETE_FAILED')
+          AND deleted_at IS NULL
+          AND updated_at &lt; DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+        ORDER BY updated_at ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

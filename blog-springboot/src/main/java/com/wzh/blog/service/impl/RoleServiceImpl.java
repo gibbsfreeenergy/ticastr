@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -23,7 +21,7 @@ import com.wzh.blog.service.RoleResourceService;
 import com.wzh.blog.service.RoleService;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.RoleVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,18 +38,23 @@ import java.util.stream.Collectors;
 @Service
 public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private RoleDao roleDao;
-    @Autowired
-    private RoleResourceService roleResourceService;
-    @Autowired
-    private RoleMenuService roleMenuService;
-    @Autowired
-    private UserRoleDao userRoleDao;
-    @Autowired
-    private AuthorizationCacheService authorizationCacheService;
+    private final RoleDao roleDao;
+    private final RoleResourceService roleResourceService;
+    private final RoleMenuService roleMenuService;
+    private final UserRoleDao userRoleDao;
+    private final AuthorizationCacheService authorizationCacheService;
+
+    public RoleServiceImpl(RoleDao roleDao,
+                           RoleResourceService roleResourceService,
+                           RoleMenuService roleMenuService,
+                           UserRoleDao userRoleDao,
+                           AuthorizationCacheService authorizationCacheService) {
+        this.roleDao = roleDao;
+        this.roleResourceService = roleResourceService;
+        this.roleMenuService = roleMenuService;
+        this.userRoleDao = userRoleDao;
+        this.authorizationCacheService = authorizationCacheService;
+    }
 
 
 
@@ -67,9 +70,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleDao, Role> implements RoleS
 
 
     @Override
-    public PageResult<RoleDTO> listRoles(SearchQueryVO conditionVO) {
+    public PageResult<RoleDTO> listRoles(SearchQueryVO conditionVO, PageQuery pageQuery) {
         // 查询角色列表
-        List<RoleDTO> roleDTOList = roleDao.listRoles(paginationContext.getOffset(), paginationContext.getSize(), conditionVO);
+        List<RoleDTO> roleDTOList = roleDao.listRoles(pageQuery.offset(), pageQuery.size(), conditionVO);
         // 查询总量
         Long count = roleDao.selectCount(new LambdaQueryWrapper<Role>()
                 .like(StringUtils.isNotBlank(conditionVO.getKeywords()), Role::getRoleName, conditionVO.getKeywords()));

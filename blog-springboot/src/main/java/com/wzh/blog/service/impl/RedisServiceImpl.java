@@ -14,8 +14,8 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-import jakarta.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  **/
 @Service
+@ConditionalOnProperty(name = "app.redis.enabled", havingValue = "true")
 public class RedisServiceImpl implements RedisService {
     private static final DefaultRedisScript<Long> CONSUME_IF_EQUALS_SCRIPT = new DefaultRedisScript<>(
             "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
@@ -54,8 +55,11 @@ public class RedisServiceImpl implements RedisService {
                     + "redis.call('INCR', KEYS[2]); "
                     + "redis.call('HINCRBY', KEYS[3], cjson.decode(ARGV[2]), 1); return 1",
             Long.class);
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    public RedisServiceImpl(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     @Override
     public void set(String key, Object value, long time) {

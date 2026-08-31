@@ -4,6 +4,9 @@ import com.wzh.blog.dto.*;
 import com.wzh.blog.entity.Article;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
+import com.wzh.blog.web.PageQuery;
+import com.wzh.blog.web.CursorPageQuery;
+import com.wzh.blog.web.CursorPageResult;
 
 import java.util.List;
 
@@ -20,7 +23,9 @@ public interface ArticleService extends IService<Article> {
      *
      * @return 文章归档
      */
-    PageResult<ArchiveDTO> listArchives();
+    PageResult<ArchiveDTO> listArchives(PageQuery pageQuery);
+
+    CursorPageResult<ArchiveDTO> listArchives(CursorPageQuery pageQuery);
 
     /**
      * 查询后台文章
@@ -28,14 +33,16 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition);
+    PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition, PageQuery pageQuery);
 
     /**
      * 查询首页文章
      *
      * @return 文章列表
      */
-    List<ArticleHomeDTO> listArticles();
+    List<ArticleHomeDTO> listArticles(PageQuery pageQuery);
+
+    CursorPageResult<ArticleHomeDTO> listArticles(CursorPageQuery pageQuery);
 
     /**
      * 根据条件查询文章列表
@@ -43,7 +50,7 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition);
+    ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition, PageQuery pageQuery);
 
     /**
      * 搜索文章
@@ -51,7 +58,9 @@ public interface ArticleService extends IService<Article> {
      * @param condition 条件
      * @return 文章列表
      */
-    List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition);
+    List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition, PageQuery pageQuery);
+
+    CursorPageResult<ArticleSearchDTO> listArticlesBySearch(String keywords, CursorPageQuery pageQuery);
 
     /**
      * 根据id查看后台文章
@@ -81,7 +90,7 @@ public interface ArticleService extends IService<Article> {
      *
      * @param articleVO 文章信息
      */
-    void saveOrUpdateArticle(ArticleVO articleVO);
+    Integer saveOrUpdateArticle(ArticleVO articleVO);
 
     /**
      * 修改文章置顶

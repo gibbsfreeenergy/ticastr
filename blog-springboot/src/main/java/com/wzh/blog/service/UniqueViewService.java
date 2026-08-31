@@ -21,4 +21,8 @@ public interface UniqueViewService extends IService<UniqueView> {
      */
     List<UniqueViewDTO> listUniqueViews();
 
+    void recordVisitor(String visitorHash, String area);
+
+    long totalViews();
+
 }

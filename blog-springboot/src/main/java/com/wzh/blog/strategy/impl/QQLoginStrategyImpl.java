@@ -3,18 +3,23 @@ package com.wzh.blog.strategy.impl;
 import com.alibaba.fastjson2.JSON;
 import com.wzh.blog.config.QQConfigProperties;
 import com.wzh.blog.constant.SocialLoginConst;
+import com.wzh.blog.dao.UserAuthDao;
+import com.wzh.blog.dao.UserInfoDao;
+import com.wzh.blog.dao.UserRoleDao;
 import com.wzh.blog.dto.QQTokenDTO;
 import com.wzh.blog.dto.QQUserInfoDTO;
 import com.wzh.blog.dto.SocialUserInfoDTO;
 import com.wzh.blog.dto.SocialTokenDTO;
 import com.wzh.blog.enums.LoginTypeEnum;
 import com.wzh.blog.exception.BizException;
+import com.wzh.blog.service.RoleLookupService;
+import com.wzh.blog.service.impl.UserDetailsServiceImpl;
 import com.wzh.blog.util.CommonUtils;
 import com.wzh.blog.vo.QQLoginVO;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,10 +37,21 @@ import static com.wzh.blog.enums.StatusCodeEnum.QQ_LOGIN_ERROR;
 @Service("qqLoginStrategyImpl")
 @Log4j2
 public class QQLoginStrategyImpl extends AbstractSocialLoginStrategyImpl {
-    @Autowired
-    private QQConfigProperties qqConfigProperties;
-    @Autowired
-    private RestTemplate restTemplate;
+    private final QQConfigProperties qqConfigProperties;
+    private final RestTemplate restTemplate;
+
+    public QQLoginStrategyImpl(QQConfigProperties qqConfigProperties,
+                               RestTemplate restTemplate,
+                               UserAuthDao userAuthDao,
+                               UserInfoDao userInfoDao,
+                               UserRoleDao userRoleDao,
+                               UserDetailsServiceImpl userDetailsService,
+                               RoleLookupService roleLookupService,
+                               HttpServletRequest request) {
+        super(userAuthDao, userInfoDao, userRoleDao, userDetailsService, roleLookupService, request);
+        this.qqConfigProperties = qqConfigProperties;
+        this.restTemplate = restTemplate;
+    }
 
     @Override
     public SocialTokenDTO getSocialToken(String data) {

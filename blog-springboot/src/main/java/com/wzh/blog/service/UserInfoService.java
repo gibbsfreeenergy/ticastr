@@ -6,6 +6,7 @@ import com.wzh.blog.entity.UserInfo;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.wzh.blog.vo.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.wzh.blog.web.PageQuery;
 
 
 /**
@@ -58,7 +59,7 @@ public interface UserInfoService extends IService<UserInfo> {
      * @param conditionVO 条件
      * @return 在线用户列表
      */
-    PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO);
+    PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO, PageQuery pageQuery);
 
     /**
      * 下线用户

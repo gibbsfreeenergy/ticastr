@@ -33,6 +33,9 @@ public class Menu {
      */
     private String name;
 
+    /** Stable machine-readable menu identity. */
+    private String code;
+
     /**
      * 路径
      */
@@ -43,10 +46,19 @@ public class Menu {
      */
     private String component;
 
+    /** Frontend route registry key; legacy component remains compatibility-only. */
+    private String routeKey;
+
     /**
      * icon
      */
     private String icon;
+
+    /** Stable icon token, independent from the UI library class name. */
+    private String iconKey;
+
+    /** Stable navigation section token. */
+    private String section;
 
     /**
      * 排序

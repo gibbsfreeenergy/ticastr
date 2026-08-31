@@ -1,11 +1,9 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.wzh.blog.strategy.context.UploadStrategyContext;
+import com.wzh.blog.media.MediaAssetStore;
+import com.wzh.blog.media.AssetLifecycleService;
 import com.wzh.blog.vo.*;
 import com.wzh.blog.dto.UserDetailDTO;
 import com.wzh.blog.dto.UserOnlineDTO;
@@ -18,12 +16,9 @@ import com.wzh.blog.service.RedisService;
 import com.wzh.blog.service.UserInfoService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.service.UserRoleService;
+import com.wzh.blog.security.CurrentUser;
 
-import com.wzh.blog.util.UserUtils;
 import com.wzh.blog.vo.SearchQueryVO;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.session.SessionInformation;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,18 +40,29 @@ import static com.wzh.blog.constant.RedisPrefixConst.USER_CODE_KEY;
 @Service
 public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> implements UserInfoService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private UserInfoDao userInfoDao;
-    @Autowired
-    private UserRoleService userRoleService;
-    @Autowired
-    private SessionRegistry sessionRegistry;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private UploadStrategyContext uploadStrategyContext;
+    private final UserInfoDao userInfoDao;
+    private final UserRoleService userRoleService;
+    private final com.wzh.blog.service.OnlineSessionService onlineSessionService;
+    private final RedisService redisService;
+    private final MediaAssetStore mediaAssetStore;
+    private final AssetLifecycleService assetLifecycleService;
+    private final CurrentUser currentUser;
+
+    public UserInfoServiceImpl(UserInfoDao userInfoDao,
+                               UserRoleService userRoleService,
+                               com.wzh.blog.service.OnlineSessionService onlineSessionService,
+                               RedisService redisService,
+                               MediaAssetStore mediaAssetStore,
+                               AssetLifecycleService assetLifecycleService,
+                               CurrentUser currentUser) {
+        this.userInfoDao = userInfoDao;
+        this.userRoleService = userRoleService;
+        this.onlineSessionService = onlineSessionService;
+        this.redisService = redisService;
+        this.mediaAssetStore = mediaAssetStore;
+        this.assetLifecycleService = assetLifecycleService;
+        this.currentUser = currentUser;
+    }
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -67,7 +73,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
     public void updateUserInfo(UserInfoVO userInfoVO) {
         // 封装用户信息
         UserInfo userInfo = UserInfo.builder()
-                .id(UserUtils.getLoginUser().getUserInfoId())
+                .id(currentUser.id())
                 .nickname(userInfoVO.getNickname())
                 .intro(userInfoVO.getIntro())
                 .webSite(userInfoVO.getWebSite())
@@ -80,14 +86,21 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
     @Override
     public String updateUserAvatar(MultipartFile file) {
+        Integer userInfoId = currentUser.id();
+        UserInfo existingUser = userInfoDao.selectById(userInfoId);
+        String previousAvatar = existingUser == null ? null : existingUser.getAvatar();
         // 头像上传
-        String avatar = uploadStrategyContext.executeUploadStrategy(file, FilePathEnum.AVATAR.getPath());
+        String avatar = mediaAssetStore.upload(file, FilePathEnum.AVATAR.getPath());
+        assetLifecycleService.deleteAfterRollback(avatar);
         // 更新用户信息
         UserInfo userInfo = UserInfo.builder()
-                .id(UserUtils.getLoginUser().getUserInfoId())
+                .id(userInfoId)
                 .avatar(avatar)
                 .build();
         userInfoDao.updateById(userInfo);
+        if (previousAvatar != null && !previousAvatar.equals(avatar)) {
+            assetLifecycleService.deleteAfterCommit(List.of(previousAvatar));
+        }
         return avatar;
     }
 
@@ -101,7 +114,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
             throw new BizException("验证码错误！");
         }
         UserInfo userInfo = UserInfo.builder()
-                .id(UserUtils.getLoginUser().getUserInfoId())
+                .id(currentUser.id())
                 .email(emailVO.getEmail())
                 .build();
         userInfoDao.updateById(userInfo);
@@ -146,17 +159,11 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
 
     @Override
-    public PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO) {
-        // 获取security在线session
-        List<UserOnlineDTO> userOnlineDTOList = sessionRegistry.getAllPrincipals().stream()
-                .filter(item -> sessionRegistry.getAllSessions(item, false).size() > 0)
-                .map(item -> JSON.parseObject(JSON.toJSONString(item), UserOnlineDTO.class))
-                .filter(item -> StringUtils.isBlank(conditionVO.getKeywords()) || item.getNickname().contains(conditionVO.getKeywords()))
-                .sorted(Comparator.comparing(UserOnlineDTO::getLastLoginTime).reversed())
-                .collect(Collectors.toList());
+    public PageResult<UserOnlineDTO> listOnlineUsers(SearchQueryVO conditionVO, com.wzh.blog.web.PageQuery pageQuery) {
+        List<UserOnlineDTO> userOnlineDTOList = onlineSessionService.list(conditionVO.getKeywords());
         // 执行分页
-        int fromIndex = Math.min(Math.toIntExact(paginationContext.getOffset()), userOnlineDTOList.size());
-        int size = Math.toIntExact(paginationContext.getSize());
+        int fromIndex = Math.min(Math.toIntExact(pageQuery.offset()), userOnlineDTOList.size());
+        int size = Math.toIntExact(pageQuery.size());
         int toIndex = userOnlineDTOList.size() - fromIndex > size ? fromIndex + size : userOnlineDTOList.size();
         List<UserOnlineDTO> userOnlineList = userOnlineDTOList.subList(fromIndex, toIndex);
         return new PageResult<>(userOnlineList, userOnlineDTOList.size());
@@ -166,15 +173,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
 
     @Override
     public void removeOnlineUser(Integer userInfoId) {
-        // 获取用户session
-        List<Object> userInfoList = sessionRegistry.getAllPrincipals().stream().filter(item -> {
-            UserDetailDTO userDetailDTO = (UserDetailDTO) item;
-            return userDetailDTO.getUserInfoId().equals(userInfoId);
-        }).collect(Collectors.toList());
-        List<SessionInformation> allSessions = new ArrayList<>();
-        userInfoList.forEach(item -> allSessions.addAll(sessionRegistry.getAllSessions(item, false)));
-        // 注销session
-        allSessions.forEach(SessionInformation::expireNow);
+        onlineSessionService.expireForUser(userInfoId);
     }
 
 }

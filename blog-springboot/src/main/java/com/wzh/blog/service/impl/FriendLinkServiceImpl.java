@@ -1,7 +1,5 @@
 package com.wzh.blog.service.impl;
 
-import jakarta.annotation.Resource;
-import com.wzh.blog.web.PaginationContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -15,7 +13,7 @@ import com.wzh.blog.service.FriendLinkService;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.wzh.blog.util.BeanCopyUtils;
 import com.wzh.blog.vo.FriendLinkVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.wzh.blog.web.PageQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,10 +28,11 @@ import java.util.List;
 @Service
 public class FriendLinkServiceImpl extends ServiceImpl<FriendLinkDao, FriendLink> implements FriendLinkService {
 
-    @Resource
-    private PaginationContext paginationContext;
-    @Autowired
-    private FriendLinkDao friendLinkDao;
+    private final FriendLinkDao friendLinkDao;
+
+    public FriendLinkServiceImpl(FriendLinkDao friendLinkDao) {
+        this.friendLinkDao = friendLinkDao;
+    }
 
 
 
@@ -48,9 +47,9 @@ public class FriendLinkServiceImpl extends ServiceImpl<FriendLinkDao, FriendLink
 
 
     @Override
-    public PageResult<FriendLinkBackDTO> listFriendLinkDTO(SearchQueryVO condition) {
+    public PageResult<FriendLinkBackDTO> listFriendLinkDTO(SearchQueryVO condition, PageQuery pageQuery) {
         // 分页查询友链列表
-        Page<FriendLink> page = new Page<>(paginationContext.getCurrent(), paginationContext.getSize());
+        Page<FriendLink> page = new Page<>(pageQuery.current(), pageQuery.size());
         Page<FriendLink> friendLinkPage = friendLinkDao.selectPage(page, new LambdaQueryWrapper<FriendLink>()
                 .like(StringUtils.isNotBlank(condition.getKeywords()), FriendLink::getLinkName, condition.getKeywords()));
         // 转换DTO

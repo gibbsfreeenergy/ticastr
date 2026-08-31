@@ -156,7 +156,7 @@ export default {
       if (this.$route.path == "/user") {
         this.$router.go(-1);
       }
-      this.$http.post("/api/logout").then(({ data }) => {
+      this.$api.auth.logout().then(data => {
         if (data.flag) {
           this.$store.commit("logout");
           this.$toast({ type: "success", message: "注销成功" });

@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     listTags() {
-      this.$http.get("/api/tags").then(({ data }) => {
+      this.$api.catalog.tags().then(data => {
         this.tagList = data.data.recordList;
         this.count = data.data.count;
       });
