@@ -1,15 +1,150 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.wzh.blog.dao.StorageProviderConfigDao">
-    <select id="selectSingleton" resultType="com.wzh.blog.entity.StorageProviderConfig">
-        SELECT id, active_provider, updated_at, updated_by
+    <sql id="storageProviderConfigColumns">
+        id, config_name, provider, endpoint, bucket, region, local_root, public_url,
+        access_key_id_ciphertext, access_key_secret_ciphertext, is_active,
+        config_source, last_validation_status, last_validation_at, last_validation_message,
+        usage_status, usage_object_count, usage_bytes, usage_last_modified,
+        usage_checked_at, usage_error, created_at, updated_at, updated_by
+    </sql>
+
+    <select id="selectAll" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
-        WHERE id = 1
+        ORDER BY is_active DESC, id ASC
+    </select>
+
+    <select id="selectById" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT <include refid="storageProviderConfigColumns"/>
+        FROM tb_storage_provider_config
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByIdForUpdate" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT <include refid="storageProviderConfigColumns"/>
+        FROM tb_storage_provider_config
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="selectActive" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT <include refid="storageProviderConfigColumns"/>
+        FROM tb_storage_provider_config
+        WHERE is_active = 1
+        LIMIT 1
+    </select>
+
+    <insert id="insertProfile" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_storage_provider_config
+        (config_name, provider, endpoint, bucket, region, local_root, public_url,
+         access_key_id_ciphertext, access_key_secret_ciphertext, is_active,
+         config_source, last_validation_status, last_validation_at, last_validation_message,
+         usage_status, usage_object_count, usage_bytes, usage_last_modified,
+         usage_checked_at, usage_error, created_at, updated_at, updated_by)
+        VALUES
+        (#{configName}, #{provider}, #{endpoint}, #{bucket}, #{region}, #{localRoot}, #{publicUrl},
+         #{accessKeyIdCiphertext}, #{accessKeySecretCiphertext}, #{active},
+         #{configSource}, #{lastValidationStatus}, #{lastValidationAt}, #{lastValidationMessage},
+         #{usageStatus}, #{usageObjectCount}, #{usageBytes}, #{usageLastModified},
+         #{usageCheckedAt}, #{usageError}, #{createdAt}, #{updatedAt}, #{updatedBy})
+    </insert>
+
+    <update id="updateProfile">
+        UPDATE tb_storage_provider_config
+        SET config_name = #{configName},
+            provider = #{provider},
+            endpoint = #{endpoint},
+            bucket = #{bucket},
+            region = #{region},
+            local_root = #{localRoot},
+            public_url = #{publicUrl},
+            access_key_id_ciphertext = #{accessKeyIdCiphertext},
+            access_key_secret_ciphertext = #{accessKeySecretCiphertext},
+            config_source = #{configSource},
+            updated_at = #{updatedAt},
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="upsertLegacyProfile" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_storage_provider_config
+        (config_name, provider, endpoint, bucket, region, local_root, public_url,
+         access_key_id_ciphertext, access_key_secret_ciphertext, is_active,
+         config_source, last_validation_status, usage_status, created_at, updated_at, updated_by)
+        VALUES
+        (#{configName}, #{provider}, #{endpoint}, #{bucket}, #{region}, #{localRoot}, #{publicUrl},
+         #{accessKeyIdCiphertext}, #{accessKeySecretCiphertext}, #{active},
+         #{configSource}, #{lastValidationStatus}, #{usageStatus}, #{createdAt}, #{updatedAt}, #{updatedBy})
+        ON DUPLICATE KEY UPDATE
+            config_name = VALUES(config_name),
+            endpoint = VALUES(endpoint),
+            bucket = VALUES(bucket),
+            region = VALUES(region),
+            local_root = VALUES(local_root),
+            public_url = VALUES(public_url),
+            access_key_id_ciphertext = VALUES(access_key_id_ciphertext),
+            access_key_secret_ciphertext = VALUES(access_key_secret_ciphertext),
+            config_source = VALUES(config_source),
+            updated_at = VALUES(updated_at),
+            updated_by = VALUES(updated_by),
+            id = LAST_INSERT_ID(id)
+    </insert>
+
+    <update id="updateValidation">
+        UPDATE tb_storage_provider_config
+        SET last_validation_status = #{status},
+            last_validation_at = #{validatedAt},
+            last_validation_message = #{message}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateUsage">
+        UPDATE tb_storage_provider_config
+        SET usage_status = #{status},
+            usage_object_count = #{objectCount},
+            usage_bytes = #{bytes},
+            usage_last_modified = #{lastModified},
+            usage_checked_at = #{checkedAt},
+            usage_error = #{error}
+        WHERE id = #{id}
+    </update>
+
+    <update id="activateOnly">
+        UPDATE tb_storage_provider_config
+        SET is_active = 0
+        WHERE is_active = 1;
+        UPDATE tb_storage_provider_config
+        SET is_active = 1,
+            updated_by = #{updatedBy},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countByProvider" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_storage_provider_config
+        WHERE provider = #{provider}
+    </select>
+
+    <select id="countAssetReferences" resultType="java.lang.Integer">
+        SELECT
+            (SELECT COUNT(*) FROM tb_content_asset WHERE storage_config_id = #{id})
+            +
+            (SELECT COUNT(*) FROM tb_media_asset WHERE storage_config_id = #{id})
+    </select>
+
+    <select id="selectSingleton" resultType="com.wzh.blog.entity.StorageProviderConfig">
+        SELECT <include refid="storageProviderConfigColumns"/>
+        FROM tb_storage_provider_config
+        WHERE is_active = 1
+        LIMIT 1
     </select>
 
     <update id="updateActive">
         UPDATE tb_storage_provider_config
-        SET active_provider = #{provider},
+        SET provider = #{provider},
+            is_active = 1,
             updated_by = #{updatedBy},
             updated_at = #{updatedAt}
         WHERE id = 1

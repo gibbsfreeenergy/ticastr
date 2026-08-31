@@ -67,12 +67,35 @@ class DatabaseMigrationIntegrationTest {
                             + "'tb_storage_provider_config')"))
                     .isEqualTo(4);
             assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_provider_config' "
+                            + "AND column_name IN ('config_name', 'provider', 'is_active', 'usage_bytes')"))
+                    .isEqualTo(4);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.tables "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_bootstrap_state'"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_storage_provider_config WHERE is_active = 1"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_storage_provider_config "
+                            + "WHERE id = 1 AND config_name = '本地默认配置' "
+                            + "AND provider = 'local' AND is_active = 1"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() "
+                            + "AND table_name IN ('tb_content_asset', 'tb_media_asset') "
+                            + "AND column_name = 'storage_config_id'"))
+                    .isEqualTo(2);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_resource WHERE url LIKE '/admin/storage/configs%'"))
+                    .isGreaterThanOrEqualTo(5);
+            assertThat(queryInt(connection,
                     "SELECT COUNT(*) FROM information_schema.statistics "
                             + "WHERE table_schema = DATABASE() AND table_name = 'tb_article_like' "
                             + "AND index_name = 'PRIMARY' AND seq_in_index = 2"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_storage_provider_config WHERE id = 1 AND active_provider = 'local'"))
                     .isEqualTo(1);
         }
     }
@@ -94,6 +117,27 @@ class DatabaseMigrationIntegrationTest {
                     "SELECT COUNT(*) FROM information_schema.table_constraints "
                             + "WHERE table_schema = DATABASE() AND constraint_name = 'uk_article_tag'"))
                     .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_provider_config' "
+                            + "AND column_name IN ('config_name', 'provider', 'is_active', 'usage_bytes')"))
+                    .isEqualTo(4);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_storage_bootstrap_state "
+                            + "WHERE id = 1 AND legacy_import_completed = 0 "
+                            + "AND legacy_active_provider = 'local' AND completed_at IS NULL"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM tb_storage_provider_config "
+                            + "WHERE id = 1 AND config_name = '本地默认配置' "
+                            + "AND provider = 'local' AND is_active = 1"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                            + "WHERE table_schema = DATABASE() "
+                            + "AND table_name IN ('tb_content_asset', 'tb_media_asset') "
+                            + "AND column_name = 'storage_config_id'"))
+                    .isEqualTo(2);
         }
     }
 
