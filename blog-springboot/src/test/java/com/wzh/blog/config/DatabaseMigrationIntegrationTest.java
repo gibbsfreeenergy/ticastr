@@ -84,6 +84,13 @@ class DatabaseMigrationIntegrationTest {
                             + "AND provider = 'local' AND is_active = 1"))
                     .isEqualTo(1);
             assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.table_constraints "
+                            + "WHERE table_schema = DATABASE() "
+                            + "AND table_name = 'tb_storage_provider_config' "
+                            + "AND constraint_name = 'ck_storage_provider_config_provider' "
+                            + "AND constraint_type = 'CHECK'"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
                     "SELECT COUNT(*) FROM information_schema.columns "
                             + "WHERE table_schema = DATABASE() "
                             + "AND table_name IN ('tb_content_asset', 'tb_media_asset') "
@@ -131,6 +138,13 @@ class DatabaseMigrationIntegrationTest {
                     "SELECT COUNT(*) FROM tb_storage_provider_config "
                             + "WHERE id = 1 AND config_name = '本地默认配置' "
                             + "AND provider = 'local' AND is_active = 1"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection,
+                    "SELECT COUNT(*) FROM information_schema.table_constraints "
+                            + "WHERE table_schema = DATABASE() "
+                            + "AND table_name = 'tb_storage_provider_config' "
+                            + "AND constraint_name = 'ck_storage_provider_config_provider' "
+                            + "AND constraint_type = 'CHECK'"))
                     .isEqualTo(1);
             assertThat(queryInt(connection,
                     "SELECT COUNT(*) FROM information_schema.columns "

@@ -46,6 +46,8 @@ ALTER TABLE tb_storage_provider_config
         (CASE WHEN config_source = 'LEGACY_ENV' THEN provider ELSE NULL END) STORED,
     ADD COLUMN active_marker tinyint GENERATED ALWAYS AS
         (CASE WHEN is_active = 1 THEN 1 ELSE NULL END) STORED,
+    ADD CONSTRAINT ck_storage_provider_config_provider
+        CHECK (provider IN ('local', 'cos', 'oss', 'tos')),
     ADD UNIQUE KEY uk_storage_provider_config_legacy_source (legacy_source_provider),
     ADD UNIQUE KEY uk_storage_provider_config_active (active_marker);
 

@@ -9,26 +9,53 @@
         usage_checked_at, usage_error, created_at, updated_at, updated_by
     </sql>
 
-    <select id="selectAll" resultType="com.wzh.blog.entity.StorageProviderConfig">
+    <resultMap id="storageProviderConfigResultMap" type="com.wzh.blog.entity.StorageProviderConfig">
+        <id property="id" column="id"/>
+        <result property="configName" column="config_name"/>
+        <result property="provider" column="provider"/>
+        <result property="endpoint" column="endpoint"/>
+        <result property="bucket" column="bucket"/>
+        <result property="region" column="region"/>
+        <result property="localRoot" column="local_root"/>
+        <result property="publicUrl" column="public_url"/>
+        <result property="accessKeyIdCiphertext" column="access_key_id_ciphertext"/>
+        <result property="accessKeySecretCiphertext" column="access_key_secret_ciphertext"/>
+        <result property="active" column="is_active"/>
+        <result property="configSource" column="config_source"/>
+        <result property="lastValidationStatus" column="last_validation_status"/>
+        <result property="lastValidationAt" column="last_validation_at"/>
+        <result property="lastValidationMessage" column="last_validation_message"/>
+        <result property="usageStatus" column="usage_status"/>
+        <result property="usageObjectCount" column="usage_object_count"/>
+        <result property="usageBytes" column="usage_bytes"/>
+        <result property="usageLastModified" column="usage_last_modified"/>
+        <result property="usageCheckedAt" column="usage_checked_at"/>
+        <result property="usageError" column="usage_error"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="storageProviderConfigResultMap">
         SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
         ORDER BY is_active DESC, id ASC
     </select>
 
-    <select id="selectById" resultType="com.wzh.blog.entity.StorageProviderConfig">
+    <select id="selectById" resultMap="storageProviderConfigResultMap">
         SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
         WHERE id = #{id}
     </select>
 
-    <select id="selectByIdForUpdate" resultType="com.wzh.blog.entity.StorageProviderConfig">
+    <select id="selectByIdForUpdate" resultMap="storageProviderConfigResultMap">
         SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
         WHERE id = #{id}
         FOR UPDATE
     </select>
 
-    <select id="selectActive" resultType="com.wzh.blog.entity.StorageProviderConfig">
+    <select id="selectActive" resultMap="storageProviderConfigResultMap">
         SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
         WHERE is_active = 1
@@ -74,10 +101,11 @@
          config_source, last_validation_status, usage_status, created_at, updated_at, updated_by)
         VALUES
         (#{configName}, #{provider}, #{endpoint}, #{bucket}, #{region}, #{localRoot}, #{publicUrl},
-         #{accessKeyIdCiphertext}, #{accessKeySecretCiphertext}, #{active},
-         #{configSource}, #{lastValidationStatus}, #{usageStatus}, #{createdAt}, #{updatedAt}, #{updatedBy})
+         #{accessKeyIdCiphertext}, #{accessKeySecretCiphertext}, 0,
+         'LEGACY_ENV', #{lastValidationStatus}, #{usageStatus}, #{createdAt}, #{updatedAt}, #{updatedBy})
         ON DUPLICATE KEY UPDATE
             config_name = VALUES(config_name),
+            provider = VALUES(provider),
             endpoint = VALUES(endpoint),
             bucket = VALUES(bucket),
             region = VALUES(region),
@@ -85,7 +113,7 @@
             public_url = VALUES(public_url),
             access_key_id_ciphertext = VALUES(access_key_id_ciphertext),
             access_key_secret_ciphertext = VALUES(access_key_secret_ciphertext),
-            config_source = VALUES(config_source),
+            config_source = 'LEGACY_ENV',
             updated_at = VALUES(updated_at),
             updated_by = VALUES(updated_by),
             id = LAST_INSERT_ID(id)
@@ -134,7 +162,7 @@
             (SELECT COUNT(*) FROM tb_media_asset WHERE storage_config_id = #{id})
     </select>
 
-    <select id="selectSingleton" resultType="com.wzh.blog.entity.StorageProviderConfig">
+    <select id="selectSingleton" resultMap="storageProviderConfigResultMap">
         SELECT <include refid="storageProviderConfigColumns"/>
         FROM tb_storage_provider_config
         WHERE is_active = 1
