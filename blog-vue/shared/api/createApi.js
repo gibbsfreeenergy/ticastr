@@ -165,6 +165,13 @@ export function createApi(client) {
       storageProviders: config => resultGet("/api/admin/storage/providers", config),
       validateStorageProvider: provider => resultPost(`/api/admin/storage/providers/${provider}/validate`),
       switchStorageProvider: payload => resultPut("/api/admin/storage/provider", payload),
+      storageConfigs: config => resultGet("/api/admin/storage/configs", config),
+      createStorageConfig: payload => resultPost("/api/admin/storage/configs", payload),
+      updateStorageConfig: (id, payload) => resultPut(`/api/admin/storage/configs/${id}`, payload),
+      deleteStorageConfig: id => resultRemove(`/api/admin/storage/configs/${id}`),
+      validateStorageConfig: id => resultPost(`/api/admin/storage/configs/${id}/validate`),
+      activateStorageConfig: id => resultPost(`/api/admin/storage/configs/${id}/activate`),
+      refreshStorageUsage: id => resultPost(`/api/admin/storage/configs/${id}/usage`),
       outbox: config => resultGet("/api/admin/outbox", config),
       outboxMetrics: config => resultGet("/api/admin/outbox/metrics", config),
       retryOutbox: eventId => resultPost(`/api/admin/outbox/${eventId}/retry`)
