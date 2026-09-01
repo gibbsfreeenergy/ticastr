@@ -21,7 +21,8 @@ app:
   public-api-url: http://localhost:8090
 
 storage:
-  active-provider: local
+  # Leave blank for a local-only catalog. Required before importing/using cloud profiles.
+  config-encryption-key:
   local-root: ./uploads
   local-public-url: http://localhost:8090/uploads/
 

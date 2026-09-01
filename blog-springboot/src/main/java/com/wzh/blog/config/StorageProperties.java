@@ -4,16 +4,12 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Provider-neutral storage settings. Secret values are bound from deployment
- * environment variables and are never serialized to API responses.
- */
+/** One-time legacy storage inputs. Runtime selection always comes from the database catalog. */
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "storage")
 public class StorageProperties {
 
-    private String activeProvider = "local";
     private String localRoot = "./uploads";
     private String localPublicUrl = "/uploads/";
     private final Provider oss = new Provider();

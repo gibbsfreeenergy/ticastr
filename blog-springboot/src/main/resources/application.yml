@@ -62,7 +62,8 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 storage:
-  active-provider: ${STORAGE_ACTIVE_PROVIDER:local}
+  # These values are migration-only inputs. Managed profiles in the database select runtime storage.
+  config-encryption-key: ${STORAGE_CONFIG_ENCRYPTION_KEY:}
   local-root: ${STORAGE_LOCAL_ROOT:./uploads}
   local-public-url: ${STORAGE_LOCAL_PUBLIC_URL:/uploads/}
   oss:

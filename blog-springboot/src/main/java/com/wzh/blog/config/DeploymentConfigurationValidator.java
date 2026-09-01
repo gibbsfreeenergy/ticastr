@@ -1,11 +1,14 @@
 package com.wzh.blog.config;
 
+import com.wzh.blog.dao.StorageProviderConfigDao;
+import com.wzh.blog.entity.StorageProviderConfig;
 import com.wzh.blog.media.StorageProviderType;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
+import java.util.List;
 
 /** Fails fast on invalid mode combinations and unreplaced production values. */
 @Component
@@ -15,33 +18,35 @@ public class DeploymentConfigurationValidator {
     private final String websiteUrl;
     private final String publicApiUrl;
     private final String allowedOrigins;
-    private final StorageProperties storageProperties;
     private final String searchIndexPath;
     private final String monitoringToken;
     private final String cursorSecret;
+    private final StorageProviderConfigDao storageConfigDao;
+    private final StorageConfigCrypto storageConfigCrypto;
 
     public DeploymentConfigurationValidator(
             @Value("${app.deployment-profile:local}") String profile,
             @Value("${website.url}") String websiteUrl,
             @Value("${app.public-api-url}") String publicApiUrl,
             @Value("${app.security.cors.allowed-origins}") String allowedOrigins,
-            StorageProperties storageProperties,
             @Value("${app.search.index-path:search-index}") String searchIndexPath,
             @Value("${monitoring.token:}") String monitoringToken,
-            @Value("${app.pagination.cursor-secret:}") String cursorSecret) {
+            @Value("${app.pagination.cursor-secret:}") String cursorSecret,
+            StorageProviderConfigDao storageConfigDao,
+            StorageConfigCrypto storageConfigCrypto) {
         this.profile = profile;
         this.websiteUrl = websiteUrl;
         this.publicApiUrl = publicApiUrl;
         this.allowedOrigins = allowedOrigins;
-        this.storageProperties = storageProperties;
         this.searchIndexPath = searchIndexPath;
         this.monitoringToken = monitoringToken;
         this.cursorSecret = cursorSecret;
+        this.storageConfigDao = storageConfigDao;
+        this.storageConfigCrypto = storageConfigCrypto;
     }
 
     @PostConstruct
     void validate() {
-        StorageProviderType providerType = StorageProviderType.from(storageProperties.getActiveProvider());
         if (searchIndexPath == null || searchIndexPath.isBlank()) {
             throw new IllegalStateException("app.search.index-path must not be blank");
         }
@@ -49,11 +54,7 @@ public class DeploymentConfigurationValidator {
             rejectPlaceholder("website.url", websiteUrl);
             rejectPlaceholder("app.public-api-url", publicApiUrl);
             rejectPlaceholder("app.security.cors.allowed-origins", allowedOrigins);
-            if (providerType == StorageProviderType.LOCAL) {
-                rejectPlaceholder("storage.local-public-url", storageProperties.getLocalPublicUrl());
-            } else if (!providerConfigured(providerType)) {
-                throw new IllegalStateException("Storage provider is not fully configured: " + providerType.code());
-            }
+            validateStorageCatalog();
             if (monitoringToken == null || monitoringToken.isBlank() || containsPlaceholder(monitoringToken)) {
                 throw new IllegalStateException("monitoring.token must be set for production-like deployments");
             }
@@ -63,13 +64,48 @@ public class DeploymentConfigurationValidator {
         }
     }
 
-    private boolean providerConfigured(StorageProviderType providerType) {
-        return switch (providerType) {
-            case OSS -> storageProperties.getOss().configured();
-            case COS -> storageProperties.getCos().configured();
-            case TOS -> storageProperties.getTos().configured();
-            case LOCAL -> true;
-        };
+    private void validateStorageCatalog() {
+        StorageProviderConfig active = storageConfigDao.selectActive();
+        if (active == null || !isUsable(active)) {
+            throw new IllegalStateException("No usable active storage profile is configured");
+        }
+        List<StorageProviderConfig> catalog = storageConfigDao.selectAll();
+        boolean hasConfiguredCloud = catalog != null && catalog.stream()
+                .anyMatch(profile -> isCloud(profile) && isUsable(profile));
+        if ((isCloud(active) || hasConfiguredCloud) && !storageConfigCrypto.hasKey()) {
+            throw new IllegalStateException("Storage configuration encryption is required for cloud profiles");
+        }
+    }
+
+    private boolean isCloud(StorageProviderConfig profile) {
+        if (profile == null || profile.getProvider() == null) {
+            return false;
+        }
+        try {
+            return StorageProviderType.from(profile.getProvider()) != StorageProviderType.LOCAL;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean isUsable(StorageProviderConfig profile) {
+        if (profile == null || profile.getProvider() == null) {
+            return false;
+        }
+        try {
+            StorageProviderType provider = StorageProviderType.from(profile.getProvider());
+            return provider == StorageProviderType.LOCAL
+                    ? hasText(profile.getLocalRoot()) && hasText(profile.getPublicUrl())
+                    : hasText(profile.getEndpoint()) && hasText(profile.getRegion()) && hasText(profile.getBucket())
+                    && hasText(profile.getPublicUrl()) && hasText(profile.getAccessKeyIdCiphertext())
+                    && hasText(profile.getAccessKeySecretCiphertext());
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private boolean isProductionLike() {
