@@ -92,7 +92,7 @@ public class AssetLifecycleService {
         try {
             if (referenceChecker.isReferenced(reference)) {
                 if (assetLedger != null) {
-                    assetLedger.register(reference, reference, "unknown");
+                    assetLedger.retain(reference);
                 }
                 log.info("Retaining media asset {} because another record still references it", reference);
                 return;

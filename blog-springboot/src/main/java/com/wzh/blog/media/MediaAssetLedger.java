@@ -21,6 +21,10 @@ public interface MediaAssetLedger {
         register(reference, objectKey, provider, null);
     }
 
+    /** Marks a still-referenced asset as retained without rewriting routing fields. */
+    default void retain(String reference) {
+    }
+
     void markDeletionStarted(String reference);
 
     void markDeleted(String reference);

@@ -32,12 +32,34 @@ public class DatabaseMediaAssetLedger implements MediaAssetLedger {
                              status, created_at, updated_at)
                         VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
                         ON DUPLICATE KEY UPDATE
-                            asset_reference = ?, object_key = ?, storage_mode = ?, storage_config_id = ?,
+                            asset_reference = VALUES(asset_reference),
+                            object_key = VALUES(object_key),
+                            storage_mode = VALUES(storage_mode),
+                            storage_config_id = COALESCE(VALUES(storage_config_id), storage_config_id),
                             status = 'ACTIVE',
                             updated_at = NOW(), deleted_at = NULL, last_error = NULL
                         """,
-                assetId(reference), reference, objectKey, valueOrDefault(provider), storageConfigId,
-                reference, objectKey, valueOrDefault(provider), storageConfigId);
+                assetId(reference), reference, objectKey, valueOrDefault(provider), storageConfigId);
+    }
+
+    @Override
+    public void retain(String reference) {
+        if (isBlank(reference)) {
+            return;
+        }
+        try {
+            jdbcTemplate.update("""
+                            UPDATE tb_media_asset
+                            SET status = 'ACTIVE',
+                                deleted_at = NULL,
+                                last_error = NULL,
+                                updated_at = NOW()
+                            WHERE asset_id = ?
+                            """,
+                    assetId(reference));
+        } catch (RuntimeException exception) {
+            log.warn("Unable to retain media asset ledger entry for {}", reference, exception);
+        }
     }
 
     @Override

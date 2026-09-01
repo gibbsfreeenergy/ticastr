@@ -112,6 +112,42 @@ class ProfileAwareAssetRoutingTest {
         verify(newProvider, never()).delete("media/2026/09/original.png");
     }
 
+    @Test
+    void retainedMediaKeepsOriginalProfileAndObjectKeyAfterActiveSwitch() throws Exception {
+        StorageProvider oldProvider = mock(StorageProvider.class);
+        StorageProvider newProvider = mock(StorageProvider.class);
+        when(oldProvider.type()).thenReturn(StorageProviderType.COS);
+        when(newProvider.type()).thenReturn(StorageProviderType.COS);
+        when(oldProvider.put(anyString(), any(), anyLong(), eq("image/png")))
+                .thenAnswer(invocation -> new StorageObjectMetadata(
+                        invocation.getArgument(0), "image/png", 3L, "old-checksum", Instant.now()));
+
+        ProfileRoutingFixture fixture = new ProfileRoutingFixture(oldProvider, newProvider);
+        MockMultipartFile firstUpload = new MockMultipartFile("file", "shared.png", "image/png", new byte[]{1, 2, 3});
+        String reference = fixture.uploadContext().upload(firstUpload, "articles/");
+        MediaAssetLedger.MediaAssetLocation originalLocation = fixture.ledger().locationFor(reference);
+        assertNotNull(originalLocation);
+
+        MediaReferenceChecker referenceChecker = mock(MediaReferenceChecker.class);
+        when(referenceChecker.isReferenced(reference)).thenReturn(true, false);
+        AssetLifecycleService lifecycleService =
+                new AssetLifecycleService(fixture.uploadContext(), referenceChecker, fixture.ledger());
+
+        lifecycleService.deleteAfterCommit(java.util.List.of(reference));
+        MediaAssetLedger.MediaAssetLocation retainedLocation = fixture.ledger().locationFor(reference);
+        assertNotNull(retainedLocation);
+        assertEquals(originalLocation.storageConfigId(), retainedLocation.storageConfigId());
+        assertEquals(originalLocation.provider(), retainedLocation.provider());
+        assertEquals(originalLocation.objectKey(), retainedLocation.objectKey());
+        verify(oldProvider, never()).delete(originalLocation.objectKey());
+
+        fixture.registry().refresh(12L);
+        lifecycleService.deleteAfterCommit(java.util.List.of(reference));
+
+        verify(oldProvider).delete(originalLocation.objectKey());
+        verify(newProvider, never()).delete(originalLocation.objectKey());
+    }
+
     private static StorageObject storageObject(String content) {
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
         return new StorageObject(
@@ -179,6 +215,10 @@ class ProfileAwareAssetRoutingTest {
         @Override
         public void register(String reference, String objectKey, String provider, Long storageConfigId) {
             locations.put(reference, new MediaAssetLocation(storageConfigId, provider, objectKey));
+        }
+
+        @Override
+        public void retain(String reference) {
         }
 
         @Override
