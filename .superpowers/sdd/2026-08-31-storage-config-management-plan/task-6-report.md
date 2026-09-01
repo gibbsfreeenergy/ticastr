@@ -33,6 +33,21 @@ The review correction removes the `./uploads` and `/uploads/` legacy-input defau
 
 `WebMvcConfig` no longer reads `StorageProperties.localRoot`. Its `/uploads/**` resource resolver queries the current active database profile per request and serves only a real file inside an active local profile's normalized real path. This is request-time work, so it cannot query before Flyway migration; cloud profiles and traversal paths return no resource.
 
+### Review follow-up: cloud drafts and startup ordering
+
+- RED: `mvn "-Dtest=DeploymentConfigurationValidatorTest,StorageConfigBootstrapRunnerTest" test`
+  - Failed at test compilation as expected because `DeploymentConfigurationValidator` did not yet expose the ordered runner `run(ApplicationArguments)` lifecycle.
+- GREEN: `mvn "-Dtest=DeploymentConfigurationValidatorTest,StorageConfigBootstrapRunnerTest,ManagedLocalStorageResourceResolverTest" test`
+  - Passed: 14 tests, 0 failures, 0 errors, 0 skipped.
+- Real MySQL/Testcontainers reports after `mvn "-Dtest=DatabaseMigrationIntegrationTest,StorageProviderConfigDaoIntegrationTest" test`:
+  - `DatabaseMigrationIntegrationTest`: 3 passed, 0 failures, 0 errors.
+  - `StorageProviderConfigDaoIntegrationTest`: 3 passed, 0 failures, 0 errors.
+- `git diff --check` passed.
+
+The production-like validator now distinguishes active-profile usability from catalog policy: the active profile must be complete, while any cloud provider row (including an incomplete admin draft) requires a valid storage encryption key. The generic error message contains no provider configuration, credential, ciphertext, or endpoint data.
+
+Storage catalog validation is no longer `@PostConstruct`. `StorageConfigBootstrapRunner` remains `@Order(0)` and `DeploymentConfigurationValidator` is now an `ApplicationRunner` at `@Order(1)`. Spring runs these only after the application context, including Flyway migration, is initialized. The focused test verifies both annotation order and the sequence in which an explicit legacy local import replaces the invalid seeded default before the production-like validator runs.
+
 ## Changed files
 
 - `blog-springboot/src/main/java/com/wzh/blog/bootstrap/StorageConfigBootstrapRunner.java`

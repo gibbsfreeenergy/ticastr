@@ -3,8 +3,10 @@ package com.wzh.blog.config;
 import com.wzh.blog.dao.StorageProviderConfigDao;
 import com.wzh.blog.entity.StorageProviderConfig;
 import com.wzh.blog.media.StorageProviderType;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -13,7 +15,8 @@ import java.util.List;
 
 /** Fails fast on invalid mode combinations and unreplaced production values. */
 @Component
-public class DeploymentConfigurationValidator {
+@Order(1)
+public class DeploymentConfigurationValidator implements ApplicationRunner {
 
     private final String profile;
     private final String websiteUrl;
@@ -46,7 +49,11 @@ public class DeploymentConfigurationValidator {
         this.storageConfigCrypto = storageConfigCrypto;
     }
 
-    @PostConstruct
+    @Override
+    public void run(ApplicationArguments args) {
+        validate();
+    }
+
     void validate() {
         if (searchIndexPath == null || searchIndexPath.isBlank()) {
             throw new IllegalStateException("app.search.index-path must not be blank");
@@ -74,9 +81,8 @@ public class DeploymentConfigurationValidator {
             rejectProductionPublicUrl("active local storage public URL", active.getPublicUrl());
         }
         List<StorageProviderConfig> catalog = storageConfigDao.selectAll();
-        boolean hasConfiguredCloud = catalog != null && catalog.stream()
-                .anyMatch(profile -> isCloud(profile) && isUsable(profile));
-        if ((isCloud(active) || hasConfiguredCloud) && !storageConfigCrypto.hasKey()) {
+        boolean hasCloudProfile = catalog != null && catalog.stream().anyMatch(this::isCloud);
+        if ((isCloud(active) || hasCloudProfile) && !storageConfigCrypto.hasKey()) {
             throw new IllegalStateException("Storage configuration encryption is required for cloud profiles");
         }
     }
