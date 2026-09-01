@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
 import java.util.Locale;
 import java.util.List;
 
@@ -69,6 +70,9 @@ public class DeploymentConfigurationValidator {
         if (active == null || !isUsable(active)) {
             throw new IllegalStateException("No usable active storage profile is configured");
         }
+        if (!isCloud(active)) {
+            rejectProductionPublicUrl("active local storage public URL", active.getPublicUrl());
+        }
         List<StorageProviderConfig> catalog = storageConfigDao.selectAll();
         boolean hasConfiguredCloud = catalog != null && catalog.stream()
                 .anyMatch(profile -> isCloud(profile) && isUsable(profile));
@@ -106,6 +110,20 @@ public class DeploymentConfigurationValidator {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private void rejectProductionPublicUrl(String name, String value) {
+        rejectPlaceholder(name, value);
+        try {
+            URI uri = URI.create(value);
+            if (!uri.isAbsolute() || uri.getHost() == null
+                    || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                    || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
+                throw new IllegalStateException(name + " must contain a real HTTP(S) URL for " + profile);
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException(name + " must contain a real HTTP(S) URL for " + profile);
+        }
     }
 
     private boolean isProductionLike() {

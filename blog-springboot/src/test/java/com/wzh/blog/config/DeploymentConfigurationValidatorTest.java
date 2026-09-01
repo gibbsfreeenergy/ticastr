@@ -56,6 +56,22 @@ class DeploymentConfigurationValidatorTest {
         }
     }
 
+    @Test
+    void rejectsRelativeLocalOrPlaceholderPublicUrlsForProductionLikeProfiles() {
+        for (String publicUrl : List.of("/uploads/", "http://localhost:8090/uploads/",
+                "https://cdn.example.com/uploads/")) {
+            StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+            StorageProviderConfig local = localProfile(4L);
+            local.setPublicUrl(publicUrl);
+            when(configDao.selectActive()).thenReturn(local);
+            when(configDao.selectAll()).thenReturn(List.of(local));
+
+            assertThatThrownBy(() -> validator(configDao, mock(StorageConfigCrypto.class)).validate())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("active local storage public URL");
+        }
+    }
+
     private DeploymentConfigurationValidator validator(StorageProviderConfigDao configDao, StorageConfigCrypto crypto) {
         return new DeploymentConfigurationValidator(
                 "production-like",

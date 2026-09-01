@@ -113,21 +113,62 @@ class StorageConfigBootstrapRunnerTest {
     }
 
     @Test
-    void completesTheBootstrapWhenNoLegacyCloudConfigurationExists() throws Exception {
+    void defaultLegacyLocalValuesDoNotCreateAnImportedProfile() throws Exception {
         StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
         StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
         StorageProperties properties = new StorageProperties();
-        properties.setLocalRoot("");
-        properties.setLocalPublicUrl("");
-        when(stateDao.selectForUpdate()).thenReturn(state(false, "oss"));
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        when(stateDao.selectForUpdate()).thenReturn(state(false, "local"));
         when(configDao.selectAll()).thenReturn(List.of(localDefault(1L)));
 
         runner(stateDao, configDao, new StorageConfigCrypto(base64Key()), properties,
-                mock(JdbcTemplate.class), mock(StorageProviderRegistry.class))
+                jdbcTemplate, mock(StorageProviderRegistry.class))
                 .run(mock(ApplicationArguments.class));
 
         verify(configDao, never()).upsertLegacyProfile(any());
+        verify(configDao).activateOnly(org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.isNull(), any(LocalDateTime.class));
+        verify(jdbcTemplate).update(startsWith("UPDATE tb_content_asset"), anyLong(),
+                org.mockito.ArgumentMatchers.eq("local"));
+        verify(jdbcTemplate).update(startsWith("UPDATE tb_media_asset"), anyLong(),
+                org.mockito.ArgumentMatchers.eq("local"));
         verify(stateDao).markCompleted(any(LocalDateTime.class));
+    }
+
+    @Test
+    void explicitLegacyLocalProfileBecomesActiveAndBackfillsLegacyAssets() throws Exception {
+        StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
+        StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        StorageProviderRegistry registry = mock(StorageProviderRegistry.class);
+        StorageProperties properties = new StorageProperties();
+        properties.setLocalRoot("C:/legacy/uploads");
+        properties.setLocalPublicUrl("https://cdn.ticastr.test/uploads/");
+        List<StorageProviderConfig> profiles = new ArrayList<>(List.of(localDefault(1L)));
+        when(stateDao.selectForUpdate()).thenReturn(state(false, "local"));
+        when(configDao.upsertLegacyProfile(any())).thenAnswer(invocation -> {
+            StorageProviderConfig imported = invocation.getArgument(0);
+            imported.setId(10L);
+            profiles.add(imported);
+            return 1;
+        });
+        when(configDao.selectAll()).thenAnswer(invocation -> List.copyOf(profiles));
+
+        runner(stateDao, configDao, new StorageConfigCrypto(base64Key()), properties, jdbcTemplate, registry)
+                .run(mock(ApplicationArguments.class));
+
+        ArgumentCaptor<StorageProviderConfig> imported = ArgumentCaptor.forClass(StorageProviderConfig.class);
+        verify(configDao).upsertLegacyProfile(imported.capture());
+        assertThat(imported.getValue()).extracting(StorageProviderConfig::getProvider,
+                StorageProviderConfig::getConfigSource, StorageProviderConfig::getLocalRoot)
+                .containsExactly("local", "LEGACY_ENV", "C:/legacy/uploads");
+        verify(configDao).activateOnly(org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.isNull(), any(LocalDateTime.class));
+        verify(jdbcTemplate).update(startsWith("UPDATE tb_content_asset"),
+                org.mockito.ArgumentMatchers.eq(10L), org.mockito.ArgumentMatchers.eq("local"));
+        verify(jdbcTemplate).update(startsWith("UPDATE tb_media_asset"),
+                org.mockito.ArgumentMatchers.eq(10L), org.mockito.ArgumentMatchers.eq("local"));
+        verify(registry).refresh(10L);
     }
 
     @Test

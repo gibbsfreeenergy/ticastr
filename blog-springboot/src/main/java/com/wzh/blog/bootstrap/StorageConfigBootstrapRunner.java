@@ -132,6 +132,7 @@ public class StorageConfigBootstrapRunner implements ApplicationRunner {
         }
         String legacyProvider = state.getLegacyActiveProvider();
         StorageProviderConfig selected = catalog.stream()
+                .filter(profile -> LEGACY_SOURCE.equals(profile.getConfigSource()))
                 .filter(profile -> sameProvider(profile, legacyProvider))
                 .filter(this::isUsable)
                 .findFirst()
@@ -156,12 +157,24 @@ public class StorageConfigBootstrapRunner implements ApplicationRunner {
             }
         }
         usableProfiles.forEach((type, profiles) -> {
-            if (profiles.size() == 1) {
-                Long id = profiles.getFirst().getId();
+            List<StorageProviderConfig> candidates = backfillCandidates(type, profiles);
+            if (candidates.size() == 1) {
+                Long id = candidates.getFirst().getId();
                 jdbcTemplate.update(CONTENT_BACKFILL, id, type.code());
                 jdbcTemplate.update(MEDIA_BACKFILL, id, type.code());
             }
         });
+    }
+
+    private List<StorageProviderConfig> backfillCandidates(StorageProviderType type,
+                                                           List<StorageProviderConfig> profiles) {
+        if (type != StorageProviderType.LOCAL || profiles.stream()
+                .noneMatch(profile -> LEGACY_SOURCE.equals(profile.getConfigSource()))) {
+            return profiles;
+        }
+        return profiles.stream()
+                .filter(profile -> !DEFAULT_SOURCE.equals(profile.getConfigSource()))
+                .toList();
     }
 
     private void refreshRegistryAfterCommit(Long configId) {

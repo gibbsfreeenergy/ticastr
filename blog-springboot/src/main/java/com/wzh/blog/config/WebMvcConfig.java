@@ -1,5 +1,5 @@
 package com.wzh.blog.config;
-
+import com.wzh.blog.dao.StorageProviderConfigDao;
 
 import com.wzh.blog.handler.PageableHandlerInterceptor;
 import com.wzh.blog.handler.WebSecurityHandler;
@@ -25,14 +25,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final PaginationContext paginationContext;
     private final RateLimitStore rateLimitStore;
-    private final StorageProperties storageProperties;
+    private final StorageProviderConfigDao storageConfigDao;
 
     public WebMvcConfig(PaginationContext paginationContext,
                         RateLimitStore rateLimitStore,
-                        StorageProperties storageProperties) {
+                        StorageProviderConfigDao storageConfigDao) {
         this.paginationContext = paginationContext;
         this.rateLimitStore = rateLimitStore;
-        this.storageProperties = storageProperties;
+        this.storageConfigDao = storageConfigDao;
     }
 
     @org.springframework.beans.factory.annotation.Value("${app.security.cors.allowed-origins}")
@@ -65,15 +65,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String localRoot = java.nio.file.Path.of(storageProperties.getLocalRoot())
-                .toAbsolutePath()
-                .normalize()
-                .toString();
-        String normalizedPath = localRoot.endsWith("\\") || localRoot.endsWith("/")
-                ? localRoot
-                : localRoot + java.io.File.separator;
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + normalizedPath);
+                .addResourceLocations("classpath:/managed-storage-placeholder/")
+                .resourceChain(false)
+                .addResolver(new ManagedLocalStorageResourceResolver(storageConfigDao));
     }
 
 

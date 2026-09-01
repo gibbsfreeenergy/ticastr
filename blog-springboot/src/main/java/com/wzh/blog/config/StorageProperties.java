@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "storage")
 public class StorageProperties {
 
-    private String localRoot = "./uploads";
-    private String localPublicUrl = "/uploads/";
+    private String localRoot;
+    private String localPublicUrl;
     private final Provider oss = new Provider();
     private final Provider cos = new Provider();
     private final Provider tos = new Provider();
