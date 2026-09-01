@@ -19,6 +19,8 @@ public interface StorageProviderConfigDao extends BaseMapper<StorageProviderConf
 
     StorageProviderConfig selectActive();
 
+    StorageProviderConfig selectActiveForUpdate();
+
     int insertProfile(StorageProviderConfig config);
 
     int updateProfile(StorageProviderConfig config);

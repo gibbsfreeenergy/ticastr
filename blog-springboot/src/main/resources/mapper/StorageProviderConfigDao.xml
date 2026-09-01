@@ -62,6 +62,14 @@
         LIMIT 1
     </select>
 
+    <select id="selectActiveForUpdate" resultMap="storageProviderConfigResultMap">
+        SELECT <include refid="storageProviderConfigColumns"/>
+        FROM tb_storage_provider_config
+        WHERE is_active = 1
+        LIMIT 1
+        FOR UPDATE
+    </select>
+
     <insert id="insertProfile" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tb_storage_provider_config
         (config_name, provider, endpoint, bucket, region, local_root, public_url,

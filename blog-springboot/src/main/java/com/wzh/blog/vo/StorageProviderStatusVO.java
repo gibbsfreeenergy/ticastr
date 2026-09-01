@@ -6,5 +6,14 @@ public record StorageProviderStatusVO(
         boolean active,
         boolean configured,
         boolean credentialsConfigured,
-        boolean supportsValidation) {
+        boolean supportsValidation,
+        int usableProfileCount) {
+
+    /** @deprecated Compatibility constructor for callers that predate profiles. */
+    @Deprecated
+    public StorageProviderStatusVO(String provider, boolean active, boolean configured,
+                                   boolean credentialsConfigured, boolean supportsValidation) {
+        this(provider, active, configured, credentialsConfigured, supportsValidation,
+                configured ? 1 : 0);
+    }
 }

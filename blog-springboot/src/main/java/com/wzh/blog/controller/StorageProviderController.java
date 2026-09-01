@@ -1,6 +1,6 @@
 package com.wzh.blog.controller;
 
-import com.wzh.blog.administration.StorageProviderAdminService;
+import com.wzh.blog.administration.StorageConfigAdminService;
 import com.wzh.blog.annotation.AccessLimit;
 import com.wzh.blog.annotation.OptLog;
 import com.wzh.blog.security.CurrentUser;
@@ -9,10 +9,16 @@ import com.wzh.blog.vo.StorageProviderSelectionResponse;
 import com.wzh.blog.vo.StorageProviderStatusVO;
 import com.wzh.blog.vo.StorageProviderValidationVO;
 import com.wzh.blog.vo.StorageProviderSwitchRequest;
+import com.wzh.blog.vo.StorageConfigListResponse;
+import com.wzh.blog.vo.StorageConfigRequest;
+import com.wzh.blog.vo.StorageConfigSummaryVO;
+import com.wzh.blog.vo.StorageUsageVO;
+import com.wzh.blog.vo.StorageValidationVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,10 +33,10 @@ import static com.wzh.blog.constant.OptTypeConst.UPDATE;
 @RequestMapping("/admin/storage")
 public class StorageProviderController {
 
-    private final StorageProviderAdminService selectionService;
+    private final StorageConfigAdminService selectionService;
     private final CurrentUser currentUser;
 
-    public StorageProviderController(StorageProviderAdminService selectionService,
+    public StorageProviderController(StorageConfigAdminService selectionService,
                                      CurrentUser currentUser) {
         this.selectionService = selectionService;
         this.currentUser = currentUser;
@@ -38,19 +44,70 @@ public class StorageProviderController {
 
     @Operation(summary = "查看当前对象存储 provider")
     @GetMapping("/provider")
+    @Deprecated
     public Result<StorageProviderSelectionResponse> currentProvider() {
         return Result.ok(selectionService.current());
     }
 
     @Operation(summary = "查看对象存储 provider 状态")
     @GetMapping("/providers")
+    @Deprecated
     public Result<java.util.List<StorageProviderStatusVO>> providers() {
         return Result.ok(selectionService.providers());
+    }
+
+    @Operation(summary = "查看对象存储配置档案")
+    @GetMapping("/configs")
+    public Result<StorageConfigListResponse> configs() {
+        return Result.ok(selectionService.list());
+    }
+
+    @Operation(summary = "新增对象存储配置档案")
+    @PostMapping("/configs")
+    public Result<StorageConfigSummaryVO> createConfig(@Valid @RequestBody StorageConfigRequest request) {
+        return Result.ok(selectionService.create(request, currentUser.id()));
+    }
+
+    @Operation(summary = "更新对象存储配置档案")
+    @PutMapping("/configs/{id}")
+    public Result<StorageConfigSummaryVO> updateConfig(@PathVariable Long id,
+                                                        @Valid @RequestBody StorageConfigRequest request) {
+        return Result.ok(selectionService.update(id, request, currentUser.id()));
+    }
+
+    @Operation(summary = "删除对象存储配置档案")
+    @DeleteMapping("/configs/{id}")
+    public Result<Void> deleteConfig(@PathVariable Long id) {
+        selectionService.delete(id);
+        return Result.ok();
+    }
+
+    @Operation(summary = "验证对象存储配置档案")
+    @PostMapping("/configs/{id}/validate")
+    @AccessLimit(seconds = 60, maxCount = 5)
+    public Result<StorageValidationVO> validateConfig(@PathVariable Long id) {
+        return Result.ok(selectionService.validate(id));
+    }
+
+    @OptLog(optType = UPDATE)
+    @Operation(summary = "启用对象存储配置档案")
+    @PostMapping("/configs/{id}/activate")
+    @AccessLimit(seconds = 60, maxCount = 5)
+    public Result<StorageConfigSummaryVO> activateConfig(@PathVariable Long id) {
+        return Result.ok(selectionService.activate(id, currentUser.id()));
+    }
+
+    @Operation(summary = "刷新对象存储配置档案用量")
+    @PostMapping("/configs/{id}/usage")
+    @AccessLimit(seconds = 60, maxCount = 5)
+    public Result<StorageUsageVO> refreshUsage(@PathVariable Long id) {
+        return Result.ok(selectionService.refreshUsage(id));
     }
 
     @Operation(summary = "验证对象存储 provider")
     @PostMapping("/providers/{provider}/validate")
     @AccessLimit(seconds = 60, maxCount = 5)
+    @Deprecated
     public Result<StorageProviderValidationVO> validate(@PathVariable String provider) {
         return Result.ok(selectionService.validateProvider(provider));
     }
@@ -59,6 +116,7 @@ public class StorageProviderController {
     @Operation(summary = "切换对象存储 provider")
     @PutMapping("/provider")
     @AccessLimit(seconds = 60, maxCount = 5)
+    @Deprecated
     public Result<StorageProviderSelectionResponse> switchProvider(
             @Valid @RequestBody StorageProviderSwitchRequest request) {
         return Result.ok(selectionService.switchProvider(request.provider(), currentUser.id()));
