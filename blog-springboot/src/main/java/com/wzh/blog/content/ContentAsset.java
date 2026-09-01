@@ -24,6 +24,7 @@ public class ContentAsset {
 
     private Integer articleId;
     private String provider;
+    private Long storageConfigId;
     private String objectKey;
     private String contentType;
     private String format;

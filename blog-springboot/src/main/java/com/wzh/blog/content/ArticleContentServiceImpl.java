@@ -50,11 +50,13 @@ public class ArticleContentServiceImpl implements ArticleContentService {
     public ArticleContentResponse replace(Integer articleId, ArticleContentRequest request) {
         String markdown = sanitizer.sanitize(request.content());
         byte[] content = markdown.getBytes(StandardCharsets.UTF_8);
-        StorageProvider provider = providerRegistry.providerForNewAsset();
+        Long storageConfigId = providerRegistry.activeConfigId();
+        StorageProvider provider = providerRegistry.providerForConfig(storageConfigId);
         ContentAssetReservation reservation = persistence.reserve(
                 articleId,
                 request.expectedVersion(),
                 content.length,
+                storageConfigId,
                 provider.type().code(),
                 CONTENT_TYPE,
                 FORMAT);
@@ -154,7 +156,9 @@ public class ArticleContentServiceImpl implements ArticleContentService {
     }
 
     private StorageObject openAsset(ContentAsset asset) {
-        StorageProvider provider = providerRegistry.providerFor(StorageProviderType.from(asset.getProvider()));
+        StorageProvider provider = asset.getStorageConfigId() == null
+                ? providerRegistry.providerForLegacyProvider(StorageProviderType.from(asset.getProvider()))
+                : providerRegistry.providerForConfig(asset.getStorageConfigId());
         try {
             return provider.get(asset.getObjectKey());
         } catch (IOException | RuntimeException exception) {

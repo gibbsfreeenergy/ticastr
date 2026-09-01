@@ -6,14 +6,20 @@ import java.util.List;
 /** Records external media ownership independently from business URL columns. */
 public interface MediaAssetLedger {
 
-    record MediaAssetLocation(String provider, String objectKey) {
+    record MediaAssetLocation(Long storageConfigId, String provider, String objectKey) {
     }
 
-    record MediaAssetRecord(String reference, String provider, String objectKey,
+    record MediaAssetRecord(String reference, Long storageConfigId, String provider, String objectKey,
                             String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
     }
 
-    void register(String reference, String objectKey, String storageMode);
+    void register(String reference, String objectKey, String provider, Long storageConfigId);
+
+    /** @deprecated Temporary compatibility for callers without a managed profile ID. */
+    @Deprecated
+    default void register(String reference, String objectKey, String provider) {
+        register(reference, objectKey, provider, null);
+    }
 
     void markDeletionStarted(String reference);
 

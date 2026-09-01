@@ -47,7 +47,9 @@ public class ContentAssetCleanupHandler implements OutboxEventHandler {
                 || ContentAssetStatus.ACTIVE.name().equals(asset.getStatus())) {
             return;
         }
-        StorageProvider provider = providerRegistry.providerFor(StorageProviderType.from(asset.getProvider()));
+        StorageProvider provider = asset.getStorageConfigId() == null
+                ? providerRegistry.providerForLegacyProvider(StorageProviderType.from(asset.getProvider()))
+                : providerRegistry.providerForConfig(asset.getStorageConfigId());
         try {
             provider.delete(asset.getObjectKey());
             persistence.markDeleted(assetId);

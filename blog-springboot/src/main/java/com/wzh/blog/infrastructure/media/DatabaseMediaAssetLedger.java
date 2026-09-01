@@ -22,20 +22,22 @@ public class DatabaseMediaAssetLedger implements MediaAssetLedger {
     }
 
     @Override
-    public void register(String reference, String objectKey, String storageMode) {
+    public void register(String reference, String objectKey, String provider, Long storageConfigId) {
         if (isBlank(reference) || isBlank(objectKey)) {
             return;
         }
         jdbcTemplate.update("""
                         INSERT INTO tb_media_asset
-                            (asset_id, asset_reference, object_key, storage_mode, status, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
+                            (asset_id, asset_reference, object_key, storage_mode, storage_config_id,
+                             status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())
                         ON DUPLICATE KEY UPDATE
-                            asset_reference = ?, object_key = ?, storage_mode = ?, status = 'ACTIVE',
+                            asset_reference = ?, object_key = ?, storage_mode = ?, storage_config_id = ?,
+                            status = 'ACTIVE',
                             updated_at = NOW(), deleted_at = NULL, last_error = NULL
                         """,
-                assetId(reference), reference, objectKey, valueOrDefault(storageMode),
-                reference, objectKey, valueOrDefault(storageMode));
+                assetId(reference), reference, objectKey, valueOrDefault(provider), storageConfigId,
+                reference, objectKey, valueOrDefault(provider), storageConfigId);
     }
 
     @Override
@@ -60,12 +62,13 @@ public class DatabaseMediaAssetLedger implements MediaAssetLedger {
         }
         try {
             return jdbcTemplate.query("""
-                            SELECT storage_mode, object_key
+                            SELECT storage_config_id, storage_mode, object_key
                             FROM tb_media_asset
                             WHERE asset_id = ?
                             """,
                     resultSet -> resultSet.next()
-                            ? new MediaAssetLocation(resultSet.getString("storage_mode"),
+                            ? new MediaAssetLocation(resultSet.getObject("storage_config_id", Long.class),
+                            resultSet.getString("storage_mode"),
                             resultSet.getString("object_key"))
                             : null,
                     assetId(reference));
@@ -79,7 +82,8 @@ public class DatabaseMediaAssetLedger implements MediaAssetLedger {
     public List<MediaAssetRecord> listCleanupCandidates(int limit) {
         int boundedLimit = Math.max(1, Math.min(limit, 100));
         return jdbcTemplate.query("""
-                        SELECT asset_reference, storage_mode, object_key, status, created_at, updated_at
+                        SELECT asset_reference, storage_config_id, storage_mode, object_key,
+                               status, created_at, updated_at
                         FROM tb_media_asset
                         WHERE status IN ('DELETING', 'DELETE_FAILED')
                           AND updated_at < DATE_SUB(NOW(), INTERVAL 1 MINUTE)
@@ -88,6 +92,7 @@ public class DatabaseMediaAssetLedger implements MediaAssetLedger {
                         """,
                 (resultSet, rowNum) -> new MediaAssetRecord(
                         resultSet.getString("asset_reference"),
+                        resultSet.getObject("storage_config_id", Long.class),
                         resultSet.getString("storage_mode"),
                         resultSet.getString("object_key"),
                         resultSet.getString("status"),

@@ -3,7 +3,7 @@
 <mapper namespace="com.wzh.blog.dao.ContentAssetDao">
 
     <sql id="contentAssetColumns">
-        asset_id, article_id, provider, object_key, content_type, format, version,
+        asset_id, article_id, provider, storage_config_id, object_key, content_type, format, version,
         checksum, size_bytes, status, created_at, updated_at, deleted_at, last_error
     </sql>
 

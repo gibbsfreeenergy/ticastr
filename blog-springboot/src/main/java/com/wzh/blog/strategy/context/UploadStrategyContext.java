@@ -43,13 +43,14 @@ public class UploadStrategyContext implements MediaAssetStore {
         String objectKey = "media/" + LocalDate.now().format(OBJECT_MONTH_FORMAT)
                 + "/" + UUID.randomUUID() + extension;
         ObjectKeyPolicy.requireSafe(objectKey);
-        StorageProvider provider = registry.providerForNewAsset();
+        Long storageConfigId = registry.activeConfigId();
+        StorageProvider provider = registry.providerForConfig(storageConfigId);
         try {
             try (InputStream input = file.getInputStream()) {
                 provider.put(objectKey, input, file.getSize(), contentType(extension));
             }
-            String reference = registry.publicReference(provider.type(), objectKey);
-            assetLedger.register(reference, objectKey, provider.type().code());
+            String reference = registry.publicReference(storageConfigId, objectKey);
+            assetLedger.register(reference, objectKey, provider.type().code(), storageConfigId);
             return reference;
         } catch (IOException exception) {
             cleanupFailedUpload(provider, objectKey, exception);
@@ -68,12 +69,12 @@ public class UploadStrategyContext implements MediaAssetStore {
     @Override
     public void delete(String fileReference) {
         MediaAssetLedger.MediaAssetLocation location = assetLedger.locationFor(fileReference);
-        StorageProviderType providerType = providerType(location);
+        StorageProvider provider = resolveProvider(location);
         String objectKey = location == null || location.objectKey() == null
-                ? toObjectKey(fileReference, providerType)
+                ? toObjectKey(fileReference, location, provider.type())
                 : location.objectKey();
         try {
-            registry.providerFor(providerType).delete(objectKey);
+            provider.delete(objectKey);
         } catch (IOException exception) {
             throw new IllegalStateException("文件删除失败", exception);
         }
@@ -87,36 +88,43 @@ public class UploadStrategyContext implements MediaAssetStore {
     @Override
     public boolean exists(String fileReference) {
         MediaAssetLedger.MediaAssetLocation location = assetLedger.locationFor(fileReference);
-        StorageProviderType providerType = providerType(location);
+        StorageProvider provider = resolveProvider(location);
         String objectKey = location == null || location.objectKey() == null
-                ? toObjectKey(fileReference, providerType)
+                ? toObjectKey(fileReference, location, provider.type())
                 : location.objectKey();
         try {
-            return registry.providerFor(providerType).exists(objectKey);
+            return provider.exists(objectKey);
         } catch (IOException exception) {
             throw new IllegalStateException("文件状态读取失败", exception);
         }
     }
 
-    private String toObjectKey(String fileReference, StorageProviderType providerType) {
+    private String toObjectKey(String fileReference,
+                               MediaAssetLedger.MediaAssetLocation location,
+                               StorageProviderType providerType) {
         if (fileReference == null || fileReference.isBlank()) {
             throw new IllegalArgumentException("文件引用不能为空");
         }
         String reference = fileReference.replace('\\', '/');
-        String prefix = registry.publicBase(providerType);
+        String prefix = location != null && location.storageConfigId() != null
+                ? registry.publicBase(location.storageConfigId())
+                : registry.publicBase(providerType);
         String objectKey = reference.startsWith(prefix)
                 ? reference.substring(prefix.length()) : reference;
         return ObjectKeyPolicy.requireSafe(objectKey.startsWith("/") ? objectKey.substring(1) : objectKey);
     }
 
-    private StorageProviderType providerType(MediaAssetLedger.MediaAssetLocation location) {
+    private StorageProvider resolveProvider(MediaAssetLedger.MediaAssetLocation location) {
+        if (location != null && location.storageConfigId() != null) {
+            return registry.providerForConfig(location.storageConfigId());
+        }
         if (location == null || location.provider() == null || location.provider().isBlank()) {
-            return registry.activeProviderType();
+            return registry.providerFor(registry.activeProviderType());
         }
         try {
-            return StorageProviderType.from(location.provider());
+            return registry.providerForLegacyProvider(StorageProviderType.from(location.provider()));
         } catch (IllegalArgumentException ignored) {
-            return registry.activeProviderType();
+            return registry.providerFor(registry.activeProviderType());
         }
     }
 

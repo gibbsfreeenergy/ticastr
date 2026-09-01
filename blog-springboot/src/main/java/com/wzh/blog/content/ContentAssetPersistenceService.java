@@ -39,6 +39,7 @@ public class ContentAssetPersistenceService {
     public ContentAssetReservation reserve(Integer articleId,
                                            Integer expectedVersion,
                                            long sizeBytes,
+                                           Long storageConfigId,
                                            String provider,
                                            String contentType,
                                            String format) {
@@ -61,6 +62,7 @@ public class ContentAssetPersistenceService {
                 .assetId(assetId)
                 .articleId(articleId)
                 .provider(provider)
+                .storageConfigId(storageConfigId)
                 .objectKey(objectKey)
                 .contentType(contentType)
                 .format(format)
