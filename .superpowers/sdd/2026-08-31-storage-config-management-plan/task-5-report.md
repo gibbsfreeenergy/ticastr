@@ -11,6 +11,16 @@
 - Broader verification: `mvn test`
   - All Task 5-focused tests and database migration/DAO tests passed. The suite has one unrelated pre-existing/flaky failure in `LocalStorageProviderTest.reportsRegularFileUsageAcrossNestedDirectories`: the test expects a fixed 2026-09-01T02:03:04Z timestamp while the first fixture file receives the later current filesystem timestamp. This task does not modify that provider or test.
 
+## Review fixes
+
+- RED (review): `mvn "-Dtest=StorageConfigAdminServiceTest,StorageProviderControllerTest" test`
+  - Failed at test compilation as expected before the safe provider-failure diagnostic helper existed.
+- GREEN (review): `mvn "-Dtest=StorageConfigAdminServiceTest,StorageProviderControllerTest" test`
+  - Passed: 13 tests, 0 failures, 0 errors.
+- Deprecated provider-only validation/switching now treat every profile of that provider, including drafts, as an ambiguity. A configured profile plus a draft therefore returns a safe conflict.
+- Deletion now locks the target and current active row, then checks references and deletes in one transaction. The null-transaction unit-test construction follows the same locked helper and verifies call order.
+- Provider validation and usage failures now log only a fixed operation name, configuration ID, and exception type; tests assert both this diagnostic and the returned safe snapshots exclude credentials, ciphertext, authorization data, signatures, and provider URLs.
+
 ## Delivered behavior
 
 - Added safe profile list/create/update/delete/validate/activate/usage operations and all seven `/admin/storage/configs` routes.

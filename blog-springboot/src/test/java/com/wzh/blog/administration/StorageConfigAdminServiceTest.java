@@ -17,6 +17,7 @@ import com.wzh.blog.vo.StorageValidationVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
@@ -186,8 +187,9 @@ class StorageConfigAdminServiceTest {
     void deletionRejectsActiveAndReferencedProfiles() {
         StorageProviderConfig active = localConfig(51L, true);
         StorageProviderConfig referenced = localConfig(52L, false);
-        when(configDao.selectById(51L)).thenReturn(active);
-        when(configDao.selectById(52L)).thenReturn(referenced);
+        when(configDao.selectByIdForUpdate(51L)).thenReturn(active);
+        when(configDao.selectByIdForUpdate(52L)).thenReturn(referenced);
+        when(configDao.selectActiveForUpdate()).thenReturn(active);
         when(configDao.countAssetReferences(52L)).thenReturn(1);
 
         assertThrows(ConflictException.class, () -> service.delete(51L));
@@ -196,11 +198,57 @@ class StorageConfigAdminServiceTest {
     }
 
     @Test
+    void deletionLocksTargetAndActiveBeforeCheckingReferencesAndDeleting() {
+        StorageProviderConfig target = localConfig(53L, false);
+        StorageProviderConfig active = localConfig(54L, true);
+        when(configDao.selectByIdForUpdate(53L)).thenReturn(target);
+        when(configDao.selectActiveForUpdate()).thenReturn(active);
+        when(configDao.countAssetReferences(53L)).thenReturn(0);
+        when(configDao.deleteById(53L)).thenReturn(1);
+
+        service.delete(53L);
+
+        InOrder order = org.mockito.Mockito.inOrder(configDao);
+        order.verify(configDao).selectByIdForUpdate(53L);
+        order.verify(configDao).selectActiveForUpdate();
+        order.verify(configDao).countAssetReferences(53L);
+        order.verify(configDao).deleteById(53L);
+        verify(registry).invalidate(53L);
+    }
+
+    @Test
     void compatibilitySwitchRejectsAmbiguousProfiles() {
         when(configDao.selectAll()).thenReturn(List.of(cloudConfig(61L, false), cloudConfig(62L, false)));
 
         assertThrows(ConflictException.class, () -> service.switchProvider("oss", 3));
         verify(configDao, never()).activateOnly(anyLong(), any(), any());
+    }
+
+    @Test
+    void compatibilityProviderOperationsRejectConfiguredProfileAlongsideDraft() {
+        StorageProviderConfig draft = StorageProviderConfig.builder().id(63L).configName("draft").provider("oss")
+                .publicUrl("https://cdn.example.com").lastValidationStatus("NEVER").usageStatus("NEVER").build();
+        when(configDao.selectAll()).thenReturn(List.of(cloudConfig(61L, false), draft));
+
+        assertThrows(ConflictException.class, () -> service.validateProvider("oss"));
+        assertThrows(ConflictException.class, () -> service.switchProvider("oss", 3));
+        verify(registry, never()).providerForConfig(anyLong());
+        verify(configDao, never()).activateOnly(anyLong(), any(), any());
+    }
+
+    @Test
+    void providerFailureDiagnosticsAndResponsesNeverContainSensitiveExceptionText() {
+        String sensitive = "Authorization=Bearer secret-token signature=abc v1:ciphertext https://provider.example.com/path";
+
+        String diagnostic = StorageConfigAdminService.safeProviderFailureDiagnostic(71L,
+                new IllegalStateException(sensitive));
+
+        assertTrue(diagnostic.contains("configId=71"));
+        assertTrue(diagnostic.contains("exceptionType=IllegalStateException"));
+        assertFalse(diagnostic.contains("secret-token"));
+        assertFalse(diagnostic.contains("signature"));
+        assertFalse(diagnostic.contains("ciphertext"));
+        assertFalse(diagnostic.contains("https://provider.example.com"));
     }
 
     private StorageConfigRequest cloudRequest(String endpoint, String secret) {

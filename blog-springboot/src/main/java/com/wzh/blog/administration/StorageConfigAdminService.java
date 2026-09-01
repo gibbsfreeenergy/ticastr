@@ -17,6 +17,7 @@ import com.wzh.blog.vo.StorageProviderStatusVO;
 import com.wzh.blog.vo.StorageProviderValidationVO;
 import com.wzh.blog.vo.StorageUsageVO;
 import com.wzh.blog.vo.StorageValidationVO;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -31,12 +32,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.UUID;
 
 /** Safe controller-to-profile-DAO administration boundary. */
 @Service
+@Log4j2
 public class StorageConfigAdminService {
 
     private static final String VALIDATION_SUCCESS = "验证成功";
@@ -107,19 +107,13 @@ public class StorageConfigAdminService {
     }
 
     public void delete(Long id) {
-        StorageProviderConfig config = requireConfig(id);
-        if (Boolean.TRUE.equals(config.getActive())) {
-            throw new ConflictException("当前启用的存储配置不能删除");
+        if (id == null) {
+            throw new IllegalArgumentException("存储配置 ID 不能为空");
         }
-        if (configDao.countAssetReferences(id) > 0) {
-            throw new ConflictException("存储配置仍被资产引用，不能删除");
-        }
-        try {
-            if (configDao.deleteById(id) != 1) {
-                throw new NotFoundException("存储配置不存在");
-            }
-        } catch (DataIntegrityViolationException exception) {
-            throw new ConflictException("存储配置仍被资产引用，不能删除");
+        if (transactionTemplate == null) {
+            deleteLocked(id);
+        } else {
+            transactionTemplate.executeWithoutResult(status -> deleteLocked(id));
         }
         registry.invalidate(id);
     }
@@ -154,6 +148,7 @@ public class StorageConfigAdminService {
             return new StorageUsageVO("SUCCESS", usage.objectCount(), usage.totalBytes(), latestModified,
                     checkedAt, null);
         } catch (Exception exception) {
+            logProviderFailure("usage refresh", id, exception);
             configDao.updateUsage(id, "FAILED", config.getUsageObjectCount(), config.getUsageBytes(),
                     config.getUsageLastModified(), checkedAt, USAGE_FAILURE);
             return new StorageUsageVO("FAILED", config.getUsageObjectCount(), config.getUsageBytes(),
@@ -213,6 +208,27 @@ public class StorageConfigAdminService {
         return target;
     }
 
+    private void deleteLocked(Long id) {
+        StorageProviderConfig target = configDao.selectByIdForUpdate(id);
+        if (target == null) {
+            throw new NotFoundException("存储配置不存在");
+        }
+        StorageProviderConfig active = configDao.selectActiveForUpdate();
+        if (Boolean.TRUE.equals(target.getActive()) || active != null && id.equals(active.getId())) {
+            throw new ConflictException("当前启用的存储配置不能删除");
+        }
+        if (configDao.countAssetReferences(id) > 0) {
+            throw new ConflictException("存储配置仍被资产引用，不能删除");
+        }
+        try {
+            if (configDao.deleteById(id) != 1) {
+                throw new NotFoundException("存储配置不存在");
+            }
+        } catch (DataIntegrityViolationException exception) {
+            throw new ConflictException("存储配置仍被资产引用，不能删除");
+        }
+    }
+
     private StorageValidationVO validateProfile(StorageProviderConfig config, boolean persist) {
         LocalDateTime validatedAt = LocalDateTime.now();
         String status = "FAILED";
@@ -229,8 +245,7 @@ public class StorageConfigAdminService {
                 success = true;
             }
         } catch (Exception ignored) {
-            // Provider exceptions may contain credentials, signatures, headers,
-            // or request URLs and must never cross this boundary.
+            logProviderFailure("validation", config.getId(), ignored);
         }
         if (persist) {
             configDao.updateValidation(config.getId(), status, validatedAt, message);
@@ -293,12 +308,20 @@ public class StorageConfigAdminService {
     private StorageProviderConfig uniqueUsableProfile(String providerCode) {
         StorageProviderType type = provider(providerCode);
         List<StorageProviderConfig> matches = configDao.selectAll().stream()
-                .filter(config -> type.code().equalsIgnoreCase(config.getProvider()))
-                .filter(this::isConfigured).toList();
+                .filter(config -> type.code().equalsIgnoreCase(config.getProvider())).toList();
         if (matches.size() != 1) {
             throw new ConflictException("该 provider 无法唯一确定配置，请使用配置 ID");
         }
         return matches.getFirst();
+    }
+
+    private void logProviderFailure(String operation, Long configId, Exception exception) {
+        log.warn("Storage {} failed: {}", operation, safeProviderFailureDiagnostic(configId, exception));
+    }
+
+    static String safeProviderFailureDiagnostic(Long configId, Exception exception) {
+        String type = exception == null ? "Unknown" : exception.getClass().getSimpleName();
+        return "configId=" + configId + ", exceptionType=" + type;
     }
 
     private List<String> supportedProviderCodes() {
