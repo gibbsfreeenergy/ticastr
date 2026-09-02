@@ -14,7 +14,7 @@
     <p v-if="error" class="storage-config-error" role="alert">{{ error }}</p>
     <p v-if="loading && !configs.length" class="storage-config-muted" aria-live="polite">正在读取存储配置…</p>
 
-    <div v-else class="storage-config-grid" aria-live="polite">
+    <div v-if="configs.length" class="storage-config-grid" aria-live="polite">
       <article v-for="config in configs" :key="config.id" class="storage-config-card">
         <div class="storage-config-card-header">
           <div>
@@ -34,7 +34,10 @@
           <div v-if="config.usage.latestModified"><dt>最近对象</dt><dd>{{ formatDate(config.usage.latestModified) }}</dd></div>
           <div v-if="config.usage.checkedAt"><dt>统计时间</dt><dd>{{ formatDate(config.usage.checkedAt) }}</dd></div>
         </dl>
-        <p v-if="config.usage.status === 'FAILED'" class="storage-config-failure">使用量刷新失败；已保留上次成功统计。</p>
+        <p v-if="config.validation.message" class="storage-config-status-detail">{{ config.validation.message }}</p>
+        <p v-if="config.usage.status === 'FAILED'" class="storage-config-failure">
+          使用量刷新失败；已保留上次成功统计。<span v-if="config.usage.error">{{ config.usage.error }}</span>
+        </p>
 
         <div class="storage-config-actions" aria-label="配置操作">
           <el-button :data-test="`edit-storage-config-${config.id}`" link type="primary" @click="openEdit(config)">编辑</el-button>
@@ -67,8 +70,8 @@
           >刷新用量</el-button>
         </div>
       </article>
-      <p v-if="!loading && !configs.length" class="storage-config-muted">暂无存储配置。</p>
     </div>
+    <p v-else-if="!loading && !error" class="storage-config-muted">暂无存储配置。</p>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑存储配置' : '新增存储配置'" width="560px">
       <el-form label-width="105px" :model="form">
@@ -135,12 +138,22 @@ function status(value) {
   return statuses.includes(value) ? value : "NEVER";
 }
 
+function statusDetail(value) {
+  if (typeof value !== "string") return "";
+  const detail = value.trim().replace(/\s+/g, " ");
+  if (!detail || detail.length > 160) return "";
+  if (/(access\s*key|secret|credential|cipher|authorization|signature|token|password|exception|stack|trace|凭据|密文|密钥|授权|签名|令牌|口令|异常|堆栈|调用栈)/i.test(detail)) return "";
+  if (/https?:\/\//i.test(detail) || /\bat\s+\S+\(/i.test(detail)) return "";
+  return detail;
+}
+
 function safeValidation(value) {
   const valueStatus = status(value?.status);
   return {
     status: valueStatus,
     success: valueStatus === "SUCCESS",
-    validatedAt: date(value?.validatedAt)
+    validatedAt: date(value?.validatedAt),
+    message: statusDetail(value?.message)
   };
 }
 
@@ -151,7 +164,8 @@ function safeUsage(value) {
     objectCount: number(value?.objectCount),
     bytes: number(value?.bytes),
     latestModified: date(value?.latestModified),
-    checkedAt: date(value?.checkedAt)
+    checkedAt: date(value?.checkedAt),
+    error: statusDetail(value?.error)
   };
 }
 
@@ -366,6 +380,7 @@ export default {
 .storage-config-details div { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr); gap: 0.5rem; margin-top: 0.45rem; font-size: 0.875rem; }
 .storage-config-details dt { color: #7c8494; }
 .storage-config-details dd { margin: 0; overflow-wrap: anywhere; }
+.storage-config-status-detail { color: #7c8494; font-size: 0.8125rem; }
 .storage-config-failure, .storage-config-error { color: #f56c6c; font-size: 0.8125rem; }
 .storage-config-actions { border-top: 1px solid #f2f5fa; padding-top: 0.75rem; }
 

@@ -179,4 +179,61 @@ describe("StorageConfigPanel", () => {
     expect(wrapper.text()).not.toContain("never-show-this");
     expect(wrapper.vm.configs).toHaveLength(1);
   });
+
+  it("preserves safe validation and usage details while rejecting credential and exception details", async () => {
+    const admin = createAdminApi({
+      storageConfigs: vi.fn().mockResolvedValue({
+        data: {
+          activeConfigId: 7,
+          configs: [{
+            ...localConfig,
+            validation: {
+              status: "SUCCESS",
+              success: true,
+              validatedAt: "2026-08-31T08:20:00",
+              message: "连接验证完成"
+            },
+            usage: {
+              status: "FAILED",
+              objectCount: 128,
+              bytes: 7340032,
+              latestModified: "2026-08-31T08:20:00",
+              checkedAt: "2026-08-31T08:25:00",
+              error: "存储服务暂不可用"
+            }
+          }, {
+            ...localConfig,
+            id: 8,
+            validation: { status: "FAILED", message: "accessKeySecret=must-not-render" },
+            usage: { status: "FAILED", error: "RuntimeException: must-not-render" }
+          }]
+        }
+      })
+    });
+    const wrapper = mountPanel(admin);
+    await flushPromises();
+
+    expect(wrapper.vm.configs[0].validation.message).toBe("连接验证完成");
+    expect(wrapper.vm.configs[0].usage.error).toBe("存储服务暂不可用");
+    expect(wrapper.text()).toContain("连接验证完成");
+    expect(wrapper.text()).toContain("存储服务暂不可用");
+    expect(wrapper.vm.configs[1].validation.message).toBe("");
+    expect(wrapper.vm.configs[1].usage.error).toBe("");
+    expect(wrapper.html()).not.toContain("must-not-render");
+  });
+
+  it("keeps an initial load error distinct from the empty state and preserves existing configs on refresh failure", async () => {
+    const admin = createAdminApi({ storageConfigs: vi.fn().mockRejectedValue(new Error("network unavailable")) });
+    const wrapper = mountPanel(admin);
+    await flushPromises();
+
+    expect(wrapper.vm.error).toBe("存储配置暂时无法读取，请稍后重试");
+    expect(wrapper.vm.configs).toEqual([]);
+    expect(wrapper.text()).not.toContain("暂无存储配置。");
+
+    wrapper.vm.configs = [{ ...localConfig }];
+    await wrapper.vm.load();
+    expect(wrapper.text()).toContain("本地上传");
+    expect(wrapper.text()).not.toContain("暂无存储配置。");
+  });
 });
