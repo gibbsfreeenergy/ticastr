@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -41,6 +42,32 @@ class StorageProviderRegistryTest {
         assertEquals(12L, registry.activeConfigId());
         assertEquals(0, oldCos.operations());
         assertEquals(0, newCos.operations());
+    }
+
+    @Test
+    void closesEveryCachedProviderAndIsIdempotent() {
+        StorageProviderConfig oldConfig = config(21L, "old-cos", true);
+        StorageProviderConfig newConfig = config(22L, "new-cos", false);
+        StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+        when(configDao.selectActive()).thenReturn(oldConfig);
+        when(configDao.selectById(21L)).thenReturn(oldConfig);
+        when(configDao.selectById(22L)).thenReturn(newConfig);
+
+        TestProvider oldCos = new TestProvider(StorageProviderType.COS);
+        TestProvider newCos = new TestProvider(StorageProviderType.COS);
+        FakeProviderFactory factory = new FakeProviderFactory(Map.of(21L, oldCos, 22L, newCos));
+        StorageProviderRegistry registry = new StorageProviderRegistry(configDao, factory);
+
+        assertSame(oldCos, registry.providerForConfig(21L));
+        assertSame(newCos, registry.providerForConfig(22L));
+
+        registry.closeAll();
+        registry.close();
+
+        assertEquals(1, oldCos.closeCount());
+        assertEquals(1, newCos.closeCount());
+        assertThrows(IllegalStateException.class, () -> registry.providerForConfig(21L));
+        assertThrows(IllegalStateException.class, registry::activeConfig);
     }
 
     private static StorageProviderConfig config(long id, String name, boolean active) {
@@ -81,6 +108,7 @@ class StorageProviderRegistryTest {
     private static final class TestProvider implements StorageProvider {
         private final StorageProviderType type;
         private final AtomicInteger operations = new AtomicInteger();
+        private final AtomicInteger closes = new AtomicInteger();
 
         private TestProvider(StorageProviderType type) {
             this.type = type;
@@ -132,8 +160,17 @@ class StorageProviderRegistryTest {
             return new StorageUsage(0, 0, null);
         }
 
+        @Override
+        public void close() {
+            closes.incrementAndGet();
+        }
+
         private int operations() {
             return operations.get();
+        }
+
+        private int closeCount() {
+            return closes.get();
         }
     }
 }

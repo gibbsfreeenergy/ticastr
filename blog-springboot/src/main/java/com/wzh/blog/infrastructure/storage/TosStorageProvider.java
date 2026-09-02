@@ -21,6 +21,7 @@ import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderConfigSnapshot;
 import com.wzh.blog.media.StorageProviderType;
 import com.wzh.blog.media.StorageUsage;
+import com.wzh.blog.media.StorageProviderConfigSnapshot.Credentials;
 import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ public final class TosStorageProvider implements StorageProvider {
 
     private final StorageProviderConfigSnapshot profile;
     private volatile TOSV2 client;
+    private boolean closed;
 
     public TosStorageProvider(StorageProviderConfigSnapshot profile) {
         this.profile = Objects.requireNonNull(profile, "profile");
@@ -57,7 +59,7 @@ public final class TosStorageProvider implements StorageProvider {
     @Override
     public boolean configured() {
         return hasText(profile.endpoint()) && hasText(profile.bucket()) && hasText(profile.region())
-                && hasText(profile.accessKeyId()) && hasText(profile.accessKeySecret());
+                && profile.credentialsConfigured();
     }
 
     @Override
@@ -81,7 +83,7 @@ public final class TosStorageProvider implements StorageProvider {
             }
             return metadata(objectKey, contentType, size, digesting.checksum(), Instant.now());
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("TOS upload failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS upload failed", exception);
         }
     }
 
@@ -94,7 +96,7 @@ public final class TosStorageProvider implements StorageProvider {
                     metadata(objectKey, output.getContentType(), output.getContentLength(),
                             valueOrEtag(output.getEtag()), instant(output.getLastModifiedInDate())));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("TOS read failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS read failed", exception);
         }
     }
 
@@ -106,7 +108,7 @@ public final class TosStorageProvider implements StorageProvider {
             return metadata(objectKey, output.getContentType(), output.getContentLength(),
                     valueOrEtag(output.getEtag()), instant(output.getLastModifiedInDate()));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("TOS head failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS head failed", exception);
         }
     }
 
@@ -119,9 +121,9 @@ public final class TosStorageProvider implements StorageProvider {
             if (isMissingObject(exception)) {
                 return;
             }
-            throw StorageProviderSupport.asIOException("TOS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS delete failed", exception);
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("TOS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS delete failed", exception);
         }
     }
 
@@ -136,7 +138,7 @@ public final class TosStorageProvider implements StorageProvider {
             if (message != null && (message.contains("404") || message.contains("NoSuchKey") || message.contains("NotFound"))) {
                 return false;
             }
-            throw StorageProviderSupport.asIOException("TOS exists failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("TOS exists failed", exception);
         }
     }
 
@@ -152,13 +154,13 @@ public final class TosStorageProvider implements StorageProvider {
                     throw new IOException("TOS read verification failed");
                 }
             }
-        } catch (Exception exception) {
-            throw new IllegalStateException("TOS validation failed", exception);
+        } catch (Exception ignored) {
+            throw new IllegalStateException("TOS validation failed");
         } finally {
             try {
                 delete(key);
             } catch (IOException exception) {
-                throw new IllegalStateException("TOS validation cleanup failed", exception);
+                throw new IllegalStateException("TOS validation cleanup failed");
             }
         }
     }
@@ -208,23 +210,25 @@ public final class TosStorageProvider implements StorageProvider {
 
     private TOSV2 client() {
         requireConfigured();
-        TOSV2 current = client;
-        if (current == null) {
-            synchronized (this) {
-                current = client;
-                if (current == null) {
-                    TransportConfig transport = new TransportConfig()
-                            .setConnectTimeoutMills(3000)
-                            .setReadTimeoutMills(5000)
-                            .setWriteTimeoutMills(5000)
-                            .setMaxRetryCount(2);
-                    current = new TOSV2ClientBuilder().build(profile.region(), profile.endpoint(),
-                            profile.accessKeyId(), profile.accessKeySecret(), transport);
-                    client = current;
-                }
+        synchronized (this) {
+            if (closed) {
+                throw new IllegalStateException("TOS storage provider is closed");
             }
+            TOSV2 current = client;
+            if (current == null) {
+                Credentials credentials = profile.resolveCredentials();
+                requireCredentials(credentials);
+                TransportConfig transport = new TransportConfig()
+                        .setConnectTimeoutMills(3000)
+                        .setReadTimeoutMills(5000)
+                        .setWriteTimeoutMills(5000)
+                        .setMaxRetryCount(2);
+                current = new TOSV2ClientBuilder().build(profile.region(), profile.endpoint(),
+                        credentials.accessKeyId(), credentials.accessKeySecret(), transport);
+                client = current;
+            }
+            return current;
         }
-        return current;
     }
 
     private void requireConfigured() {
@@ -236,6 +240,12 @@ public final class TosStorageProvider implements StorageProvider {
     private void requireConfiguredForUsage() throws IOException {
         if (!configured()) {
             throw new IOException("TOS storage provider is not configured");
+        }
+    }
+
+    private void requireCredentials(Credentials credentials) {
+        if (credentials == null || !hasText(credentials.accessKeyId()) || !hasText(credentials.accessKeySecret())) {
+            throw new IllegalStateException("TOS storage credentials are unavailable");
         }
     }
 
@@ -273,12 +283,13 @@ public final class TosStorageProvider implements StorageProvider {
     @Override
     @PreDestroy
     public synchronized void close() {
+        closed = true;
         TOSV2 current = client;
         client = null;
         if (current != null) {
             try {
                 current.close();
-            } catch (IOException ignored) {
+            } catch (Exception ignored) {
                 // Shutdown must not prevent the Spring context from closing.
             }
         }

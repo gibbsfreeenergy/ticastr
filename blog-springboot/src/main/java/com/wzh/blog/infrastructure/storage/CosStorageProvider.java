@@ -19,6 +19,7 @@ import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderConfigSnapshot;
 import com.wzh.blog.media.StorageProviderType;
 import com.wzh.blog.media.StorageUsage;
+import com.wzh.blog.media.StorageProviderConfigSnapshot.Credentials;
 import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public final class CosStorageProvider implements StorageProvider {
 
     private final StorageProviderConfigSnapshot profile;
     private volatile COSClient client;
+    private boolean closed;
 
     public CosStorageProvider(StorageProviderConfigSnapshot profile) {
         this.profile = Objects.requireNonNull(profile, "profile");
@@ -55,7 +57,7 @@ public final class CosStorageProvider implements StorageProvider {
     @Override
     public boolean configured() {
         return hasText(profile.endpoint()) && hasText(profile.bucket()) && hasText(profile.region())
-                && hasText(profile.accessKeyId()) && hasText(profile.accessKeySecret());
+                && profile.credentialsConfigured();
     }
 
     @Override
@@ -74,7 +76,7 @@ public final class CosStorageProvider implements StorageProvider {
             }
             return metadata(objectKey, contentType, size, digesting.checksum(), Instant.now());
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS upload failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS upload failed", exception);
         }
     }
 
@@ -89,7 +91,7 @@ public final class CosStorageProvider implements StorageProvider {
                     metadata(objectKey, metadata.getContentType(), metadata.getContentLength(),
                             valueOrEtag(metadata.getETag()), instant(metadata.getLastModified())));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS read failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS read failed", exception);
         }
     }
 
@@ -101,7 +103,7 @@ public final class CosStorageProvider implements StorageProvider {
             return metadata(objectKey, metadata.getContentType(), metadata.getContentLength(),
                     valueOrEtag(metadata.getETag()), instant(metadata.getLastModified()));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS head failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS head failed", exception);
         }
     }
 
@@ -114,9 +116,9 @@ public final class CosStorageProvider implements StorageProvider {
             if (isMissingObject(exception)) {
                 return;
             }
-            throw StorageProviderSupport.asIOException("COS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS delete failed", exception);
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS delete failed", exception);
         }
     }
 
@@ -126,7 +128,7 @@ public final class CosStorageProvider implements StorageProvider {
         try {
             return client().doesObjectExist(profile.bucket(), objectKey);
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("COS exists failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("COS exists failed", exception);
         }
     }
 
@@ -142,13 +144,13 @@ public final class CosStorageProvider implements StorageProvider {
                     throw new IOException("COS read verification failed");
                 }
             }
-        } catch (Exception exception) {
-            throw new IllegalStateException("COS validation failed", exception);
+        } catch (Exception ignored) {
+            throw new IllegalStateException("COS validation failed");
         } finally {
             try {
                 delete(key);
             } catch (IOException exception) {
-                throw new IllegalStateException("COS validation cleanup failed", exception);
+                throw new IllegalStateException("COS validation cleanup failed");
             }
         }
     }
@@ -196,23 +198,26 @@ public final class CosStorageProvider implements StorageProvider {
 
     private COSClient client() {
         requireConfigured();
-        COSClient current = client;
-        if (current == null) {
-            synchronized (this) {
-                current = client;
-                if (current == null) {
-                    COSCredentials credentials = new BasicCOSCredentials(profile.accessKeyId(), profile.accessKeySecret());
-                    ClientConfig configuration = new ClientConfig(new Region(profile.region()));
-                    configuration.setConnectionTimeout(3000);
-                    configuration.setSocketTimeout(5000);
-                    configuration.setMaxErrorRetry(2);
-                    configureEndpoint(configuration);
-                    current = new COSClient(credentials, configuration);
-                    client = current;
-                }
+        synchronized (this) {
+            if (closed) {
+                throw new IllegalStateException("COS storage provider is closed");
             }
+            COSClient current = client;
+            if (current == null) {
+                Credentials credentials = profile.resolveCredentials();
+                requireCredentials(credentials);
+                COSCredentials sdkCredentials = new BasicCOSCredentials(credentials.accessKeyId(),
+                        credentials.accessKeySecret());
+                ClientConfig configuration = new ClientConfig(new Region(profile.region()));
+                configuration.setConnectionTimeout(3000);
+                configuration.setSocketTimeout(5000);
+                configuration.setMaxErrorRetry(2);
+                configureEndpoint(configuration);
+                current = new COSClient(sdkCredentials, configuration);
+                client = current;
+            }
+            return current;
         }
-        return current;
     }
 
     private void configureEndpoint(ClientConfig configuration) {
@@ -235,6 +240,12 @@ public final class CosStorageProvider implements StorageProvider {
     private void requireConfiguredForUsage() throws IOException {
         if (!configured()) {
             throw new IOException("COS storage provider is not configured");
+        }
+    }
+
+    private void requireCredentials(Credentials credentials) {
+        if (credentials == null || !hasText(credentials.accessKeyId()) || !hasText(credentials.accessKeySecret())) {
+            throw new IllegalStateException("COS storage credentials are unavailable");
         }
     }
 
@@ -272,10 +283,15 @@ public final class CosStorageProvider implements StorageProvider {
     @Override
     @PreDestroy
     public synchronized void close() {
+        closed = true;
         COSClient current = client;
         client = null;
         if (current != null) {
-            current.shutdown();
+            try {
+                current.shutdown();
+            } catch (RuntimeException ignored) {
+                // Shutdown is best effort and must remain idempotent.
+            }
         }
     }
 }

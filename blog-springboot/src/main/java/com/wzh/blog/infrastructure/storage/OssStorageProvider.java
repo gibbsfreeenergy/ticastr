@@ -17,6 +17,7 @@ import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderConfigSnapshot;
 import com.wzh.blog.media.StorageProviderType;
 import com.wzh.blog.media.StorageUsage;
+import com.wzh.blog.media.StorageProviderConfigSnapshot.Credentials;
 import jakarta.annotation.PreDestroy;
 
 import java.io.IOException;
@@ -36,14 +37,21 @@ public final class OssStorageProvider implements StorageProvider {
     private static final Duration MAX_USAGE_DURATION = Duration.ofSeconds(30);
 
     private final StorageProviderConfigSnapshot profile;
-    private final Supplier<OSS> clientFactory;
+    private final CredentialAwareClientFactory clientFactory;
     private volatile OSS client;
+    private boolean closed;
 
     public OssStorageProvider(StorageProviderConfigSnapshot profile) {
         this(profile, null);
     }
 
     OssStorageProvider(StorageProviderConfigSnapshot profile, Supplier<OSS> clientFactory) {
+        this(profile, clientFactory == null ? null : ignored -> clientFactory.get(), true);
+    }
+
+    OssStorageProvider(StorageProviderConfigSnapshot profile,
+                       CredentialAwareClientFactory clientFactory,
+                       boolean testSeam) {
         this.profile = Objects.requireNonNull(profile, "profile");
         if (profile.provider() != StorageProviderType.OSS) {
             throw new IllegalArgumentException("Storage profile is not an OSS profile");
@@ -59,7 +67,7 @@ public final class OssStorageProvider implements StorageProvider {
     @Override
     public boolean configured() {
         return hasText(profile.endpoint()) && hasText(profile.bucket()) && hasText(profile.region())
-                && hasText(profile.accessKeyId()) && hasText(profile.accessKeySecret());
+                && profile.credentialsConfigured();
     }
 
     @Override
@@ -78,7 +86,7 @@ public final class OssStorageProvider implements StorageProvider {
             }
             return metadata(objectKey, contentType, size, digesting.checksum(), Instant.now());
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS upload failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS upload failed", exception);
         }
     }
 
@@ -93,7 +101,7 @@ public final class OssStorageProvider implements StorageProvider {
                     metadata(objectKey, metadata.getContentType(), metadata.getContentLength(),
                             valueOrEtag(metadata.getETag()), instant(metadata.getLastModified())));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS read failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS read failed", exception);
         }
     }
 
@@ -105,7 +113,7 @@ public final class OssStorageProvider implements StorageProvider {
             return metadata(objectKey, metadata.getContentType(), metadata.getContentLength(),
                     valueOrEtag(metadata.getETag()), instant(metadata.getLastModified()));
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS head failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS head failed", exception);
         }
     }
 
@@ -118,9 +126,9 @@ public final class OssStorageProvider implements StorageProvider {
             if (isMissingObject(exception)) {
                 return;
             }
-            throw StorageProviderSupport.asIOException("OSS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS delete failed", exception);
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS delete failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS delete failed", exception);
         }
     }
 
@@ -130,7 +138,7 @@ public final class OssStorageProvider implements StorageProvider {
         try {
             return client().doesObjectExist(profile.bucket(), objectKey);
         } catch (RuntimeException exception) {
-            throw StorageProviderSupport.asIOException("OSS exists failed", exception);
+            throw StorageProviderSupport.sanitizedOperationIOException("OSS exists failed", exception);
         }
     }
 
@@ -146,13 +154,13 @@ public final class OssStorageProvider implements StorageProvider {
                     throw new IOException("OSS read verification failed");
                 }
             }
-        } catch (Exception exception) {
-            throw new IllegalStateException("OSS validation failed", exception);
+        } catch (Exception ignored) {
+            throw new IllegalStateException("OSS validation failed");
         } finally {
             try {
                 delete(key);
             } catch (IOException exception) {
-                throw new IllegalStateException("OSS validation cleanup failed", exception);
+                throw new IllegalStateException("OSS validation cleanup failed");
             }
         }
     }
@@ -202,25 +210,29 @@ public final class OssStorageProvider implements StorageProvider {
 
     private OSS client() {
         requireConfigured();
-        OSS current = client;
-        if (current == null) {
-            synchronized (this) {
-                current = client;
-                if (current == null) {
-                    current = Objects.requireNonNull(clientFactory.get(), "OSS client factory returned null");
-                    client = current;
-                }
+        synchronized (this) {
+            if (closed) {
+                throw new IllegalStateException("OSS storage provider is closed");
             }
+            OSS current = client;
+            if (current == null) {
+                Credentials credentials = profile.resolveCredentials();
+                current = Objects.requireNonNull(clientFactory.create(credentials),
+                        "OSS client factory returned null");
+                client = current;
+            }
+            return current;
         }
-        return current;
     }
 
-    private OSS buildClient() {
+    private OSS buildClient(Credentials credentials) {
+        requireCredentials(credentials);
         ClientBuilderConfiguration configuration = new ClientBuilderConfiguration();
         configuration.setConnectionTimeout(3000);
         configuration.setSocketTimeout(5000);
         configuration.setMaxErrorRetry(2);
-        return new OSSClientBuilder().build(profile.endpoint(), profile.accessKeyId(), profile.accessKeySecret(), configuration);
+        return new OSSClientBuilder().build(profile.endpoint(), credentials.accessKeyId(),
+                credentials.accessKeySecret(), configuration);
     }
 
     private void requireConfigured() {
@@ -232,6 +244,12 @@ public final class OssStorageProvider implements StorageProvider {
     private void requireConfiguredForUsage() throws IOException {
         if (!configured()) {
             throw new IOException("OSS storage provider is not configured");
+        }
+    }
+
+    private void requireCredentials(Credentials credentials) {
+        if (credentials == null || !hasText(credentials.accessKeyId()) || !hasText(credentials.accessKeySecret())) {
+            throw new IllegalStateException("OSS storage credentials are unavailable");
         }
     }
 
@@ -268,10 +286,20 @@ public final class OssStorageProvider implements StorageProvider {
     @Override
     @PreDestroy
     public synchronized void close() {
+        closed = true;
         OSS current = client;
         client = null;
         if (current != null) {
-            current.shutdown();
+            try {
+                current.shutdown();
+            } catch (RuntimeException ignored) {
+                // Shutdown is best effort and must remain idempotent.
+            }
         }
+    }
+
+    @FunctionalInterface
+    interface CredentialAwareClientFactory {
+        OSS create(Credentials credentials);
     }
 }

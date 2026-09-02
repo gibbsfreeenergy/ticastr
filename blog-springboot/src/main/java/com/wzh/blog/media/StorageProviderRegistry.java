@@ -4,12 +4,16 @@ import com.wzh.blog.config.StorageProperties;
 import com.wzh.blog.dao.StorageProviderConfigDao;
 import com.wzh.blog.entity.StorageProviderConfig;
 import com.wzh.blog.infrastructure.storage.StorageProviderFactory;
+import jakarta.annotation.PreDestroy;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,10 +27,12 @@ public class StorageProviderRegistry {
     private final StorageProviderFactory factory;
     private final ConcurrentHashMap<Long, StorageProvider> providersByConfigId = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, StorageProviderConfig> configsById = new ConcurrentHashMap<>();
+    private final Object lifecycleMonitor = new Object();
     private final AtomicReference<StorageProviderConfig> activeConfig;
-    private final Map<StorageProviderType, StorageProvider> legacyProviders;
+    private Map<StorageProviderType, StorageProvider> legacyProviders;
     private final AtomicReference<StorageProviderType> legacyActiveProvider;
     private final StorageProperties legacyProperties;
+    private volatile boolean closed;
 
     public StorageProviderRegistry(StorageProviderConfigDao configDao, StorageProviderFactory factory) {
         this.configDao = Objects.requireNonNull(configDao, "configDao");
@@ -80,12 +86,17 @@ public class StorageProviderRegistry {
     }
 
     public StorageProvider providerForNewAsset() {
+        ensureOpen();
         StorageProviderConfig current = activeConfig.get();
         return current == null ? providerFor(legacyActiveProvider.get()) : providerForConfig(current.getId());
     }
 
     public StorageProvider providerForConfig(Long configId) {
-        return providersByConfigId.computeIfAbsent(requireId(configId), ignored -> factory.create(configFor(configId)));
+        Long id = requireId(configId);
+        synchronized (lifecycleMonitor) {
+            ensureOpen();
+            return providersByConfigId.computeIfAbsent(id, ignored -> factory.create(configFor(id)));
+        }
     }
 
     public StorageProvider providerForLegacyProvider(StorageProviderType providerType) {
@@ -93,16 +104,19 @@ public class StorageProviderRegistry {
         if (configDao == null) {
             return providerFor(providerType);
         }
-        List<StorageProviderConfig> matching = configDao.selectAll().stream()
-                .filter(config -> providerType.code().equalsIgnoreCase(config.getProvider()))
-                .filter(this::isConfigured)
-                .toList();
-        if (matching.size() != 1) {
-            throw new IllegalStateException("Legacy storage provider is ambiguous: " + providerType.code());
+        synchronized (lifecycleMonitor) {
+            ensureOpen();
+            List<StorageProviderConfig> matching = configDao.selectAll().stream()
+                    .filter(config -> providerType.code().equalsIgnoreCase(config.getProvider()))
+                    .filter(this::isConfigured)
+                    .toList();
+            if (matching.size() != 1) {
+                throw new IllegalStateException("Legacy storage provider is ambiguous: " + providerType.code());
+            }
+            StorageProviderConfig config = matching.getFirst();
+            cacheConfig(config);
+            return providerForConfig(config.getId());
         }
-        StorageProviderConfig config = matching.getFirst();
-        cacheConfig(config);
-        return providerForConfig(config.getId());
     }
 
     public StorageProviderConfig activeConfig() {
@@ -134,20 +148,53 @@ public class StorageProviderRegistry {
 
     public void invalidate(Long configId) {
         Long id = requireId(configId);
-        StorageProvider provider = providersByConfigId.remove(id);
-        configsById.remove(id);
-        if (provider != null) {
-            provider.close();
-        }
-        StorageProviderConfig current = activeConfig.get();
-        if (current != null && id.equals(current.getId())) {
-            activeConfig.set(loadConfig(id));
+        StorageProvider provider;
+        synchronized (lifecycleMonitor) {
+            provider = providersByConfigId.remove(id);
+            configsById.remove(id);
+            StorageProviderConfig current = activeConfig.get();
+            if (current != null && id.equals(current.getId())) {
+                activeConfig.set(closed ? null : loadConfig(id));
+            }
+            closeProvider(provider);
         }
     }
 
     public void refresh(Long configId) {
-        StorageProviderConfig selected = loadConfig(requireId(configId));
-        activeConfig.set(selected);
+        Long id = requireId(configId);
+        synchronized (lifecycleMonitor) {
+            ensureOpen();
+            StorageProviderConfig selected = loadConfig(id);
+            activeConfig.set(selected);
+        }
+    }
+
+    /** Closes every cached provider and releases registry references. */
+    @PreDestroy
+    public void closeAll() {
+        Set<StorageProvider> providersToClose;
+        synchronized (lifecycleMonitor) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            providersToClose = Collections.newSetFromMap(new IdentityHashMap<>());
+            providersToClose.addAll(providersByConfigId.values());
+            providersToClose.addAll(legacyProviders.values());
+            providersByConfigId.clear();
+            configsById.clear();
+            activeConfig.set(null);
+            legacyActiveProvider.set(null);
+            legacyProviders = Map.of();
+        }
+        for (StorageProvider provider : providersToClose) {
+            closeProvider(provider);
+        }
+    }
+
+    /** Compatibility alias for callers that model the registry as closeable. */
+    public void close() {
+        closeAll();
     }
 
     /** @deprecated Resolves a provider-only legacy asset only when unambiguous. */
@@ -157,11 +204,14 @@ public class StorageProviderRegistry {
         if (configDao != null) {
             return providerForLegacyProvider(providerType);
         }
-        StorageProvider provider = legacyProviders.get(providerType);
-        if (provider == null) {
-            throw new IllegalArgumentException("Storage provider is not registered: " + providerType.code());
+        synchronized (lifecycleMonitor) {
+            ensureOpen();
+            StorageProvider provider = legacyProviders.get(providerType);
+            if (provider == null) {
+                throw new IllegalArgumentException("Storage provider is not registered: " + providerType.code());
+            }
+            return provider;
         }
-        return provider;
     }
 
     /** @deprecated Use activeConfigId() for managed storage profiles. */
@@ -204,6 +254,7 @@ public class StorageProviderRegistry {
     /** @deprecated Use publicBase(Long) for managed storage profiles. */
     @Deprecated
     public String publicBase(StorageProviderType providerType) {
+        ensureOpen();
         if (configDao != null) {
             StorageProviderConfig current = activeConfig.get();
             if (current != null && providerType.code().equalsIgnoreCase(current.getProvider())) {
@@ -234,7 +285,12 @@ public class StorageProviderRegistry {
     }
 
     private StorageProviderConfig configFor(Long configId) {
-        return configsById.computeIfAbsent(requireId(configId), this::loadConfig);
+        synchronized (lifecycleMonitor) {
+            ensureOpen();
+            Long id = requireId(configId);
+            StorageProviderConfig cached = configsById.get(id);
+            return cached == null ? loadConfig(id) : cached;
+        }
     }
 
     private StorageProviderConfig loadConfig(Long configId) {
@@ -261,6 +317,23 @@ public class StorageProviderRegistry {
             throw new IllegalArgumentException("Storage profile ID must not be null");
         }
         return configId;
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException("Storage provider registry is closed");
+        }
+    }
+
+    private void closeProvider(StorageProvider provider) {
+        if (provider == null) {
+            return;
+        }
+        try {
+            provider.close();
+        } catch (RuntimeException ignored) {
+            // One broken adapter must not prevent the remaining providers from closing.
+        }
     }
 
     private boolean isConfigured(StorageProviderConfig config) {

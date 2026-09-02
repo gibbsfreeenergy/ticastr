@@ -15,11 +15,18 @@ final class StorageProviderSupport {
         return new DigestingInputStream(inputStream);
     }
 
+    /**
+     * Converts provider failures without retaining SDK exception chains. SDK
+     * messages can contain signed URLs, request headers, or authentication
+     * details and must not cross the storage boundary.
+     */
+    static IOException sanitizedOperationIOException(String message, Throwable exception) {
+        return new IOException(message);
+    }
+
+    /** Compatibility name for internal callers; it is intentionally cause-free. */
     static IOException asIOException(String message, Exception exception) {
-        if (exception instanceof IOException ioException) {
-            return ioException;
-        }
-        return new IOException(message, exception);
+        return sanitizedOperationIOException(message, exception);
     }
 
     static IOException sanitizedUsageIOException(String message) {
@@ -80,15 +87,13 @@ final class StorageProviderSupport {
                 try {
                     super.close();
                 } catch (IOException exception) {
-                    failure = exception;
+                    failure = sanitizedOperationIOException("Unable to close provider response", exception);
                 }
                 try {
                     owner.close();
                 } catch (Exception exception) {
                     if (failure == null) {
-                        failure = asIOException("Unable to close provider response", exception);
-                    } else {
-                        failure.addSuppressed(exception);
+                        failure = sanitizedOperationIOException("Unable to close provider response", exception);
                     }
                 }
                 if (failure != null) {

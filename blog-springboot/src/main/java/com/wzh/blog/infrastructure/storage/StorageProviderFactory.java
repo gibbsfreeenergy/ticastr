@@ -35,15 +35,34 @@ public class StorageProviderFactory {
     private StorageProviderConfigSnapshot snapshot(StorageProviderConfig config) {
         Objects.requireNonNull(config, "config");
         StorageProviderType provider = StorageProviderType.from(config.getProvider());
-        String accessKeyId = null;
-        String accessKeySecret = null;
-        if (provider != StorageProviderType.LOCAL) {
-            accessKeyId = decrypt(config.getAccessKeyIdCiphertext());
-            accessKeySecret = decrypt(config.getAccessKeySecretCiphertext());
+        if (provider == StorageProviderType.LOCAL) {
+            return new StorageProviderConfigSnapshot(
+                    config.getId(), config.getConfigName(), provider, config.getEndpoint(), config.getBucket(),
+                    config.getRegion(), config.getLocalRoot(), config.getPublicUrl(), null, null);
         }
-        return new StorageProviderConfigSnapshot(
+
+        String accessKeyIdCiphertext = config.getAccessKeyIdCiphertext();
+        String accessKeySecretCiphertext = config.getAccessKeySecretCiphertext();
+        return StorageProviderConfigSnapshot.managed(
                 config.getId(), config.getConfigName(), provider, config.getEndpoint(), config.getBucket(),
-                config.getRegion(), config.getLocalRoot(), config.getPublicUrl(), accessKeyId, accessKeySecret);
+                config.getRegion(), config.getLocalRoot(), config.getPublicUrl(),
+                new StorageProviderConfigSnapshot.CredentialSupplier() {
+                    @Override
+                    public boolean configured() {
+                        return hasText(accessKeyIdCiphertext) && hasText(accessKeySecretCiphertext);
+                    }
+
+                    @Override
+                    public StorageProviderConfigSnapshot.Credentials resolve() {
+                        return new StorageProviderConfigSnapshot.Credentials(
+                                decrypt(accessKeyIdCiphertext), decrypt(accessKeySecretCiphertext));
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "EncryptedStorageCredentialSupplier";
+                    }
+                });
     }
 
     private String decrypt(String ciphertext) {
@@ -58,5 +77,9 @@ public class StorageProviderFactory {
             throw new IllegalArgumentException("Storage profile " + field + " must not be blank");
         }
         return value;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
