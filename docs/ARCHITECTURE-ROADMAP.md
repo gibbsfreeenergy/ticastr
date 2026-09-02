@@ -23,9 +23,9 @@ MySQL 是唯一持久事实源。Redis 只提供可选 cache、限流、锁、Se
 
 ### 第一优先级：数据、安全、内容
 
-- Flyway 迁移拆出内容资产、互动事实、provider 配置、Outbox、访客事实和查询索引。
+- Flyway 迁移拆出内容资产、互动事实、managed storage profile 配置、Outbox、访客事实和查询索引。
 - 文章 metadata/content 分离，内容有版本、checksum、ETag、expectedVersion 冲突保护和恢复流程。
-- local/OSS/COS/TOS 统一 provider port，后台验证后一次激活一个 provider，旧资产保留原 provider。
+- local/OSS/COS/TOS 统一 provider port，后台通过七个 `/api/admin/storage/configs` 路由管理配置档案；数据库 `is_active` 唯一选择新对象的 profile，旧资产保留原 provider 和 `storage_config_id`。
 - 上传校验真实媒体结构、大小、尺寸/像素和 Markdown HTML；session principal 不保存密码。
 - CORS、CSP、CSRF、限流、监控 token、错误脱敏和审计边界统一。
 
@@ -41,7 +41,7 @@ MySQL 是唯一持久事实源。Redis 只提供可选 cache、限流、锁、Se
 
 - 公共文章 metadata、Markdown、评论和推荐按职责/状态独立加载；后台编辑器支持 Markdown 版本、自动保存、预览、发布和恢复。
 - shared HTTP 做安全错误归一化、content validator cache；WebSocket 做 bounded reconnect、事件去重和资源释放。
-- 管理后台可查看 provider 状态、验证/切换和 Outbox；不显示凭据或任意删除能力。
+- 管理后台可查看托管 storage profile 摘要、按配置 ID 验证/激活/刷新 usage 和 Outbox；摘要允许包含安全 `endpoint` 等配置字段，但不显示凭据、密文、供应商请求 URL 或任意删除能力。
 - 公共站点构建生成文章 prerender、canonical/OG/Twitter/JSON-LD、sitemap、robots、feed 和响应式图片。
 - CI 统一执行 backend、frontend、架构/代理/Compose 契约、bundle、浏览器 smoke 和性能/安全检查。
 
@@ -58,8 +58,8 @@ MySQL 是唯一持久事实源。Redis 只提供可选 cache、限流、锁、Se
 1. 用带 MySQL/Redis 的真实环境完成 Testcontainers/Compose matrix，并记录跳过原因，而不是把 unit pass 当成集成通过。
 2. 使用至少 10,000 条文章 metadata 和 100,000 条互动/Outbox 数据执行 p50/p95 基准；没有实测前不宣称性能提升。
 3. 若未来需要多实例，先启用 Redis Session/Streams 并验证 idempotency、pending recovery、WebSocket 广播和锁，再考虑独立 worker 部署。
-4. 当搜索规模超过本地 Lucene 的单机容量，先保留 ArticleSearchApplicationService port，再评估托管搜索，不把 provider 选择泄露到业务层。
+4. 当搜索规模超过本地 Lucene 的单机容量，先保留 ArticleSearchApplicationService port，再评估托管搜索，不把 storage profile 选择泄露到业务层。
 
 ## 完成标准
 
-功能完成必须同时满足：核心数据库迁移可从 legacy baseline 升级；Redis off/on/failure 三种模式有证据；正文不会回到 MySQL；Outbox 可恢复；provider 删除有引用保护；前端 lint/test/build/budget 通过；部署契约不启动被移除的中间件；所有跳过的真实依赖测试在报告中可见。
+功能完成必须同时满足：核心数据库迁移可从 legacy baseline 升级；Redis off/on/failure 三种模式有证据；正文不会回到 MySQL；Outbox 可恢复；managed storage profile 删除有引用保护；前端 lint/test/build/budget 通过；部署契约不启动被移除的中间件；所有跳过的真实依赖测试在报告中可见。

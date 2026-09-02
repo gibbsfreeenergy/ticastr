@@ -10,7 +10,7 @@ MySQL 是唯一持久事实源。业务层依赖 port/application service，云 
 | chat presence/broadcast | ChatPresenceStore、ChatEventPublisher | Redis Pub/Sub 或本地 registry | Redis 开启时跨实例 | 聊天历史在 MySQL；广播 best-effort，断线可恢复 |
 | durable events | DurableEventPublisher、Outbox handler | MySQL Outbox + DB worker，Redis Streams bridge 可选 | Outbox 始终；Streams 可选 | PENDING/PROCESSING/PUBLISHED/DEAD，ACK/完成后才确认 |
 | article search | ArticleSearchApplicationService | 本地 Lucene | 始终 | 索引可删除重建；正文不回写 MySQL |
-| media/content storage | MediaAssetStore、StorageProvider | local、Aliyun OSS、Tencent COS、Volcengine TOS | 一个 active provider | 资产记录 provider/object key；删除异步且引用安全 |
+| media/content storage | MediaAssetStore、StorageProvider、`/api/admin/storage/configs*` | local、Aliyun OSS、Tencent COS、Volcengine TOS | 托管 profile catalog；`is_active` 唯一 | 新对象走唯一 active profile；资产记录 provider/`storage_config_id`/object key；删除异步且引用安全 |
 | SMTP | Outbox handler | JavaMailSender | 邮件 handler 执行时 | 不在请求线程发送；失败重试/dead |
 | QQ/微博 OAuth | SocialLoginStrategy | provider strategy | 用户触发 | RestTemplate 有超时；外部响应不直接进入 HTML |
 
@@ -19,5 +19,5 @@ MySQL 是唯一持久事实源。业务层依赖 port/application service，云 
 1. 不在 controller/service/DAO 直接 import 云 SDK、RedisTemplate、邮件 client 或 RestTemplate。
 2. 外部调用必须有超时、有限重试、可观测错误和关闭语义。
 3. Redis 是否可用由 app.redis.enabled 决定，而不是由 classpath 决定；关闭时不创建连接工厂、Redis Session repository、listener 或 Stream consumer。
-4. 新增 provider 必须实现 StorageProvider，object key 由服务端生成，后台状态 API 不得返回 endpoint secret。
+4. 新增 provider 必须实现 StorageProvider，object key 由服务端生成；管理摘要允许返回已校验的 `endpoint`，但不得返回明文凭据、AES-GCM 密文、签名、Authorization、供应商请求 URL 或任意 object key。
 5. 更新依赖前执行 mvn -B dependency:tree，同步检查许可证、漏洞和镜像体积。

@@ -11,7 +11,7 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 监控
 
-通过 API 使用 X-Monitoring-Token 抓取 /actuator/prometheus。重点指标：HTTP p50/p95、Hikari 使用率、Outbox pending/processing/dead、最老事件、handler 失败、Stream pending/dead、Lucene index 状态、provider 验证/删除/usage 失败、限流拒绝和 WebSocket 连接数。
+通过 API 使用 X-Monitoring-Token 抓取 /actuator/prometheus。重点指标：HTTP p50/p95、Hikari 使用率、Outbox pending/processing/dead、最老事件、handler 失败、Stream pending/dead、Lucene index 状态、限流拒绝和 WebSocket 连接数。当前没有 provider validate/delete/usage 的专用 Micrometer 指标；排查托管存储问题时，优先查看 `/api/admin/storage/configs` 返回的验证/usage 快照、通用应用日志、/actuator/health 和对应 HTTP 失败记录。
 
 ## Outbox/Streams 故障
 
@@ -39,6 +39,7 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 - active 档案不能删除；仍被 `tb_content_asset` 或 `tb_media_asset` 引用的档案不能删除。
 - 旧 `/api/admin/storage/provider`、`/providers` 和 provider-only validate/switch 路由仅为滚动兼容保留；当同 provider 存在多条档案时，旧 validate/switch 返回 409，要求改用配置 ID。
 - 权限资源由 V21 migration 写入数据库；如果缺少 `/admin/storage/configs*` 权限，先核查迁移和资源表，不在 controller 或文档里手工补“配置”。
+- 管理摘要允许返回已校验的 `endpoint`、`region`、`bucket`、`localRoot`、`publicUrl`；这些字段属于安全配置摘要，不等同于供应商请求 URL。
 
 ## 搜索重建
 
@@ -50,4 +51,4 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 数据安全
 
-不得在日志、错误响应、SEO 文件或 admin API 输出密码、access key、secret、AES-GCM 密文、Authorization、签名、完整 provider endpoint、任意 object key 或请求正文。发现泄露时先轮换凭据，再保留 traceId 调查。
+不得在日志、错误响应、SEO 文件或 admin API 输出密码、access key、secret、AES-GCM 密文、Authorization、签名、供应商请求 URL、任意 object key 或请求正文。管理摘要中允许返回已经过校验的 `endpoint`，但该 URL 必须保持无凭据、无 query、无 fragment，且不得泄露到公共 HTML。发现泄露时先轮换凭据，再保留 traceId 调查。

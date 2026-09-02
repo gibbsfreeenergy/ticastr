@@ -89,7 +89,7 @@ Docker 不可用时，Testcontainers 集成测试会明确标记 skipped；这�
 
 ## 生产交付
 
-公共站点构建时可通过 `PRERENDER_API_URL` 获取公开文章，`PUBLIC_SITE_ORIGIN` 生成 `robots.txt`、sitemap 和 feed，并生成文章静态 HTML。浏览器仍使用相对路径，provider endpoint、凭据、密文和任意 object key 都不会进入 HTML 或前端状态。
+公共站点构建时可通过 `PRERENDER_API_URL` 获取公开文章，`PUBLIC_SITE_ORIGIN` 生成 `robots.txt`、sitemap 和 feed，并生成文章静态 HTML。公共 HTML 不包含 provider 配置；管理 API 和管理端前端状态允许包含已校验的安全配置摘要字段，如 `endpoint`、`region`、`bucket`、`localRoot`、`publicUrl`，但不返回明文凭据、AES-GCM 密文、签名、Authorization、供应商请求 URL 或任意 object key。
 
 反向代理必须保留 `/api`、`/uploads`、`/websocket` 规则和 WebSocket upgrade 头。监控通过 API 的 `/actuator/prometheus`，使用独立的 `X-Monitoring-Token` 请求头。
 

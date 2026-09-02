@@ -77,7 +77,7 @@
 
 ## 托管存储配置管理
 
-运行时存储目录由数据库中的 `tb_storage_provider_config` 管理。provider 只允许 `local`、`cos`、`oss`、`tos`；同一 provider 可以保存多条档案，但 `is_active` 在数据库层只允许一条 active 记录负责新对象。所有列表、创建、更新、验证、激活和 usage 响应都只返回安全摘要，不返回明文凭据、AES-GCM 密文、签名、Authorization、任意 object key 或供应商内部请求 URL。
+运行时存储目录由数据库中的 `tb_storage_provider_config` 管理。provider 只允许 `local`、`cos`、`oss`、`tos`；同一 provider 可以保存多条档案，但 `is_active` 在数据库层只允许一条 active 记录负责新对象。所有列表、创建、更新、验证、激活和 usage 响应都只返回安全摘要；摘要允许包含已校验的 `endpoint`、`region`、`bucket`、`localRoot`、`publicUrl`，但不返回明文凭据、AES-GCM 密文、签名、Authorization、任意 object key 或供应商内部请求 URL。
 
 ### 主接口
 
@@ -97,13 +97,13 @@
 | --- | --- | --- |
 | `name` | 必填 | 必填 |
 | `provider` | 必须为 `local` | 必须为 `cos`、`oss` 或 `tos` |
-| `endpoint` | 为空 | 必填，且必须是无凭据、无 query、无 fragment 的绝对 HTTP(S) URL |
-| `region` | 为空 | 必填 |
-| `bucket` | 为空 | 必填 |
-| `localRoot` | 必填，且必须是规范化后的绝对路径 | 为空 |
+| `endpoint` | 不使用；请求值被忽略并清除 | 必填，且必须是无凭据、无 query、无 fragment 的绝对 HTTP(S) URL |
+| `region` | 不使用；请求值被忽略并清除 | 必填 |
+| `bucket` | 不使用；请求值被忽略并清除 | 必填 |
+| `localRoot` | 必填，且必须是规范化后的绝对路径 | 不使用；请求值被忽略并清除 |
 | `publicUrl` | 必填，且必须是安全的 HTTP(S) 绝对 URL | 必填，且必须是安全的 HTTP(S) 绝对 URL |
-| `accessKeyId` | 忽略 | 创建时必填；更新时留空表示保留原值 |
-| `accessKeySecret` | 忽略 | 创建时必填；更新时留空表示保留原值 |
+| `accessKeyId` | 不使用；请求值被忽略并清除 | 创建时必填；更新时留空表示保留原值 |
+| `accessKeySecret` | 不使用；请求值被忽略并清除 | 创建时必填；更新时留空表示保留原值 |
 
 云配置的凭据以 `STORAGE_CONFIG_ENCRYPTION_KEY` 提供的 Base64 32 字节 AES 主密钥做 AES-GCM 加密后落库。响应 DTO 只暴露：
 
