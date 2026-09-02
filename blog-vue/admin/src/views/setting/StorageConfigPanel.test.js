@@ -180,7 +180,7 @@ describe("StorageConfigPanel", () => {
     expect(wrapper.vm.configs).toHaveLength(1);
   });
 
-  it("preserves safe validation and usage details while rejecting credential and exception details", async () => {
+  it("allowlists defined status details and drops opaque values without sensitive keywords", async () => {
     const admin = createAdminApi({
       storageConfigs: vi.fn().mockResolvedValue({
         data: {
@@ -191,7 +191,7 @@ describe("StorageConfigPanel", () => {
               status: "SUCCESS",
               success: true,
               validatedAt: "2026-08-31T08:20:00",
-              message: "连接验证完成"
+              message: " 验证成功 "
             },
             usage: {
               status: "FAILED",
@@ -199,13 +199,23 @@ describe("StorageConfigPanel", () => {
               bytes: 7340032,
               latestModified: "2026-08-31T08:20:00",
               checkedAt: "2026-08-31T08:25:00",
-              error: "存储服务暂不可用"
+              error: " 使用量刷新失败 "
             }
           }, {
             ...localConfig,
             id: 8,
-            validation: { status: "FAILED", message: "accessKeySecret=must-not-render" },
-            usage: { status: "FAILED", error: "RuntimeException: must-not-render" }
+            validation: { status: "FAILED", message: "配置验证失败" },
+            usage: { status: "FAILED", error: "J8m4Qs7wX2pL" }
+          }, {
+            ...localConfig,
+            id: 9,
+            validation: { status: "FAILED", message: "配置字段不完整" },
+            usage: { status: "FAILED", error: "opaque-identifier-8d43f9" }
+          }, {
+            ...localConfig,
+            id: 10,
+            validation: { status: "FAILED", message: "random-value-62b9" },
+            usage: { status: "FAILED", error: "C2n7Vb9Kp4" }
           }]
         }
       })
@@ -213,13 +223,26 @@ describe("StorageConfigPanel", () => {
     const wrapper = mountPanel(admin);
     await flushPromises();
 
-    expect(wrapper.vm.configs[0].validation.message).toBe("连接验证完成");
-    expect(wrapper.vm.configs[0].usage.error).toBe("存储服务暂不可用");
-    expect(wrapper.text()).toContain("连接验证完成");
-    expect(wrapper.text()).toContain("存储服务暂不可用");
-    expect(wrapper.vm.configs[1].validation.message).toBe("");
+    expect(wrapper.vm.configs[0].validation.message).toBe("验证成功");
+    expect(wrapper.vm.configs[0].usage.error).toBe("使用量刷新失败");
+    expect(wrapper.vm.configs[1].validation.message).toBe("配置验证失败");
+    expect(wrapper.vm.configs[2].validation.message).toBe("配置字段不完整");
+    expect(wrapper.text()).toContain("验证成功");
+    expect(wrapper.text()).toContain("使用量刷新失败");
+    expect(wrapper.text()).toContain("配置验证失败");
+    expect(wrapper.text()).toContain("配置字段不完整");
     expect(wrapper.vm.configs[1].usage.error).toBe("");
-    expect(wrapper.html()).not.toContain("must-not-render");
+    expect(wrapper.vm.configs[2].usage.error).toBe("");
+    expect(wrapper.vm.configs[3].validation.message).toBe("");
+    expect(wrapper.vm.configs[3].usage.error).toBe("");
+    expect(wrapper.html()).not.toContain("J8m4Qs7wX2pL");
+    expect(wrapper.html()).not.toContain("opaque-identifier-8d43f9");
+    expect(wrapper.html()).not.toContain("random-value-62b9");
+    expect(wrapper.html()).not.toContain("C2n7Vb9Kp4");
+    expect(JSON.stringify(wrapper.vm.configs)).not.toContain("J8m4Qs7wX2pL");
+    expect(JSON.stringify(wrapper.vm.configs)).not.toContain("opaque-identifier-8d43f9");
+    expect(JSON.stringify(wrapper.vm.configs)).not.toContain("random-value-62b9");
+    expect(JSON.stringify(wrapper.vm.configs)).not.toContain("C2n7Vb9Kp4");
   });
 
   it("keeps an initial load error distinct from the empty state and preserves existing configs on refresh failure", async () => {

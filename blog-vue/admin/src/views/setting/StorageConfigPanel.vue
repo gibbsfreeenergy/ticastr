@@ -121,6 +121,8 @@
 <script>
 const providers = ["local", "cos", "oss", "tos"];
 const statuses = ["NEVER", "SUCCESS", "FAILED"];
+const validationMessages = new Set(["验证成功", "配置验证失败", "配置字段不完整"]);
+const usageErrors = new Set(["使用量刷新失败"]);
 
 function text(value) {
   return typeof value === "string" ? value : "";
@@ -138,13 +140,10 @@ function status(value) {
   return statuses.includes(value) ? value : "NEVER";
 }
 
-function statusDetail(value) {
+function statusDetail(value, allowedMessages) {
   if (typeof value !== "string") return "";
-  const detail = value.trim().replace(/\s+/g, " ");
-  if (!detail || detail.length > 160) return "";
-  if (/(access\s*key|secret|credential|cipher|authorization|signature|token|password|exception|stack|trace|凭据|密文|密钥|授权|签名|令牌|口令|异常|堆栈|调用栈)/i.test(detail)) return "";
-  if (/https?:\/\//i.test(detail) || /\bat\s+\S+\(/i.test(detail)) return "";
-  return detail;
+  const detail = value.trim();
+  return allowedMessages.has(detail) ? detail : "";
 }
 
 function safeValidation(value) {
@@ -153,7 +152,7 @@ function safeValidation(value) {
     status: valueStatus,
     success: valueStatus === "SUCCESS",
     validatedAt: date(value?.validatedAt),
-    message: statusDetail(value?.message)
+    message: statusDetail(value?.message, validationMessages)
   };
 }
 
@@ -165,7 +164,7 @@ function safeUsage(value) {
     bytes: number(value?.bytes),
     latestModified: date(value?.latestModified),
     checkedAt: date(value?.checkedAt),
-    error: statusDetail(value?.error)
+    error: statusDetail(value?.error, usageErrors)
   };
 }
 
