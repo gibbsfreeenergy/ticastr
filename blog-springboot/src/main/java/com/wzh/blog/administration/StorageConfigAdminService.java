@@ -5,6 +5,7 @@ import com.wzh.blog.dao.StorageProviderConfigDao;
 import com.wzh.blog.entity.StorageProviderConfig;
 import com.wzh.blog.exception.ConflictException;
 import com.wzh.blog.exception.NotFoundException;
+import com.wzh.blog.infrastructure.storage.StorageProviderFactory;
 import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderRegistry;
 import com.wzh.blog.media.StorageProviderType;
@@ -46,23 +47,34 @@ public class StorageConfigAdminService {
     private final StorageProviderConfigDao configDao;
     private final StorageProviderRegistry registry;
     private final StorageConfigCrypto crypto;
+    private final StorageProviderFactory providerFactory;
     private final TransactionTemplate transactionTemplate;
 
     public StorageConfigAdminService(StorageProviderConfigDao configDao,
                                      StorageProviderRegistry registry,
                                      StorageConfigCrypto crypto) {
-        this(configDao, registry, crypto, null);
+        this(configDao, registry, crypto, new StorageProviderFactory(crypto), null);
     }
 
     @Autowired
     public StorageConfigAdminService(StorageProviderConfigDao configDao,
                                      StorageProviderRegistry registry,
                                      StorageConfigCrypto crypto,
+                                     StorageProviderFactory providerFactory,
                                      PlatformTransactionManager transactionManager) {
         this.configDao = Objects.requireNonNull(configDao, "configDao");
         this.registry = Objects.requireNonNull(registry, "registry");
         this.crypto = Objects.requireNonNull(crypto, "crypto");
+        this.providerFactory = Objects.requireNonNull(providerFactory, "providerFactory");
         this.transactionTemplate = transactionManager == null ? null : new TransactionTemplate(transactionManager);
+    }
+
+    /** Keeps direct construction compatible with callers that provide only a transaction manager. */
+    public StorageConfigAdminService(StorageProviderConfigDao configDao,
+                                     StorageProviderRegistry registry,
+                                     StorageConfigCrypto crypto,
+                                     PlatformTransactionManager transactionManager) {
+        this(configDao, registry, crypto, new StorageProviderFactory(crypto), transactionManager);
     }
 
     public StorageConfigListResponse list() {
@@ -90,15 +102,18 @@ public class StorageConfigAdminService {
         updated.setActive(existing.getActive());
         updated.setConfigSource("ADMIN");
         updated.setCreatedAt(existing.getCreatedAt());
-        updated.setLastValidationStatus(existing.getLastValidationStatus());
-        updated.setLastValidationAt(existing.getLastValidationAt());
-        updated.setLastValidationMessage(existing.getLastValidationMessage());
-        updated.setUsageStatus(existing.getUsageStatus());
-        updated.setUsageObjectCount(existing.getUsageObjectCount());
-        updated.setUsageBytes(existing.getUsageBytes());
-        updated.setUsageLastModified(existing.getUsageLastModified());
-        updated.setUsageCheckedAt(existing.getUsageCheckedAt());
-        updated.setUsageError(existing.getUsageError());
+
+        if (Boolean.TRUE.equals(existing.getActive())) {
+            StorageValidationVO validation = validateProfile(updated, false);
+            if (!validation.success()) {
+                throw new ConflictException(VALIDATION_FAILURE);
+            }
+            applyValidation(updated, validation);
+        } else {
+            clearValidation(updated);
+        }
+        clearUsage(updated);
+
         if (configDao.updateProfile(updated) != 1) {
             throw new ConflictException("存储配置更新失败");
         }
@@ -125,15 +140,16 @@ public class StorageConfigAdminService {
 
     public StorageConfigSummaryVO activate(Long id, Integer userId) {
         StorageProviderConfig candidate = requireConfig(id);
-        StorageValidationVO validation = validateProfile(candidate, true);
+        StorageValidationVO validation = validateProfile(candidate, false);
         if (!validation.success()) {
             throw new ConflictException(VALIDATION_FAILURE);
         }
         StorageProviderConfig activated = transactionTemplate == null
-                ? activateLocked(id, userId)
-                : transactionTemplate.execute(status -> activateLocked(id, userId));
+                ? activateLocked(candidate, validation, userId)
+                : transactionTemplate.execute(status -> activateLocked(candidate, validation, userId));
         registry.refresh(id);
         activated.setActive(true);
+        applyValidation(activated, validation);
         return summary(activated);
     }
 
@@ -196,15 +212,22 @@ public class StorageConfigAdminService {
         return current();
     }
 
-    private StorageProviderConfig activateLocked(Long id, Integer userId) {
-        StorageProviderConfig target = configDao.selectByIdForUpdate(id);
+    private StorageProviderConfig activateLocked(StorageProviderConfig candidate,
+                                                 StorageValidationVO validation,
+                                                 Integer userId) {
+        StorageProviderConfig target = configDao.selectByIdForUpdate(candidate.getId());
         if (target == null) {
             throw new NotFoundException("存储配置不存在");
         }
         // Lock the active row as well, so the subsequent activateOnly update is
         // serialized with competing profile switches.
         configDao.selectActiveForUpdate();
-        configDao.activateOnly(id, userId, LocalDateTime.now());
+        if (!sameProfile(candidate, target)) {
+            throw new ConflictException("存储配置已被修改，请重新验证后再激活");
+        }
+        configDao.updateValidation(target.getId(), validation.status(), validation.validatedAt(), validation.message());
+        applyValidation(target, validation);
+        configDao.activateOnly(target.getId(), userId, LocalDateTime.now());
         return target;
     }
 
@@ -234,11 +257,15 @@ public class StorageConfigAdminService {
         String status = "FAILED";
         String message = VALIDATION_FAILURE;
         boolean success = false;
+        StorageProvider provider = null;
         try {
             if (!isConfigured(config)) {
                 message = "配置字段不完整";
             } else {
-                StorageProvider provider = registry.providerForConfig(config.getId());
+                // Candidate profiles must never enter the registry cache before they
+                // are persisted. The factory also owns the credential decryption
+                // boundary for this short-lived validation provider.
+                provider = providerFactory.create(config);
                 provider.validateConnection();
                 status = "SUCCESS";
                 message = VALIDATION_SUCCESS;
@@ -246,11 +273,57 @@ public class StorageConfigAdminService {
             }
         } catch (Exception ignored) {
             logProviderFailure("validation", config.getId(), ignored);
+        } finally {
+            if (provider != null) {
+                try {
+                    provider.close();
+                } catch (Exception ignored) {
+                    logProviderFailure("validation provider close", config.getId(), ignored);
+                }
+            }
         }
         if (persist) {
             configDao.updateValidation(config.getId(), status, validatedAt, message);
         }
         return new StorageValidationVO(status, success, validatedAt, message);
+    }
+
+    private void applyValidation(StorageProviderConfig config, StorageValidationVO validation) {
+        config.setLastValidationStatus(validation.status());
+        config.setLastValidationAt(validation.validatedAt());
+        config.setLastValidationMessage(validation.message());
+    }
+
+    private void clearValidation(StorageProviderConfig config) {
+        config.setLastValidationStatus("NEVER");
+        config.setLastValidationAt(null);
+        config.setLastValidationMessage(null);
+    }
+
+    private void clearUsage(StorageProviderConfig config) {
+        config.setUsageStatus("NEVER");
+        config.setUsageObjectCount(null);
+        config.setUsageBytes(null);
+        config.setUsageLastModified(null);
+        config.setUsageCheckedAt(null);
+        config.setUsageError(null);
+    }
+
+    private boolean sameProfile(StorageProviderConfig expected, StorageProviderConfig actual) {
+        return Objects.equals(expected.getId(), actual.getId())
+                && Objects.equals(expected.getConfigName(), actual.getConfigName())
+                && Objects.equals(expected.getProvider(), actual.getProvider())
+                && Objects.equals(expected.getEndpoint(), actual.getEndpoint())
+                && Objects.equals(expected.getBucket(), actual.getBucket())
+                && Objects.equals(expected.getRegion(), actual.getRegion())
+                && Objects.equals(expected.getLocalRoot(), actual.getLocalRoot())
+                && Objects.equals(expected.getPublicUrl(), actual.getPublicUrl())
+                && Objects.equals(expected.getAccessKeyIdCiphertext(), actual.getAccessKeyIdCiphertext())
+                && Objects.equals(expected.getAccessKeySecretCiphertext(), actual.getAccessKeySecretCiphertext())
+                && Objects.equals(expected.getActive(), actual.getActive())
+                && Objects.equals(expected.getConfigSource(), actual.getConfigSource())
+                && Objects.equals(expected.getUpdatedAt(), actual.getUpdatedAt())
+                && Objects.equals(expected.getUpdatedBy(), actual.getUpdatedBy());
     }
 
     private StorageProviderConfig toConfig(StorageConfigRequest request, StorageProviderConfig existing,

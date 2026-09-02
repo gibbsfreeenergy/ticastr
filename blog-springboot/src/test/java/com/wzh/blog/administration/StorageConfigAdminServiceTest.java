@@ -4,6 +4,7 @@ import com.wzh.blog.config.StorageConfigCrypto;
 import com.wzh.blog.dao.StorageProviderConfigDao;
 import com.wzh.blog.entity.StorageProviderConfig;
 import com.wzh.blog.exception.ConflictException;
+import com.wzh.blog.infrastructure.storage.StorageProviderFactory;
 import com.wzh.blog.media.StorageObject;
 import com.wzh.blog.media.StorageObjectMetadata;
 import com.wzh.blog.media.StorageProvider;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +44,7 @@ class StorageConfigAdminServiceTest {
     private StorageProviderConfigDao configDao;
     private StorageProviderRegistry registry;
     private StorageConfigCrypto crypto;
+    private StorageProviderFactory providerFactory;
     private StorageConfigAdminService service;
 
     @BeforeEach
@@ -49,7 +52,8 @@ class StorageConfigAdminServiceTest {
         configDao = mock(StorageProviderConfigDao.class);
         registry = mock(StorageProviderRegistry.class);
         crypto = mock(StorageConfigCrypto.class);
-        service = new StorageConfigAdminService(configDao, registry, crypto);
+        providerFactory = mock(StorageProviderFactory.class);
+        service = new StorageConfigAdminService(configDao, registry, crypto, providerFactory, null);
     }
 
     @Test
@@ -104,11 +108,98 @@ class StorageConfigAdminServiceTest {
     }
 
     @Test
+    void activeUpdateValidationFailureDoesNotPersistOrInvalidateCurrentProfile() {
+        StorageProviderConfig existing = localConfig(13L, true);
+        StorageProvider provider = healthyProvider();
+        when(configDao.selectById(13L)).thenReturn(existing);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
+        doThrow(new RuntimeException("unavailable")).when(provider).validateConnection();
+
+        assertThrows(ConflictException.class, () -> service.update(13L,
+                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                        "https://cdn.example.com", null, null), 9));
+
+        verify(configDao, never()).updateProfile(any());
+        verify(configDao, never()).updateValidation(anyLong(), anyString(), any(), anyString());
+        verify(registry, never()).invalidate(anyLong());
+        verify(provider).close();
+    }
+
+    @Test
+    void activeUpdateValidatesCandidateBeforePersistingSuccessAndClearsUsageSnapshot() {
+        StorageProviderConfig existing = localConfig(14L, true);
+        existing.setUsageStatus("SUCCESS");
+        existing.setUsageObjectCount(4L);
+        existing.setUsageBytes(400L);
+        existing.setUsageLastModified(LocalDateTime.of(2026, 8, 1, 1, 2));
+        existing.setUsageCheckedAt(LocalDateTime.of(2026, 8, 1, 1, 3));
+        StorageProvider provider = healthyProvider();
+        when(configDao.selectById(14L)).thenReturn(existing);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
+        when(configDao.updateProfile(any())).thenReturn(1);
+
+        StorageConfigSummaryVO result = service.update(14L,
+                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                        "https://cdn.example.com", null, null), 9);
+
+        ArgumentCaptor<StorageProviderConfig> captured = ArgumentCaptor.forClass(StorageProviderConfig.class);
+        InOrder order = org.mockito.Mockito.inOrder(providerFactory, provider, configDao);
+        order.verify(providerFactory).create(any(StorageProviderConfig.class));
+        order.verify(provider).validateConnection();
+        order.verify(provider).close();
+        order.verify(configDao).updateProfile(captured.capture());
+        assertEquals("SUCCESS", captured.getValue().getLastValidationStatus());
+        assertEquals("验证成功", captured.getValue().getLastValidationMessage());
+        assertEquals("NEVER", captured.getValue().getUsageStatus());
+        assertNull(captured.getValue().getUsageObjectCount());
+        assertNull(captured.getValue().getUsageBytes());
+        assertNull(captured.getValue().getUsageLastModified());
+        assertNull(captured.getValue().getUsageCheckedAt());
+        assertNull(captured.getValue().getUsageError());
+        assertTrue(result.validation().success());
+        assertEquals("NEVER", result.usage().status());
+        verify(registry).invalidate(14L);
+    }
+
+    @Test
+    void inactiveUpdateClearsValidationAndUsageSnapshotsInsteadOfKeepingStaleValues() {
+        StorageProviderConfig existing = localConfig(15L, false);
+        existing.setLastValidationStatus("SUCCESS");
+        existing.setLastValidationAt(LocalDateTime.of(2026, 8, 1, 1, 2));
+        existing.setLastValidationMessage("验证成功");
+        existing.setUsageStatus("FAILED");
+        existing.setUsageObjectCount(4L);
+        existing.setUsageBytes(400L);
+        existing.setUsageLastModified(LocalDateTime.of(2026, 8, 1, 1, 3));
+        existing.setUsageCheckedAt(LocalDateTime.of(2026, 8, 1, 1, 4));
+        existing.setUsageError("使用量刷新失败");
+        when(configDao.selectById(15L)).thenReturn(existing);
+        when(configDao.updateProfile(any())).thenReturn(1);
+
+        service.update(15L, new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                "https://cdn.example.com", null, null), 9);
+
+        ArgumentCaptor<StorageProviderConfig> captured = ArgumentCaptor.forClass(StorageProviderConfig.class);
+        verify(configDao).updateProfile(captured.capture());
+        StorageProviderConfig saved = captured.getValue();
+        assertEquals("NEVER", saved.getLastValidationStatus());
+        assertNull(saved.getLastValidationAt());
+        assertNull(saved.getLastValidationMessage());
+        assertEquals("NEVER", saved.getUsageStatus());
+        assertNull(saved.getUsageObjectCount());
+        assertNull(saved.getUsageBytes());
+        assertNull(saved.getUsageLastModified());
+        assertNull(saved.getUsageCheckedAt());
+        assertNull(saved.getUsageError());
+        verify(providerFactory, never()).create(any(StorageProviderConfig.class));
+    }
+
+    @Test
     void validationPersistsSafeSuccessAndFailureMessages() {
         StorageProviderConfig config = localConfig(21L, false);
         StorageProvider provider = healthyProvider();
         when(configDao.selectById(21L)).thenReturn(config);
-        when(registry.providerForConfig(21L)).thenReturn(provider);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
 
         StorageValidationVO success = service.validate(21L);
 
@@ -136,7 +227,7 @@ class StorageConfigAdminServiceTest {
         when(configDao.selectById(31L)).thenReturn(target);
         when(configDao.selectByIdForUpdate(31L)).thenReturn(target);
         when(configDao.selectActive()).thenReturn(active);
-        when(registry.providerForConfig(31L)).thenReturn(provider);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
 
         doThrow(new RuntimeException("authorization: leaked")).when(provider).validateConnection();
         assertThrows(ConflictException.class, () -> service.activate(31L, 8));
@@ -144,12 +235,33 @@ class StorageConfigAdminServiceTest {
         verify(registry, never()).refresh(31L);
 
         StorageProvider healthy = healthyProvider();
-        when(registry.providerForConfig(31L)).thenReturn(healthy);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(healthy);
         StorageConfigSummaryVO activated = service.activate(31L, 8);
 
         assertTrue(activated.active());
         verify(configDao).activateOnly(org.mockito.ArgumentMatchers.eq(31L), org.mockito.ArgumentMatchers.eq(8), any());
         verify(registry).refresh(31L);
+    }
+
+    @Test
+    void activationRejectsCandidateChangedAfterNetworkValidation() {
+        StorageProviderConfig candidate = localConfig(32L, false);
+        candidate.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 20));
+        StorageProviderConfig target = localConfig(32L, false);
+        target.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 21));
+        target.setLocalRoot("C:/changed-after-validation");
+        StorageProvider candidateProvider = healthyProvider();
+        when(configDao.selectById(32L)).thenReturn(candidate);
+        when(configDao.selectByIdForUpdate(32L)).thenReturn(target);
+        when(configDao.selectActiveForUpdate()).thenReturn(localConfig(30L, true));
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(candidateProvider);
+
+        assertThrows(ConflictException.class, () -> service.activate(32L, 8));
+
+        verify(configDao, never()).activateOnly(anyLong(), any(), any());
+        verify(configDao, never()).updateValidation(anyLong(), anyString(), any(), anyString());
+        verify(registry, never()).refresh(32L);
+        verify(candidateProvider).close();
     }
 
     @Test

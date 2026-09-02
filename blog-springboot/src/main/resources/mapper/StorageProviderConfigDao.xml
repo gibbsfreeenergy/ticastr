@@ -97,6 +97,15 @@
             access_key_id_ciphertext = #{accessKeyIdCiphertext},
             access_key_secret_ciphertext = #{accessKeySecretCiphertext},
             config_source = #{configSource},
+            last_validation_status = #{lastValidationStatus},
+            last_validation_at = #{lastValidationAt},
+            last_validation_message = #{lastValidationMessage},
+            usage_status = #{usageStatus},
+            usage_object_count = #{usageObjectCount},
+            usage_bytes = #{usageBytes},
+            usage_last_modified = #{usageLastModified},
+            usage_checked_at = #{usageCheckedAt},
+            usage_error = #{usageError},
             updated_at = #{updatedAt},
             updated_by = #{updatedBy}
         WHERE id = #{id}
