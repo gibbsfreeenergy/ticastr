@@ -1,6 +1,10 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { flushPromises, shallowMount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import StorageConfigPanel from "./StorageConfigPanel.vue";
+
+const storageConfigPanelSource = readFileSync(resolve(process.cwd(), "src/views/setting/StorageConfigPanel.vue"), "utf8");
 
 const localConfig = {
   id: 7,
@@ -44,6 +48,18 @@ function mountPanel(admin = createAdminApi()) {
 describe("StorageConfigPanel", () => {
   beforeEach(() => {
     vi.stubGlobal("confirm", vi.fn(() => true));
+  });
+
+  it("keeps the dialog at its desktop width while constraining it on narrow viewports", async () => {
+    const wrapper = mountPanel();
+    await flushPromises();
+    const dialog = wrapper.find(".storage-config-dialog");
+    const dialogStyle = storageConfigPanelSource.match(/:deep\(\.storage-config-dialog\)\s*\{([^}]*)\}/)?.[1] || "";
+
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.classes()).toContain("storage-config-dialog");
+    expect(dialog.attributes("width")).toBe("560px");
+    expect(dialogStyle).toContain("max-width: calc(100vw - 32px);");
   });
 
   it("shows only local fields for local and cloud fields for cloud providers", async () => {
@@ -169,7 +185,8 @@ describe("StorageConfigPanel", () => {
 
     expect(wrapper.text()).toContain("128 个对象");
     expect(wrapper.text()).toContain("7 MB");
-    expect(wrapper.text()).toContain("使用量刷新失败");
+    expect(wrapper.find(".storage-config-failure").text()).toBe("使用量刷新失败；已保留上次成功统计。");
+    expect(wrapper.find(".storage-config-failure").text().match(/使用量刷新失败/g)).toHaveLength(1);
     expect(wrapper.html()).not.toContain("never-render-this");
     expect(JSON.stringify(wrapper.vm.configs)).not.toContain("never-render-this");
 

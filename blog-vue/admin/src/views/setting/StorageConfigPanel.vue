@@ -36,7 +36,7 @@
         </dl>
         <p v-if="config.validation.message" class="storage-config-status-detail">{{ config.validation.message }}</p>
         <p v-if="config.usage.status === 'FAILED'" class="storage-config-failure">
-          使用量刷新失败；已保留上次成功统计。<span v-if="config.usage.error">{{ config.usage.error }}</span>
+          使用量刷新失败；已保留上次成功统计。<span v-if="config.usage.error !== '使用量刷新失败'">{{ config.usage.error }}</span>
         </p>
 
         <div class="storage-config-actions" aria-label="配置操作">
@@ -73,7 +73,12 @@
     </div>
     <p v-else-if="!loading && !error" class="storage-config-muted">暂无存储配置。</p>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑存储配置' : '新增存储配置'" width="560px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId ? '编辑存储配置' : '新增存储配置'"
+      width="560px"
+      class="storage-config-dialog"
+    >
       <el-form label-width="105px" :model="form">
         <el-form-item label="配置名称">
           <el-input v-model="form.name" aria-label="配置名称" />
@@ -382,6 +387,7 @@ export default {
 .storage-config-status-detail { color: #7c8494; font-size: 0.8125rem; }
 .storage-config-failure, .storage-config-error { color: #f56c6c; font-size: 0.8125rem; }
 .storage-config-actions { border-top: 1px solid #f2f5fa; padding-top: 0.75rem; }
+:deep(.storage-config-dialog) { max-width: calc(100vw - 32px); }
 
 @media (max-width: 600px) {
   .storage-config-header { flex-direction: column; }
