@@ -23,11 +23,12 @@
 | REDIS_HOST / REDIS_PORT / REDIS_PASSWORD | localhost:6379 | Redis 开启模式的连接 |
 | SPRING_SESSION_STORE_TYPE | none | redis 时使用共享 Spring Session；必须同时开启 Redis |
 | APP_REDIS_STREAM_* | 见 application.yml | Stream 前缀、consumer group、批量、租约和退避 |
-| STORAGE_ACTIVE_PROVIDER | local | 新对象使用的 provider：local/oss/cos/tos |
-| STORAGE_LOCAL_ROOT / STORAGE_LOCAL_PUBLIC_URL | ./uploads / /uploads/ | local provider |
-| OSS_* | 空 | 阿里 OSS endpoint、bucket、region、密钥和公开 URL |
-| COS_* | 空 | 腾讯 COS endpoint、bucket、region、密钥和公开 URL |
-| TOS_* | 空 | 火山 TOS endpoint、bucket、region、密钥和公开 URL |
+| STORAGE_CONFIG_ENCRYPTION_KEY | 空 | 托管云存储档案的 AES-GCM 主密钥；Base64 编码 32 字节，catalog 中存在 cloud profile 时必须提供 |
+| STORAGE_ACTIVE_PROVIDER | legacy bootstrap only | 旧部署一次性导入时选择 active provider；`tb_storage_bootstrap_state` 完成后不再覆盖数据库 |
+| STORAGE_LOCAL_ROOT / STORAGE_LOCAL_PUBLIC_URL | 空 | 旧 local 配置的一次性 bootstrap 输入；完成后不再作为运行时事实源 |
+| OSS_* | 空 | 旧阿里 OSS 配置的一次性 bootstrap 输入；完成后不再覆盖 `tb_storage_provider_config` |
+| COS_* | 空 | 旧腾讯 COS 配置的一次性 bootstrap 输入；完成后不再覆盖 `tb_storage_provider_config` |
+| TOS_* | 空 | 旧火山 TOS 配置的一次性 bootstrap 输入；完成后不再覆盖 `tb_storage_provider_config` |
 | SEARCH_DATA_ROOT | ./data | 本地可持久化数据根目录 |
 | SEARCH_INDEX_PATH | search-index | Lucene 索引目录；相对值必须位于 SEARCH_DATA_ROOT 下，绝对值也必须位于其下 |
 | PAGINATION_CURSOR_SECRET | 本地开发占位值 | 游标签名；production-like 必须至少 32 字符随机秘密 |
@@ -39,7 +40,16 @@
 | PRERENDER_API_URL | 本地 API | 公共站点 SEO 构建工具读取公开文章 |
 | PUBLIC_SITE_ORIGIN | 本地站点 | SEO feed/sitemap 的绝对 origin |
 
-production、production-like、staging 会拒绝 localhost、示例域名、placeholder provider、空监控 token 和弱游标密钥。对象 provider 的切换由后台验证写入、读取、删除临时对象完成，密钥不会回传。
+production、production-like、staging 会拒绝 localhost、示例域名、空监控 token 和弱游标密钥。运行时存储事实源是数据库中的托管配置档案：provider 仅 `local`、`cos`、`oss`、`tos`，同 provider 可有多档案，但 `is_active` 只能有一条。catalog 中只要存在任意 cloud profile 行，就必须提供 `STORAGE_CONFIG_ENCRYPTION_KEY`；旧 `STORAGE_*` / `OSS_*` / `COS_*` / `TOS_*` 变量只在 `legacy_import_completed = 0` 时一次性导入，完成后不会覆盖数据库。
+
+## 托管存储档案
+
+- 运行时由 `tb_storage_provider_config` 决定 active 档案，不再按环境变量实时切换 provider。
+- 一次性导入的旧档案以 `LEGACY_ENV` source 落库，导入完成后仅数据库档案参与运行时选择。
+- `local` 档案要求 `localRoot` 和 `publicUrl`；cloud 档案要求 `endpoint`、`region`、`bucket`、`publicUrl`、`accessKeyId`、`accessKeySecret`。
+- 云凭据写入数据库前使用 AES-GCM 加密；API、日志和前端状态只显示“是否已配置”，不回显明文或密文。
+- active 切换只影响新对象；内容和媒体资产在数据库中同时保存 `provider` 与 `storage_config_id`，历史对象继续按创建时配置读取。
+- usage 由管理员手动刷新，失败时保留上次成功的对象数、字节数和最近修改时间。
 
 ## Redis 两种运行模式
 
@@ -51,7 +61,7 @@ production、production-like、staging 会拒绝 localhost、示例域名、plac
 ## 代理规则
 
 - 浏览器请求始终使用相对 /api/...。
-- /uploads/... 由 API 的 storage handler 提供。
+- /uploads/... 由 API 按当前 active local 档案提供；cloud 档案不会把 provider endpoint 暴露给浏览器。
 - /websocket 必须保留 HTTP/1.1 upgrade、Upgrade 和 Connection 头。
 - Vercel 后端 origin 通过 VERCEL_BACKEND_URL 注入，只接受 HTTPS、无凭据、无查询串/fragment 的 URL。
 

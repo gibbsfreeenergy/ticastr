@@ -33,7 +33,7 @@
 | 版本列表 | GET | `/api/admin/articles/{id}/versions` | 有界 cursor page |
 | 恢复版本 | POST | `/api/admin/articles/{id}/versions/{version}/restore` | 新版本 metadata |
 
-`tb_article` 只保存 `content_asset_id` 指针；正文是对象存储中的不可变 Markdown 版本，`tb_content_asset` 保存 provider、object key、版本、大小、checksum、状态和时间。切换 provider 只影响新资产，旧资产按照自身记录的 provider 读取/删除。
+`tb_article` 只保存 `content_asset_id` 指针；正文是对象存储中的不可变 Markdown 版本，`tb_content_asset` 保存 provider、`storage_config_id`、object key、版本、大小、checksum、状态和时间。切换 active 存储配置只影响新资产，旧资产优先按自身记录的 `storage_config_id` 读取/删除；只有历史 `NULL` 行才保留 provider 类型兼容回退。
 
 保存请求示例：
 
@@ -75,18 +75,69 @@
 
 `current` 从 1 开始，`size` 范围 1–100。新公开接口不要重新引入全量加载后内存分页，也不要把正文加入列表查询。
 
-## 存储 provider 管理
+## 托管存储配置管理
 
-管理接口：
+运行时存储目录由数据库中的 `tb_storage_provider_config` 管理。provider 只允许 `local`、`cos`、`oss`、`tos`；同一 provider 可以保存多条档案，但 `is_active` 在数据库层只允许一条 active 记录负责新对象。所有列表、创建、更新、验证、激活和 usage 响应都只返回安全摘要，不返回明文凭据、AES-GCM 密文、签名、Authorization、任意 object key 或供应商内部请求 URL。
+
+### 主接口
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/admin/storage/provider` | 当前 provider 和可用状态，不含凭据 |
-| GET | `/api/admin/storage/providers` | local/OSS/COS/TOS 的状态摘要 |
-| POST | `/api/admin/storage/providers/{provider}/validate` | 有界写入/读取/删除临时对象 |
-| PUT | `/api/admin/storage/provider` | 只允许激活一个已验证 provider |
+| GET | `/api/admin/storage/configs` | 返回 `StorageConfigListResponse`，包含 `activeConfigId` 和全部配置摘要 |
+| POST | `/api/admin/storage/configs` | 创建 inactive 配置档案 |
+| PUT | `/api/admin/storage/configs/{id}` | 更新指定配置；更新时空凭据表示保留原密文 |
+| DELETE | `/api/admin/storage/configs/{id}` | 删除 inactive 且未被内容/媒体资产引用的配置 |
+| POST | `/api/admin/storage/configs/{id}/validate` | 对指定配置执行有界写入/读取/删除验证，并持久化安全验证快照 |
+| POST | `/api/admin/storage/configs/{id}/activate` | 先验证，再原子切换唯一 active 配置 |
+| POST | `/api/admin/storage/configs/{id}/usage` | 手动刷新真实用量快照 |
 
-后台不接收任意 object key 删除，不显示 secret/access key。provider 验证失败不能改变当前激活项；激活切换不迁移旧对象。
+请求体字段固定为 `name`、`provider`、`endpoint`、`region`、`bucket`、`localRoot`、`publicUrl`、`accessKeyId`、`accessKeySecret`，字段规则如下：
+
+| 字段 | `local` | `cos` / `oss` / `tos` |
+| --- | --- | --- |
+| `name` | 必填 | 必填 |
+| `provider` | 必须为 `local` | 必须为 `cos`、`oss` 或 `tos` |
+| `endpoint` | 为空 | 必填，且必须是无凭据、无 query、无 fragment 的绝对 HTTP(S) URL |
+| `region` | 为空 | 必填 |
+| `bucket` | 为空 | 必填 |
+| `localRoot` | 必填，且必须是规范化后的绝对路径 | 为空 |
+| `publicUrl` | 必填，且必须是安全的 HTTP(S) 绝对 URL | 必填，且必须是安全的 HTTP(S) 绝对 URL |
+| `accessKeyId` | 忽略 | 创建时必填；更新时留空表示保留原值 |
+| `accessKeySecret` | 忽略 | 创建时必填；更新时留空表示保留原值 |
+
+云配置的凭据以 `STORAGE_CONFIG_ENCRYPTION_KEY` 提供的 Base64 32 字节 AES 主密钥做 AES-GCM 加密后落库。响应 DTO 只暴露：
+
+- 配置摘要：`id`、`name`、`provider`、`active`、`configured`、`credentialsConfigured`、`endpoint`、`region`、`bucket`、`localRoot`、`publicUrl`
+- 验证快照：`status`、`success`、`validatedAt`、`message`
+- 用量快照：`status`、`objectCount`、`bytes`、`latestModified`、`checkedAt`、`error`
+
+`validate` 成功时返回 `status=SUCCESS`、`success=true`、`message=验证成功`；字段不完整或真实 provider 校验失败时仍返回 200，但 `status=FAILED`，消息只允许 `配置字段不完整` 或 `配置验证失败`。`activate` 失败时返回 409，并保持原 active 配置不变。`usage` 始终由管理员手动触发，统计真实 regular file 或云对象的数量、字节数和最近修改时间；统计失败时返回 `status=FAILED`、`error=使用量刷新失败`，同时保留上次成功的 `objectCount`、`bytes` 和 `latestModified`。
+
+这组接口的错误语义补充如下：
+
+- `POST` / `PUT` 字段缺失、provider 不支持、URL 不合法或 `localRoot` 不是绝对规范化路径时返回 400。
+- 任一带 `{id}` 的路由在配置不存在时返回 404。
+- `DELETE` active / referenced 配置、`POST /activate` 的预验证失败，以及旧 provider-only 路由无法唯一映射配置时返回 409。
+- `POST /validate` 和 `POST /usage` 的真实 provider 故障不会回传 SDK 细节，而是返回 200 + 安全失败快照。
+
+删除规则：
+
+- active 配置不能删除，返回 409。
+- 仍被 `tb_content_asset` 或 `tb_media_asset` 引用的配置不能删除，返回 409。
+- 不存在的配置 ID 返回 404。
+
+### 兼容路由
+
+为滚动发布保留旧 provider 路由：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/admin/storage/provider` | 返回当前 active provider、`activeConfigId` 和支持的 provider 列表 |
+| GET | `/api/admin/storage/providers` | 返回四类 provider 的聚合状态摘要和可用档案数 |
+| POST | `/api/admin/storage/providers/{provider}/validate` | 仅当该 provider 恰好只有一条档案时执行兼容验证 |
+| PUT | `/api/admin/storage/provider` | 仅当目标 provider 恰好只有一条档案时切换到该配置 |
+
+当同一 provider 存在多条档案时，旧 `/provider` 切换和 `/providers/{provider}/validate` 无法唯一定位配置，返回 409，并要求调用方改用配置 ID 路由。这个歧义包含同 provider 的未完成草稿档案；新管理页面不再依赖旧接口。
 
 ## Outbox 与 Redis Stream
 

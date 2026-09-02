@@ -2,7 +2,7 @@
 
 ## 启动
 
-1. 校验 .env 中 DB、origin、CORS、provider 和 production secret。
+1. 校验 .env 中 DB、origin、CORS、监控 token、游标密钥，以及是否需要 `STORAGE_CONFIG_ENCRYPTION_KEY`。
 2. 默认模式启动：docker compose up -d。
 3. Redis 模式启动：docker compose -f compose.yaml -f compose.redis.yaml up -d。
 4. 检查 /actuator/health/liveness、/actuator/health/readiness；再访问公共站点、后台和 WebSocket。
@@ -11,7 +11,7 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 监控
 
-通过 API 使用 X-Monitoring-Token 抓取 /actuator/prometheus。重点指标：HTTP p50/p95、Hikari 使用率、Outbox pending/processing/dead、最老事件、handler 失败、Stream pending/dead、Lucene index 状态、provider 延时/失败、限流拒绝和 WebSocket 连接数。
+通过 API 使用 X-Monitoring-Token 抓取 /actuator/prometheus。重点指标：HTTP p50/p95、Hikari 使用率、Outbox pending/processing/dead、最老事件、handler 失败、Stream pending/dead、Lucene index 状态、provider 验证/删除/usage 失败、限流拒绝和 WebSocket 连接数。
 
 ## Outbox/Streams 故障
 
@@ -29,7 +29,16 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 对象存储
 
-后台“基础设施”页先执行 provider 写入、读取、删除验证，再切换 active provider。凭据只从 API 环境变量读取；已有文章内容和媒体继续使用自身 ledger 中记录的 provider。验证失败不得激活。
+后台“基础设施”页以 `/api/admin/storage/configs` 为主接口管理托管档案：
+
+- provider 仅 `local`、`cos`、`oss`、`tos`；同 provider 可保留多条档案，但数据库 `is_active` 只允许一条 active。
+- `local` 档案要求 `localRoot` 与 `publicUrl`；cloud 档案要求 `endpoint`、`region`、`bucket`、`publicUrl`、`accessKeyId`、`accessKeySecret`，并且 catalog 中只要存在 cloud profile 行就必须配置 `STORAGE_CONFIG_ENCRYPTION_KEY`。
+- 旧 `STORAGE_ACTIVE_PROVIDER`、`STORAGE_LOCAL_*`、`OSS_*`、`COS_*`、`TOS_*` 只在 bootstrap 未完成时导入一次，并以 `LEGACY_ENV` source 落库。`tb_storage_bootstrap_state.legacy_import_completed = 1` 后，数据库是唯一运行时事实源，继续改这些环境变量不会覆盖档案。
+- 先执行 `/validate`，再执行 `/activate`。验证接口失败时返回安全快照，不返回供应商异常细节；激活失败返回 409，当前 active 档案保持不变。
+- `/usage` 只做手动刷新。失败时返回 `FAILED` 状态和安全错误，同时保留上次成功的对象数、字节数和最近修改时间。
+- active 档案不能删除；仍被 `tb_content_asset` 或 `tb_media_asset` 引用的档案不能删除。
+- 旧 `/api/admin/storage/provider`、`/providers` 和 provider-only validate/switch 路由仅为滚动兼容保留；当同 provider 存在多条档案时，旧 validate/switch 返回 409，要求改用配置 ID。
+- 权限资源由 V21 migration 写入数据库；如果缺少 `/admin/storage/configs*` 权限，先核查迁移和资源表，不在 controller 或文档里手工补“配置”。
 
 ## 搜索重建
 
@@ -41,4 +50,4 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 数据安全
 
-不得在日志、错误响应、SEO 文件或 admin API 输出密码、access key、secret、完整 provider endpoint、任意 object key 或请求正文。发现泄露时先轮换凭据，再保留 traceId 调查。
+不得在日志、错误响应、SEO 文件或 admin API 输出密码、access key、secret、AES-GCM 密文、Authorization、签名、完整 provider endpoint、任意 object key 或请求正文。发现泄露时先轮换凭据，再保留 traceId 调查。
