@@ -94,6 +94,7 @@ class StorageConfigAdminServiceTest {
         existing.setAccessKeyIdCiphertext("v1:existing-id");
         existing.setAccessKeySecretCiphertext("v1:existing-secret");
         when(configDao.selectById(12L)).thenReturn(existing);
+        when(configDao.selectByIdForUpdate(12L)).thenReturn(existing);
         when(configDao.updateProfile(any())).thenReturn(1);
 
         service.update(12L, new StorageConfigRequest("renamed", "oss", "https://storage.example.com",
@@ -135,6 +136,7 @@ class StorageConfigAdminServiceTest {
         existing.setUsageCheckedAt(LocalDateTime.of(2026, 8, 1, 1, 3));
         StorageProvider provider = healthyProvider();
         when(configDao.selectById(14L)).thenReturn(existing);
+        when(configDao.selectByIdForUpdate(14L)).thenReturn(existing);
         when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
         when(configDao.updateProfile(any())).thenReturn(1);
 
@@ -147,6 +149,7 @@ class StorageConfigAdminServiceTest {
         order.verify(providerFactory).create(any(StorageProviderConfig.class));
         order.verify(provider).validateConnection();
         order.verify(provider).close();
+        order.verify(configDao).selectByIdForUpdate(14L);
         order.verify(configDao).updateProfile(captured.capture());
         assertEquals("SUCCESS", captured.getValue().getLastValidationStatus());
         assertEquals("验证成功", captured.getValue().getLastValidationMessage());
@@ -174,13 +177,17 @@ class StorageConfigAdminServiceTest {
         existing.setUsageCheckedAt(LocalDateTime.of(2026, 8, 1, 1, 4));
         existing.setUsageError("使用量刷新失败");
         when(configDao.selectById(15L)).thenReturn(existing);
+        when(configDao.selectByIdForUpdate(15L)).thenReturn(existing);
         when(configDao.updateProfile(any())).thenReturn(1);
 
         service.update(15L, new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
                 "https://cdn.example.com", null, null), 9);
 
         ArgumentCaptor<StorageProviderConfig> captured = ArgumentCaptor.forClass(StorageProviderConfig.class);
-        verify(configDao).updateProfile(captured.capture());
+        InOrder order = org.mockito.Mockito.inOrder(configDao);
+        order.verify(configDao).selectById(15L);
+        order.verify(configDao).selectByIdForUpdate(15L);
+        order.verify(configDao).updateProfile(captured.capture());
         StorageProviderConfig saved = captured.getValue();
         assertEquals("NEVER", saved.getLastValidationStatus());
         assertNull(saved.getLastValidationAt());
@@ -192,6 +199,50 @@ class StorageConfigAdminServiceTest {
         assertNull(saved.getUsageCheckedAt());
         assertNull(saved.getUsageError());
         verify(providerFactory, never()).create(any(StorageProviderConfig.class));
+    }
+
+    @Test
+    void inactiveUpdateRejectsWhenTargetBecomesActiveBeforeWrite() {
+        StorageProviderConfig expected = localConfig(16L, false);
+        StorageProviderConfig target = localConfig(16L, true);
+        target.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 21));
+        target.setUpdatedBy(8);
+        when(configDao.selectById(16L)).thenReturn(expected);
+        when(configDao.selectByIdForUpdate(16L)).thenReturn(target);
+
+        assertThrows(ConflictException.class, () -> service.update(16L,
+                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                        "https://cdn.example.com", null, null), 9));
+
+        verify(configDao).selectByIdForUpdate(16L);
+        verify(configDao, never()).updateProfile(any());
+        verify(registry, never()).invalidate(anyLong());
+        verify(providerFactory, never()).create(any(StorageProviderConfig.class));
+    }
+
+    @Test
+    void activeUpdateRejectsWhenTargetChangesAfterNetworkValidation() {
+        StorageProviderConfig expected = localConfig(17L, true);
+        expected.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 20));
+        StorageProviderConfig target = localConfig(17L, true);
+        target.setLocalRoot("C:/changed-after-validation");
+        target.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 21));
+        StorageProvider provider = healthyProvider();
+        when(configDao.selectById(17L)).thenReturn(expected);
+        when(providerFactory.create(any(StorageProviderConfig.class))).thenReturn(provider);
+        when(configDao.selectByIdForUpdate(17L)).thenReturn(target);
+
+        assertThrows(ConflictException.class, () -> service.update(17L,
+                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                        "https://cdn.example.com", null, null), 9));
+
+        InOrder order = org.mockito.Mockito.inOrder(providerFactory, provider, configDao);
+        order.verify(providerFactory).create(any(StorageProviderConfig.class));
+        order.verify(provider).validateConnection();
+        order.verify(provider).close();
+        order.verify(configDao).selectByIdForUpdate(17L);
+        verify(configDao, never()).updateProfile(any());
+        verify(registry, never()).invalidate(anyLong());
     }
 
     @Test

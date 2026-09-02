@@ -114,8 +114,10 @@ public class StorageConfigAdminService {
         }
         clearUsage(updated);
 
-        if (configDao.updateProfile(updated) != 1) {
-            throw new ConflictException("存储配置更新失败");
+        if (transactionTemplate == null) {
+            updateLocked(existing, updated);
+        } else {
+            transactionTemplate.executeWithoutResult(status -> updateLocked(existing, updated));
         }
         registry.invalidate(id);
         return summary(updated);
@@ -231,6 +233,19 @@ public class StorageConfigAdminService {
         return target;
     }
 
+    private void updateLocked(StorageProviderConfig expected, StorageProviderConfig updated) {
+        StorageProviderConfig target = configDao.selectByIdForUpdate(expected.getId());
+        if (target == null) {
+            throw new NotFoundException("存储配置不存在");
+        }
+        if (!sameProfile(expected, target)) {
+            throw new ConflictException("存储配置已被修改，请重新加载后再更新");
+        }
+        if (configDao.updateProfile(updated) != 1) {
+            throw new ConflictException("存储配置更新失败");
+        }
+    }
+
     private void deleteLocked(Long id) {
         StorageProviderConfig target = configDao.selectByIdForUpdate(id);
         if (target == null) {
@@ -322,6 +337,7 @@ public class StorageConfigAdminService {
                 && Objects.equals(expected.getAccessKeySecretCiphertext(), actual.getAccessKeySecretCiphertext())
                 && Objects.equals(expected.getActive(), actual.getActive())
                 && Objects.equals(expected.getConfigSource(), actual.getConfigSource())
+                && Objects.equals(expected.getCreatedAt(), actual.getCreatedAt())
                 && Objects.equals(expected.getUpdatedAt(), actual.getUpdatedAt())
                 && Objects.equals(expected.getUpdatedBy(), actual.getUpdatedBy());
     }
