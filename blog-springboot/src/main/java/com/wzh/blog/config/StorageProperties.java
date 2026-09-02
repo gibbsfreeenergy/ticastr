@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "storage")
 public class StorageProperties {
 
+    /** Optional active-provider hint used only during the one-time legacy import. */
+    private String activeProvider = "";
     private String localRoot;
     private String localPublicUrl;
     private final Provider oss = new Provider();

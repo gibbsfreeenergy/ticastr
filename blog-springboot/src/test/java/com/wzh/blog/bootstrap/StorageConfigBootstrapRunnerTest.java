@@ -70,6 +70,58 @@ class StorageConfigBootstrapRunnerTest {
     }
 
     @Test
+    void supportedEnvironmentActiveProviderTakesPriorityOverTheV21Hint() {
+        StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
+        StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+        StorageProperties properties = configuredProperties();
+        properties.setActiveProvider("cos");
+        List<StorageProviderConfig> profiles = new ArrayList<>(List.of(localDefault(1L)));
+        AtomicLong ids = new AtomicLong(10L);
+        when(stateDao.selectForUpdate()).thenReturn(state(false, "oss"));
+        when(configDao.upsertLegacyProfile(any())).thenAnswer(invocation -> {
+            StorageProviderConfig profile = invocation.getArgument(0);
+            profile.setId(ids.getAndIncrement());
+            profiles.add(profile);
+            return 1;
+        });
+        when(configDao.selectAll()).thenAnswer(invocation -> List.copyOf(profiles));
+
+        StorageProviderRegistry registry = mock(StorageProviderRegistry.class);
+        runner(stateDao, configDao, new StorageConfigCrypto(base64Key()), properties,
+                mock(JdbcTemplate.class), registry).run(mock(ApplicationArguments.class));
+
+        verify(configDao).activateOnly(org.mockito.ArgumentMatchers.eq(11L),
+                org.mockito.ArgumentMatchers.isNull(), any(LocalDateTime.class));
+        verify(registry).refresh(11L);
+    }
+
+    @Test
+    void invalidEnvironmentActiveProviderFallsBackToTheV21Hint() {
+        StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
+        StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
+        StorageProperties properties = configuredProperties();
+        properties.setActiveProvider("not-supported");
+        List<StorageProviderConfig> profiles = new ArrayList<>(List.of(localDefault(1L)));
+        AtomicLong ids = new AtomicLong(10L);
+        when(stateDao.selectForUpdate()).thenReturn(state(false, "oss"));
+        when(configDao.upsertLegacyProfile(any())).thenAnswer(invocation -> {
+            StorageProviderConfig profile = invocation.getArgument(0);
+            profile.setId(ids.getAndIncrement());
+            profiles.add(profile);
+            return 1;
+        });
+        when(configDao.selectAll()).thenAnswer(invocation -> List.copyOf(profiles));
+
+        StorageProviderRegistry registry = mock(StorageProviderRegistry.class);
+        runner(stateDao, configDao, new StorageConfigCrypto(base64Key()), properties,
+                mock(JdbcTemplate.class), registry).run(mock(ApplicationArguments.class));
+
+        verify(configDao).activateOnly(org.mockito.ArgumentMatchers.eq(12L),
+                org.mockito.ArgumentMatchers.isNull(), any(LocalDateTime.class));
+        verify(registry).refresh(12L);
+    }
+
+    @Test
     void fallsBackToSeededLocalWhenOldActiveCloudProfileIsIncomplete() throws Exception {
         StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
         StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
@@ -93,7 +145,9 @@ class StorageConfigBootstrapRunnerTest {
         StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
         StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
         StorageProperties properties = configuredProperties();
+        properties.setActiveProvider("local");
         List<StorageProviderConfig> profiles = new ArrayList<>(List.of(localDefault(1L)));
+        StorageProviderRegistry registry = mock(StorageProviderRegistry.class);
         when(stateDao.selectForUpdate()).thenReturn(state(false, "local"), state(true, "oss"));
         when(configDao.upsertLegacyProfile(any())).thenAnswer(invocation -> {
             StorageProviderConfig profile = invocation.getArgument(0);
@@ -103,13 +157,18 @@ class StorageConfigBootstrapRunnerTest {
         });
         when(configDao.selectAll()).thenAnswer(invocation -> List.copyOf(profiles));
         StorageConfigBootstrapRunner runner = runner(stateDao, configDao, new StorageConfigCrypto(base64Key()),
-                properties, mock(JdbcTemplate.class), mock(StorageProviderRegistry.class));
+                properties, mock(JdbcTemplate.class), registry);
 
         runner.run(mock(ApplicationArguments.class));
+        properties.setActiveProvider("tos");
         runner.run(mock(ApplicationArguments.class));
 
         verify(configDao, times(4)).upsertLegacyProfile(any());
         verify(stateDao, times(1)).markCompleted(any(LocalDateTime.class));
+        verify(configDao, times(1)).selectAll();
+        verify(configDao, times(1)).activateOnly(org.mockito.ArgumentMatchers.eq(2L),
+                org.mockito.ArgumentMatchers.isNull(), any(LocalDateTime.class));
+        verify(registry, times(1)).refresh(2L);
     }
 
     @Test
@@ -117,6 +176,7 @@ class StorageConfigBootstrapRunnerTest {
         StorageBootstrapStateDao stateDao = mock(StorageBootstrapStateDao.class);
         StorageProviderConfigDao configDao = mock(StorageProviderConfigDao.class);
         StorageProperties properties = new StorageProperties();
+        assertThat(properties.getActiveProvider()).isEmpty();
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         when(stateDao.selectForUpdate()).thenReturn(state(false, "local"));
         when(configDao.selectAll()).thenReturn(List.of(localDefault(1L)));
