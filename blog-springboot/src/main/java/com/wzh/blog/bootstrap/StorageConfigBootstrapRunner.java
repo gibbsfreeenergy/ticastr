@@ -130,22 +130,36 @@ public class StorageConfigBootstrapRunner implements ApplicationRunner {
         if (catalog == null || catalog.isEmpty()) {
             throw new IllegalStateException("No storage profile is configured");
         }
-        String legacyProvider = state.getLegacyActiveProvider();
-        StorageProviderConfig selected = catalog.stream()
-                .filter(profile -> LEGACY_SOURCE.equals(profile.getConfigSource()))
-                .filter(profile -> sameProvider(profile, legacyProvider))
-                .filter(this::isUsable)
-                .findFirst()
-                .orElseGet(() -> catalog.stream()
-                        .filter(profile -> StorageProviderType.LOCAL.code().equalsIgnoreCase(profile.getProvider()))
-                        .filter(profile -> DEFAULT_SOURCE.equals(profile.getConfigSource()))
-                        .filter(this::isUsable)
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No usable local storage profile is configured")));
+        StorageProviderConfig selected = findLegacyProfile(catalog,
+                supportedProvider(legacyProperties.getActiveProvider()));
+        if (selected == null) {
+            selected = findLegacyProfile(catalog, supportedProvider(state.getLegacyActiveProvider()));
+        }
+        if (selected == null) {
+            selected = catalog.stream()
+                    .filter(profile -> StorageProviderType.LOCAL.code().equalsIgnoreCase(profile.getProvider()))
+                    .filter(profile -> DEFAULT_SOURCE.equals(profile.getConfigSource()))
+                    .filter(this::isUsable)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No usable local storage profile is configured"));
+        }
         if (selected.getId() == null) {
             throw new IllegalStateException("Storage profile ID is missing");
         }
         return selected;
+    }
+
+    private StorageProviderConfig findLegacyProfile(List<StorageProviderConfig> catalog,
+                                                    StorageProviderType providerType) {
+        if (providerType == null) {
+            return null;
+        }
+        return catalog.stream()
+                .filter(profile -> LEGACY_SOURCE.equals(profile.getConfigSource()))
+                .filter(profile -> providerType.code().equalsIgnoreCase(profile.getProvider()))
+                .filter(this::isUsable)
+                .findFirst()
+                .orElse(null);
     }
 
     private void backfillLegacyAssets(List<StorageProviderConfig> catalog) {
@@ -190,9 +204,15 @@ public class StorageConfigBootstrapRunner implements ApplicationRunner {
         registry.refresh(configId);
     }
 
-    private boolean sameProvider(StorageProviderConfig profile, String provider) {
-        return provider != null && profile != null && profile.getProvider() != null
-                && provider.equalsIgnoreCase(profile.getProvider());
+    private StorageProviderType supportedProvider(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        try {
+            return StorageProviderType.from(value);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private boolean isUsable(StorageProviderConfig profile) {

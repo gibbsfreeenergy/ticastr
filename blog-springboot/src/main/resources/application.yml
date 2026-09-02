@@ -64,6 +64,7 @@ mybatis-plus:
 storage:
   # These values are migration-only inputs. Managed profiles in the database select runtime storage.
   config-encryption-key: ${STORAGE_CONFIG_ENCRYPTION_KEY:}
+  active-provider: ${STORAGE_ACTIVE_PROVIDER:}
   local-root: ${STORAGE_LOCAL_ROOT:}
   local-public-url: ${STORAGE_LOCAL_PUBLIC_URL:}
   oss:
