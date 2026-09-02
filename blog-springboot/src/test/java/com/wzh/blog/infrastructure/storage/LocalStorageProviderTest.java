@@ -71,6 +71,7 @@ class LocalStorageProviderTest {
         Files.write(root.resolve("first.txt"), new byte[]{1, 2, 3});
         Files.write(root.resolve("nested").resolve("second.txt"), new byte[]{4, 5, 6, 7});
         Instant latest = Instant.parse("2026-09-01T02:03:04Z");
+        Files.setLastModifiedTime(root.resolve("first.txt"), FileTime.from(latest.minusSeconds(1)));
         Files.setLastModifiedTime(root.resolve("nested").resolve("second.txt"), FileTime.from(latest));
 
         StorageUsage usage = provider.usage();
