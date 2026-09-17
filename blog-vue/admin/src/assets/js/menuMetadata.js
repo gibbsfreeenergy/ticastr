@@ -1,25 +1,11 @@
 const MENU_METADATA = Object.freeze({
   home: { section: "workspace", iconKey: "home" },
+  articleGroup: { section: "content", iconKey: "pen" },
   article: { section: "content", iconKey: "pen" },
   articleList: { section: "content", iconKey: "file" },
-  category: { section: "content", iconKey: "folder" },
-  tag: { section: "content", iconKey: "tag" },
-  album: { section: "content", iconKey: "image" },
-  photo: { section: "content", iconKey: "image" },
-  talk: { section: "content", iconKey: "bubble" },
-  talkList: { section: "content", iconKey: "list" },
-  comment: { section: "community", iconKey: "comment" },
-  message: { section: "community", iconKey: "message" },
-  user: { section: "community", iconKey: "users" },
-  online: { section: "community", iconKey: "user" },
-  role: { section: "settings", iconKey: "shield" },
-  resource: { section: "settings", iconKey: "code" },
-  menu: { section: "settings", iconKey: "list" },
-  website: { section: "settings", iconKey: "globe" },
+  about: { section: "content", iconKey: "info" },
   page: { section: "settings", iconKey: "page" },
-  friendLink: { section: "settings", iconKey: "link" },
-  about: { section: "settings", iconKey: "info" },
-  operation: { section: "settings", iconKey: "history" },
+  website: { section: "settings", iconKey: "globe" },
   setting: { section: "settings", iconKey: "settings" },
   storage: { section: "settings", iconKey: "folder" }
 });
@@ -27,7 +13,6 @@ const MENU_METADATA = Object.freeze({
 const SECTION_LABELS = Object.freeze({
   workspace: "工作台",
   content: "内容管理",
-  community: "互动社区",
   settings: "系统设置"
 });
 

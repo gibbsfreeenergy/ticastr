@@ -78,19 +78,14 @@
           </el-button>
         </el-form>
       </el-tab-pane>
-      <el-tab-pane v-if="canManageOutbox" label="可靠事件" name="outbox">
-        <OutboxPanel />
-      </el-tab-pane>
     </el-tabs>
   </el-card>
 </template>
 
 <script>
-import OutboxPanel from "./OutboxPanel.vue";
 import { getCsrfHeaders } from "../../../../shared/http/csrf";
 
 export default {
-  components: { OutboxPanel },
   data: function() {
     return {
       infoForm: {
@@ -166,9 +161,6 @@ export default {
   computed: {
     avatar() {
       return this.$store.state.avatar;
-    },
-    canManageOutbox() {
-      return (this.$store.state.roleList || []).includes("admin");
     },
     uploadHeaders() {
       return getCsrfHeaders();

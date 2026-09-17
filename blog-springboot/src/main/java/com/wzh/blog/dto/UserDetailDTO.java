@@ -1,183 +1,66 @@
 package com.wzh.blog.dto;
 
+import com.alibaba.fastjson2.annotation.JSONField;
+import com.wzh.blog.security.AuthenticatedUserPrincipal;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import com.alibaba.fastjson2.annotation.JSONField;
-import com.wzh.blog.security.AuthenticatedUserPrincipal;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.FALSE;
 
-
 /**
- * 用户信息
- *
- * @author yezhiqiu
- * @date 2021/08/10
+ * 仅在密码校验阶段使用的用户详情。
  */
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = false)
-/**
- * Authentication-phase user details. It is retained only as the short-lived
- * credential-bearing object returned by UserDetailsService; successful login
- * replaces it with AuthenticatedUserPrincipal before session persistence.
- */
 public class UserDetailDTO extends AuthenticatedUserPrincipal {
 
-    /**
-     * 用户账号id
-     */
     private Integer id;
-
-    /**
-     * 用户信息id
-     */
     private Integer userInfoId;
-
-    /**
-     * 邮箱号
-     */
     private String email;
-
-    /**
-     * 登录方式
-     */
     private Integer loginType;
-
-    /**
-     * 用户名
-     */
     private String username;
 
-    /**
-     * 密码
-     */
-    /**
-     * The password is needed only during the authentication handshake.  It is
-     * transient and excluded from JSON serializers so a session principal can
-     * never persist or expose the password hash.
-     */
     @JSONField(serialize = false, deserialize = false)
     private transient String password;
 
-    /**
-     * 用户角色
-     */
     private List<String> roleList;
-
-    /**
-     * 用户昵称
-     */
     private String nickname;
-
-    /**
-     * 用户头像
-     */
     private String avatar;
-
-    /**
-     * 用户简介
-     */
     private String intro;
-
-    /**
-     * 个人网站
-     */
     private String webSite;
-
-    /**
-     * 点赞文章集合
-     */
-    private Set<Object> articleLikeSet;
-
-    /**
-     * 点赞评论集合
-     */
-    private Set<Object> commentLikeSet;
-
-    /**
-     * 点赞说说集合
-     */
-    private Set<Object> talkLikeSet;
-
-    /**
-     * 用户登录ip
-     */
-    private String ipAddress;
-
-    /**
-     * ip来源
-     */
-    private String ipSource;
-
-    /**
-     * 是否禁用
-     */
     private Integer isDisable;
-
-    /**
-     * 浏览器
-     */
-    private String browser;
-
-    /**
-     * 操作系统
-     */
-    private String os;
-
-    /**
-     * 最近登录时间
-     */
-    private LocalDateTime lastLoginTime;
-
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Optional.ofNullable(this.roleList).orElseGet(List::of).stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toSet());
+        return Optional.ofNullable(roleList).orElseGet(List::of).stream()
+                .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
     public String getPassword() {
-        return this.password;
+        return password;
     }
 
-    /** Clears the authentication-only credential before session persistence. */
     public void eraseCredentials() {
-        this.password = null;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
+        password = null;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return this.isDisable == FALSE;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
+        return Integer.valueOf(FALSE).equals(isDisable);
     }
 
     @Override
     public boolean isEnabled() {
         return true;
     }
-
 }

@@ -118,17 +118,12 @@ ul{
   content: "";
 }
 
-canvas {
-  animation: to_show 4s;
-}
-
 .home-banner {
   background-color: #1d4ed8;
   background-image: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #7c3aed 100%);
 }
 
-.banner,
-.message-banner {
+.banner {
   background-color: #1d4ed8 !important;
   background-image: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #7c3aed 100%) !important;
 }
@@ -155,9 +150,6 @@ p {
   margin-bottom: 16px !important;
 }
 
-.login-container {
-  background: #fff !important;
-}
 @media (min-width: 760px) {
   .v-toolbar__content, .v-toolbar__extension {
     padding: 10px 36px;
@@ -196,14 +188,6 @@ p {
   .article-wrapper{
     padding: 50px 40px;
   }
-  .login-container {
-    padding: 1rem;
-    border-radius: 4px;
-    height: 500px;
-  }
-  .login-wrapper {
-   padding: 3.5rem 1.5rem 0 1.5rem;
-   }
 }
 
 @media (max-width: 759px) {
@@ -240,16 +224,6 @@ p {
     color: #eee;
     animation: title-scale 1s;
   }
-  .login-container {
-    padding: 1rem;
-    border-radius: 4px;
-    height: 100vh;
-    width: 100vw;
-    
-  }
-  .login-wrapper {
-    padding: 18vh 0.5em 0 0.5rem;
-   }
 }
 
 ::-webkit-scrollbar {
@@ -286,88 +260,8 @@ p {
   background-color: #49b1f5;
 }
 
-.emoji-btn {
-  cursor: pointer;
-  font-size: 1.3rem;
-}
-
-.emoji-btn-active {
-  cursor: pointer;
-  font-size: 1.3rem;
-  color: #66b1ff;
-}
-
-.emoji-container {
-  margin: 10px 0;
-  display: flex;
-  align-items: center;
-}
-
-.send-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.login-tip {
-  color: #333;
-  font-size: 0.875rem;
-}
-
-.login-tip span {
-  cursor: pointer;
-}
-
 .separator{
   margin: 0 6px;
-}
-
-.comment-textarea {
-  font-size: 0.875rem;
-  color: #555 !important;
-  outline: none;
-  padding: 10px 5px;
-  min-height: 122px;
-  resize: none;
-  width: 100%;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.upload-btn{
-  color: #fff;
-  margin-left: 1rem;
-  background-color: #49b1f5;
-}
-
-.upload-btn:hover{
-  background-color: #ff7242;
-}
-
-.cancle-btn{
-  background-color: #90939910;
-  border-color: #90939950;
-  color: #4c4948;
-}
-
-.v-comment-btn{
-  border: 1px solid #ededed;
-  border-color: #fff;
-  border-radius: 4px;
-  text-align: center;
-  padding: 6px 16px;
-  font-size: 14px;
-  transition: all 0.3s;
-  outline: none;
-}
-
-.comment-input{
-  position: relative;
-}
-
-.commmen-img{
-  position: absolute;
-  right: 0;
-  bottom: 0;
 }
 
 @keyframes header-effect{
@@ -451,50 +345,6 @@ pre.hljs code {
 }
 .right-container .is-collapsible{
   padding-left: 8px !important;
-}
-.bbox {
- left: -40px;
- bottom: 10px;
-}
-.bbox_active{
- left: 20px;
- bottom: 20px;
-}
-.bbox:hover:not(.bbox_active){
-  transform: translate(45px, 0);
-}
-.list_box {
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-.music_list {
-  max-width: 1320px;
-  height: 100%;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 0;
-  margin: auto;
-  border-radius: 5px;
-}
-.music_talk_list{
-  font-size: 12px;
-}
-.talk_content{
-  word-break: break-all;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2; 
-  overflow: hidden;
-}
-.pan{
-  width: 80px;
-  height: 80px;
-  padding: 13px;
 }
 #nprogress .bar {
   background:#49b1f5 !important; 

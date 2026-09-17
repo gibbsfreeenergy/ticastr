@@ -1,181 +1,96 @@
-@font-face {
-  font-family: "iconfont"; /* Project id 1477597 */
-  src: url('iconfont.eot?t=1642877766994'); /* IE9 */
-  src: url('iconfont.eot?t=1642877766994#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('iconfont.woff2?t=1642877766994') format('woff2'),
-       url('iconfont.woff?t=1642877766994') format('woff'),
-       url('iconfont.ttf?t=1642877766994') format('truetype'),
-       url('iconfont.svg?t=1642877766994#iconfont') format('svg');
-}
-
+/*
+ * The public app only needs the small set of icons below. Keep them as CSS
+ * glyphs so the retired icon-font binary and its unused glyph catalog do not
+ * have to ship with the reader.
+ */
 .iconfont {
-  font-family: "iconfont" !important;
+  display: inline-block;
   font-style: normal;
+  font-weight: normal;
+  line-height: 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.iconpinglun:before {
-  content: "\e619";
+.iconyueliang::before {
+  content: "☾";
 }
 
-.iconxiangxia2:before {
-  content: "\e6fa";
+.iconhanbao::before {
+  content: "☰";
 }
 
-.iconqita:before {
-  content: "\e7eb";
+.iconziyuanldpi::before {
+  content: "↑";
 }
 
-.iconfaxian:before {
-  content: "\e616";
+.iconshezhi::before {
+  content: "⚙";
 }
 
-.iconxiangce1:before {
-  content: "\e7be";
+.icontaiyang::before {
+  content: "☀";
 }
 
-.iconyueliang:before {
-  content: "\e62c";
+.iconshijian::before {
+  content: "◷";
 }
 
-.iconhanbao:before {
-  content: "\e78c";
+.iconzishu::before {
+  content: "≣";
 }
 
-.iconziyuanldpi:before {
-  content: "\e60d";
+.icongengxinshijian::before {
+  content: "↻";
 }
 
-.iconshezhi:before {
-  content: "\e771";
+.iconrili::before {
+  content: "▣";
 }
 
-.icontaiyang:before {
-  content: "\e6ed";
+.iconsousuo::before {
+  content: "⌕";
 }
 
-.iconshijian:before {
-  content: "\e61a";
+.iconzhifeiji::before {
+  content: "✈";
 }
 
-.iconliulan:before {
-  content: "\e60e";
+.iconzhuye::before {
+  content: "⌂";
 }
 
-.iconpinglunzu1:before {
-  content: "\e766";
+.iconguidang::before {
+  content: "▤";
 }
 
-.iconfenlei1:before {
-  content: "\e625";
+.iconchenggong::before {
+  content: "✓";
 }
 
-.iconzishu:before {
-  content: "\e617";
+.iconcuowu::before {
+  content: "×";
 }
 
-.icongengxinshijian:before {
-  content: "\e6be";
+.iconfuzhi::before {
+  content: "⧉";
 }
 
-.iconrili:before {
-  content: "\e797";
+.iconzhiding::before {
+  content: "↑";
 }
 
-.iconsousuo:before {
-  content: "\e60b";
+.iconqq::before {
+  content: "QQ";
+  font-size: 0.65em;
+  font-weight: 700;
 }
 
-.iconfenlei:before {
-  content: "\e669";
+.icongithub::before {
+  content: "◉";
 }
 
-.icontuichu:before {
-  content: "\e600";
+.icongitee-fill-round::before {
+  content: "G";
+  font-weight: 700;
 }
-
-.icongerenzhongxin:before {
-  content: "\e606";
-}
-
-.icondenglu:before {
-  content: "\e611";
-}
-
-.iconbiaoqian:before {
-  content: "\e62b";
-}
-
-.iconlianjie:before {
-  content: "\e746";
-}
-
-.iconzhifeiji:before {
-  content: "\e7d5";
-}
-
-.iconzhuye:before {
-  content: "\e7bb";
-}
-
-.iconguidang:before {
-  content: "\e689";
-}
-
-.iconpinglunzu:before {
-  content: "\e765";
-}
-
-.iconchenggong:before {
-  content: "\e635";
-}
-
-.iconcuowu:before {
-  content: "\e64a";
-}
-
-.iconqunliao:before {
-  content: "\e68f";
-}
-
-.iconerweima:before {
-  content: "\e69a";
-}
-
-.iconfuzhi:before {
-  content: "\ec7a";
-}
-
-.iconzhiding:before {
-  content: "\e6a7";
-}
-
-.iconweibo:before {
-  content: "\e62f";
-}
-
-.icondianzan:before {
-  content: "\e60c";
-}
-
-.iconbiaoqing:before {
-  content: "\e644";
-}
-
-.iconqq:before {
-  content: "\e66a";
-}
-
-.icongithub:before {
-  content: "\e72a";
-}
-
-.icongitee-fill-round:before {
-  content: "\e686";
-}
-
-.iconfanhuidingbu:before {
-  content: "\e633";
-}
-

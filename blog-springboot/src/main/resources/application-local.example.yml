@@ -5,9 +5,6 @@ spring:
     url: jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&allowMultiQueries=true
     username: blog
     password: change-me
-  mail:
-    username: noreply@example.com
-    password: change-me
 
 monitoring:
   token: change-me
@@ -28,10 +25,3 @@ storage:
 
 website:
   url: http://localhost:8080
-
-qq:
-  app-id: replace-me
-
-weibo:
-  app-id: replace-me
-  app-secret: change-me

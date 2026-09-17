@@ -5,7 +5,6 @@ import com.wzh.blog.content.ContentAsset;
 import com.wzh.blog.bootstrap.ArticleSearchBootstrapRunner;
 import com.wzh.blog.dao.ArticleDao;
 import com.wzh.blog.dao.OutboxEventDao;
-import com.wzh.blog.dao.TagDao;
 import com.wzh.blog.dto.ArticleSearchDTO;
 import com.wzh.blog.entity.Article;
 import com.wzh.blog.entity.OutboxEvent;
@@ -41,7 +40,6 @@ class ArticleSearchApplicationServiceTest {
     private ArticleSearchApplicationService service;
     private LuceneArticleSearchIndex index;
     private final ArticleContentService content = mock(ArticleContentService.class);
-    private final TagDao tags = mock(TagDao.class);
 
     @BeforeEach
     void setUp() {
@@ -49,13 +47,13 @@ class ArticleSearchApplicationServiceTest {
         index.rebuild(IntStream.rangeClosed(1, 61).mapToObj(id -> {
             currentArticles.put(id, Article.builder().id(id).articleTitle("Current " + id)
                     .isDelete(0).status(1).build());
-            return new ArticleSearchDocument(id, "Search " + id, null, List.of(), "search body " + id);
+            return new ArticleSearchDocument(id, "Search " + id, "search body " + id);
         }).toList());
         when(articles.selectByIds(anyCollection())).thenAnswer(call ->
                 ((Collection<?>) call.getArgument(0)).stream().map(currentArticles::get)
                         .filter(java.util.Objects::nonNull).toList());
-        service = new ArticleSearchApplicationService(index, articles, tags,
-                content, outbox, new CursorCodec("test-search-key", 900L));
+        service = new ArticleSearchApplicationService(index, articles, content, outbox,
+                new CursorCodec("test-search-key", 900L));
     }
 
     @Test
@@ -94,7 +92,7 @@ class ArticleSearchApplicationServiceTest {
             inserted.add(call.getArgument(0));
             return 1;
         });
-        service = new ArticleSearchApplicationService(index, articles, tags, content,
+        service = new ArticleSearchApplicationService(index, articles, content,
                 new OutboxEventService(events), new CursorCodec("test-search-key", 900L));
         service.scheduleIndex(1);
         service.scheduleIndex(1);
@@ -114,8 +112,6 @@ class ArticleSearchApplicationServiceTest {
         byte[] body = "Recovered searchable content".getBytes(StandardCharsets.UTF_8);
         when(content.openPublic(1)).thenReturn(new StorageObject(new ByteArrayInputStream(body),
                 new StorageObjectMetadata("articles/1/test.md", "text/markdown", body.length, "checksum", null)));
-        when(tags.listTagNameByArticleId(1)).thenReturn(List.of("recovery"));
-
         new ArticleSearchBootstrapRunner(service).run(null);
 
         assertThat(service.search("Recovered", new CursorPageQuery(null, 10)).items())

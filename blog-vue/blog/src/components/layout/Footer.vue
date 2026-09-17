@@ -1,5 +1,5 @@
 <template>
-  <v-footer app padless absolute v-if="!this.isMessage">
+  <v-footer app padless absolute>
     <div class="footer-wrap">
       <div>
         ©{{ year(blogInfo.websiteConfig.websiteCreateTime) }} -
@@ -16,9 +16,6 @@
 <script>
 export default {
   computed: {
-    isMessage() {
-      return this.$route.path == "/message";
-    },
     blogInfo() {
       return this.$store.state.blogInfo;
     }

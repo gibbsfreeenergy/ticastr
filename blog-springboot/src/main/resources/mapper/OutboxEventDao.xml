@@ -22,18 +22,6 @@
         WHERE status = #{status}
     </select>
 
-    <select id="countAll" resultType="long">
-        SELECT COUNT(*) FROM tb_outbox_event
-    </select>
-
-    <select id="listRecent" resultType="com.wzh.blog.entity.OutboxEvent">
-        SELECT event_id, event_type, event_version, aggregate_id, status, attempts,
-               next_attempt_at, created_at, published_at, processed_at, last_error
-        FROM tb_outbox_event
-        ORDER BY created_at DESC, event_id DESC
-        LIMIT #{offset}, #{size}
-    </select>
-
     <select id="existsOpen" resultType="boolean">
         SELECT EXISTS (
             SELECT 1

@@ -1,7 +1,6 @@
 package com.wzh.blog.controller;
 
 
-import com.wzh.blog.annotation.OptLog;
 import com.wzh.blog.annotation.AccessLimit;
 import com.wzh.blog.dto.*;
 import com.wzh.blog.enums.FilePathEnum;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
-import static com.wzh.blog.constant.OptTypeConst.*;
 
 /**
  * 文章控制器
@@ -92,7 +90,6 @@ public class ArticleController {
      * @param articleVO 文章信息
      * @return {@link Result<>}
      */
-    @OptLog(optType = SAVE_OR_UPDATE)
     @Operation(summary = "添加或修改文章")
     @PostMapping("/admin/articles")
     public Result<Integer> saveOrUpdateArticle(@Valid @RequestBody ArticleVO articleVO) {
@@ -100,7 +97,6 @@ public class ArticleController {
     }
 
     /** Writes a new immutable Markdown version; the article row stores only its pointer. */
-    @OptLog(optType = SAVE_OR_UPDATE)
     @Operation(summary = "保存文章 Markdown 内容")
     @AccessLimit(seconds = 60, maxCount = 30)
     @PutMapping("/admin/articles/{articleId}/content")
@@ -119,7 +115,6 @@ public class ArticleController {
         return Result.ok(articleContentService.versions(articleId, cursor, size));
     }
 
-    @OptLog(optType = SAVE_OR_UPDATE)
     @Operation(summary = "恢复文章内容版本")
     @AccessLimit(seconds = 60, maxCount = 10)
     @PostMapping("/admin/articles/{articleId}/versions/{version}/restore")
@@ -137,7 +132,6 @@ public class ArticleController {
      * @param articleTopVO 文章置顶信息
      * @return {@link Result<>}
      */
-    @OptLog(optType = UPDATE)
     @Operation(summary = "修改文章置顶")
     @PutMapping("/admin/articles/top")
     public Result<?> updateArticleTop(@Valid @RequestBody ArticleTopVO articleTopVO) {
@@ -151,7 +145,6 @@ public class ArticleController {
      * @param deleteVO 逻辑删除信息
      * @return {@link Result<>}
      */
-    @OptLog(optType = UPDATE)
     @Operation(summary = "恢复或删除文章")
     @PutMapping("/admin/articles")
     public Result<?> updateArticleDelete(@Valid @RequestBody DeleteVO deleteVO) {
@@ -179,7 +172,6 @@ public class ArticleController {
      * @param articleIdList 文章id列表
      * @return {@link Result<>}
      */
-    @OptLog(optType = REMOVE)
     @Operation(summary = "物理删除文章")
     @DeleteMapping("/admin/articles")
     public Result<?> deleteArticles(@RequestBody List<Integer> articleIdList) {
@@ -234,18 +226,6 @@ public class ArticleController {
     }
 
     /**
-     * 根据条件查询文章
-     *
-     * @param condition 条件
-     * @return {@link Result<ArticlePreviewListDTO>} 文章列表
-     */
-    @Operation(summary = "根据条件查询文章")
-    @GetMapping("/articles/condition")
-    public Result<ArticlePreviewListDTO> listArticlesByCondition(ArticleQueryVO condition) {
-        return Result.ok(articleService.listArticlesByCondition(condition, condition.toPageQuery()));
-    }
-
-    /**
      * 搜索文章
      *
      * @param condition 条件
@@ -257,21 +237,6 @@ public class ArticleController {
             @RequestParam(required = false, defaultValue = "") String keywords,
             CursorPageQueryVO pageQueryVO) {
         return Result.ok(articleService.listArticlesBySearch(keywords, pageQueryVO.toCursorPageQuery()));
-    }
-
-    /**
-     * 点赞文章
-     *
-     * @param articleId 文章id
-     * @return {@link Result<>}
-     */
-    @Operation(summary = "点赞文章")
-    @AccessLimit(seconds = 60, maxCount = 10)
-    @Parameter(name = "articleId", description = "文章id", required = true)
-    @PostMapping("/articles/{articleId}/like")
-    public Result<?> saveArticleLike(@PathVariable("articleId") Integer articleId) {
-        articleService.saveArticleLike(articleId);
-        return Result.ok();
     }
 
     private ResponseEntity<InputStreamResource> streamContent(ContentAsset asset,

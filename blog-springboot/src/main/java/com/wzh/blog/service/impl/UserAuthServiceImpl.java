@@ -1,281 +1,46 @@
 package com.wzh.blog.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.toolkit.IdWorker;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.wzh.blog.constant.CommonConst;
-import com.wzh.blog.dao.UserInfoDao;
-import com.wzh.blog.dao.UserRoleDao;
-import com.wzh.blog.dto.*;
-import com.wzh.blog.entity.UserInfo;
-import com.wzh.blog.entity.UserAuth;
-import com.wzh.blog.dao.UserAuthDao;
-import com.wzh.blog.entity.UserRole;
-import com.wzh.blog.enums.LoginTypeEnum;
-import com.wzh.blog.enums.RoleEnum;
-import com.wzh.blog.exception.BizException;
-import com.wzh.blog.service.BlogInfoService;
-import com.wzh.blog.service.RedisService;
-import com.wzh.blog.service.RoleLookupService;
-import com.wzh.blog.service.UserAuthService;
-import com.wzh.blog.security.CurrentUser;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.wzh.blog.strategy.context.SocialLoginStrategyContext;
-import com.wzh.blog.vo.*;
-import org.springframework.scheduling.annotation.Scheduled;
+import com.wzh.blog.dao.UserAuthDao;
+import com.wzh.blog.entity.UserAuth;
+import com.wzh.blog.exception.BizException;
+import com.wzh.blog.security.CurrentUser;
+import com.wzh.blog.service.UserAuthService;
+import com.wzh.blog.vo.PasswordVO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.wzh.blog.constant.CommonConst.*;
-import static com.wzh.blog.constant.RedisPrefixConst.*;
-import static com.wzh.blog.enums.UserAreaTypeEnum.getUserAreaType;
-import static com.wzh.blog.util.CommonUtils.checkEmail;
-import static com.wzh.blog.util.CommonUtils.getRandomCode;
-
-
 /**
- * 用户账号服务
- *
- * @author yezhiqiu
- * @date 2021/08/10
+ * 管理员账号服务实现。
  */
 @Service
 public class UserAuthServiceImpl extends ServiceImpl<UserAuthDao, UserAuth> implements UserAuthService {
 
-    private final RedisService redisService;
     private final UserAuthDao userAuthDao;
-    private final UserRoleDao userRoleDao;
-    private final UserInfoDao userInfoDao;
-    private final BlogInfoService blogInfoService;
-    private final com.wzh.blog.service.DurableEventPublisher durableEventPublisher;
-    private final SocialLoginStrategyContext socialLoginStrategyContext;
     private final PasswordEncoder passwordEncoder;
-    private final RoleLookupService roleLookupService;
     private final CurrentUser currentUser;
 
-    public UserAuthServiceImpl(RedisService redisService,
-                               UserAuthDao userAuthDao,
-                               UserRoleDao userRoleDao,
-                               UserInfoDao userInfoDao,
-                               BlogInfoService blogInfoService,
-                               com.wzh.blog.service.DurableEventPublisher durableEventPublisher,
-                               SocialLoginStrategyContext socialLoginStrategyContext,
+    public UserAuthServiceImpl(UserAuthDao userAuthDao,
                                PasswordEncoder passwordEncoder,
-                               RoleLookupService roleLookupService,
                                CurrentUser currentUser) {
-        this.redisService = redisService;
         this.userAuthDao = userAuthDao;
-        this.userRoleDao = userRoleDao;
-        this.userInfoDao = userInfoDao;
-        this.blogInfoService = blogInfoService;
-        this.durableEventPublisher = durableEventPublisher;
-        this.socialLoginStrategyContext = socialLoginStrategyContext;
         this.passwordEncoder = passwordEncoder;
-        this.roleLookupService = roleLookupService;
         this.currentUser = currentUser;
     }
 
-
-
-
     @Override
-    public void sendCode(String username) {
-        Long sendCount = redisService.incrExpire(USER_CODE_SEND_LIMIT_KEY + username, 60);
-        if (sendCount != null && sendCount > 1) {
-            throw new BizException("验证码已发送，请一分钟后再试");
-        }
-        // 校验账号是否合法
-        if (!checkEmail(username)) {
-            throw new BizException("请输入正确邮箱");
-        }
-        // 生成六位随机验证码发送
-        String code = getRandomCode();
-        // 发送验证码
-        EmailDTO emailDTO = EmailDTO.builder()
-                .email(username)
-                .subject("验证码")
-                .content("您的验证码为 " + code + " 有效期15分钟，请不要告诉他人哦！")
-                .build();
-        durableEventPublisher.publishEmail(emailDTO, "verification-code:" + username);
-        // 将验证码存入redis，设置过期时间为15分钟
-        redisService.set(USER_CODE_KEY + username, code, CODE_EXPIRE_TIME);
-    }
-
-
-
-    @Override
-    public List<UserAreaDTO> listUserAreas(UserQueryVO conditionVO) {
-        List<UserAreaDTO> userAreaDTOList = new ArrayList<>();
-        switch (Objects.requireNonNull(getUserAreaType(conditionVO.getType()))) {
-            case USER:
-                // 查询注册用户区域分布
-                Object userArea = redisService.get(USER_AREA);
-                if (Objects.nonNull(userArea)) {
-                    userAreaDTOList = JSON.parseArray(userArea.toString(), UserAreaDTO.class);
-                }
-                return userAreaDTOList;
-            case VISITOR:
-                // 查询游客区域分布
-                Map<String, Object> visitorArea = redisService.hGetAll(VISITOR_AREA);
-                if (Objects.nonNull(visitorArea)) {
-                    userAreaDTOList = visitorArea.entrySet().stream()
-                            .map(item -> UserAreaDTO.builder()
-                                    .name(item.getKey())
-                                    .value(Long.valueOf(item.getValue().toString()))
-                                    .build())
-                            .collect(Collectors.toList());
-                }
-                return userAreaDTOList;
-            default:
-                break;
-        }
-        return userAreaDTOList;
-    }
-
     @Transactional(rollbackFor = Exception.class)
-
-
-    @Override
-    public void register(UserVO user) {
-        // 校验账号是否合法
-        if (checkUser(user)) {
-            throw new BizException("邮箱已被注册！");
-        }
-        // 新增用户信息
-        UserInfo userInfo = UserInfo.builder()
-                .email(user.getUsername())
-                .nickname(CommonConst.DEFAULT_NICKNAME + IdWorker.getId())
-                .avatar(blogInfoService.getWebsiteConfig().getUserAvatar())
-                .build();
-        userInfoDao.insert(userInfo);
-        // 绑定用户角色
-        UserRole userRole = UserRole.builder()
-                .userId(userInfo.getId())
-                .roleId(roleLookupService.requireRoleId(RoleEnum.USER))
-                .build();
-        userRoleDao.insert(userRole);
-        // 新增用户账号
-        UserAuth userAuth = UserAuth.builder()
-                .userInfoId(userInfo.getId())
-                .username(user.getUsername())
-                .password(passwordEncoder.encode(user.getPassword()))
-                .loginType(LoginTypeEnum.EMAIL.getType())
-                .build();
-        userAuthDao.insert(userAuth);
-    }
-
-
-
-    @Override
-    public void updatePassword(UserVO user) {
-        // 校验账号是否合法
-        if (!checkUser(user)) {
-            throw new BizException("邮箱尚未注册！");
-        }
-        // 根据用户名修改密码
-        userAuthDao.update(new UserAuth(), new LambdaUpdateWrapper<UserAuth>()
-                .set(UserAuth::getPassword, passwordEncoder.encode(user.getPassword()))
-                .eq(UserAuth::getUsername, user.getUsername()));
-    }
-
-
-
-    @Override
     public void updateAdminPassword(PasswordVO passwordVO) {
-        // 查询旧密码是否正确
         UserAuth user = userAuthDao.selectOne(new LambdaQueryWrapper<UserAuth>()
                 .eq(UserAuth::getId, currentUser.require().getId()));
-        // 正确则修改密码，错误则提示不正确
-        if (Objects.nonNull(user) && passwordEncoder.matches(passwordVO.getOldPassword(), user.getPassword())) {
-            UserAuth userAuth = UserAuth.builder()
-                    .id(currentUser.require().getId())
-                    .password(passwordEncoder.encode(passwordVO.getNewPassword()))
-                    .build();
-            userAuthDao.updateById(userAuth);
-        } else {
+        if (user == null || !passwordEncoder.matches(passwordVO.getOldPassword(), user.getPassword())) {
             throw new BizException("旧密码不正确");
         }
+        userAuthDao.updateById(UserAuth.builder()
+                .id(user.getId())
+                .password(passwordEncoder.encode(passwordVO.getNewPassword()))
+                .build());
     }
-
-
-
-    @Override
-    public PageResult<UserBackDTO> listUserBackDTO(UserQueryVO condition, com.wzh.blog.web.PageQuery pageQuery) {
-        // 获取后台用户数量
-        Integer count = userAuthDao.countUser(condition);
-        if (count == 0) {
-            return new PageResult<>();
-        }
-        // 获取后台用户列表
-        List<UserBackDTO> userBackDTOList = userAuthDao.listUsers(pageQuery.offset(), pageQuery.size(), condition);
-        return new PageResult<>(userBackDTOList, count);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-
-
-    @Override
-    public UserInfoDTO qqLogin(QQLoginVO qqLoginVO) {
-        return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(qqLoginVO), LoginTypeEnum.QQ);
-    }
-
-    @Transactional(rollbackFor = BizException.class)
-
-
-    @Override
-    public UserInfoDTO weiboLogin(WeiboLoginVO weiboLoginVO) {
-        return socialLoginStrategyContext.executeLoginStrategy(JSON.toJSONString(weiboLoginVO), LoginTypeEnum.WEIBO);
-    }
-
-    /**
-     * 校验用户数据是否合法
-     *
-     * @param user 用户数据
-     * @return 结果
-     */
-    private Boolean checkUser(UserVO user) {
-        String codeKey = USER_CODE_KEY + user.getUsername();
-        if (!Boolean.TRUE.equals(redisService.consumeIfEquals(codeKey, user.getCode()))) {
-            throw new BizException("验证码错误！");
-        }
-        //查询用户名是否存在
-        UserAuth userAuth = userAuthDao.selectOne(new LambdaQueryWrapper<UserAuth>()
-                .select(UserAuth::getUsername)
-                .eq(UserAuth::getUsername, user.getUsername()));
-        return Objects.nonNull(userAuth);
-    }
-
-    /**
-     * 统计用户地区
-     */
-    @Scheduled(cron = "0 0 * * * ?")
-    public void statisticalUserArea() {
-        // 统计用户地域分布
-        Map<String, Long> userAreaMap = userAuthDao.selectList(new LambdaQueryWrapper<UserAuth>().select(UserAuth::getIpSource))
-                .stream()
-                .map(item -> {
-                    if (StringUtils.isNotBlank(item.getIpSource())) {
-                        return item.getIpSource().substring(0, 2)
-                                .replaceAll(PROVINCE, "")
-                                .replaceAll(CITY, "");
-                    }
-                    return UNKNOWN;
-                })
-                .collect(Collectors.groupingBy(item -> item, Collectors.counting()));
-        // 转换格式
-        List<UserAreaDTO> userAreaList = userAreaMap.entrySet().stream()
-                .map(item -> UserAreaDTO.builder()
-                        .name(item.getKey())
-                        .value(item.getValue())
-                        .build())
-                .collect(Collectors.toList());
-        redisService.set(USER_AREA, JSON.toJSONString(userAreaList));
-    }
-
 }

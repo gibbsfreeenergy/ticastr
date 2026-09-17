@@ -29,7 +29,6 @@ async function loadMenus() {
   const normalizedMenuList = userMenuList.map(item => {
     const routeKey = item.routeKey || item.code || resolveRouteKey(null, item.component);
     const normalizedItem = decorateMenuEntry(item, routeKey);
-    normalizedItem.icon = `iconfont ${normalizedItem.iconKey}`;
     normalizedItem.component = normalizedItem.component === "Layout" || !normalizedItem.component
       ? Layout
       : normalizedItem.component;
@@ -40,7 +39,6 @@ async function loadMenus() {
         throw new Error(`Unknown menu route key: ${childRouteKey || route.path}`);
       }
       const normalizedRoute = decorateMenuEntry(route, childRouteKey);
-      normalizedRoute.icon = `iconfont ${normalizedRoute.iconKey}`;
       normalizedRoute.component = component;
       return normalizedRoute;
     });

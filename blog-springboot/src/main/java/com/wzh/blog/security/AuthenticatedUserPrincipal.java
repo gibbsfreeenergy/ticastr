@@ -1,24 +1,21 @@
 package com.wzh.blog.security;
 
-import com.wzh.blog.dto.UserDetailDTO;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.wzh.blog.dto.UserDetailDTO;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.wzh.blog.constant.CommonConst.FALSE;
 
 /**
- * Password-free principal persisted in the authenticated session.
- * Password verification is performed before this object is created.
+ * 登录后的无密码会话主体。
  */
 public class AuthenticatedUserPrincipal implements UserDetails {
 
@@ -32,25 +29,14 @@ public class AuthenticatedUserPrincipal implements UserDetails {
     private String avatar;
     private String intro;
     private String webSite;
-    private Set<Object> articleLikeSet;
-    private Set<Object> commentLikeSet;
-    private Set<Object> talkLikeSet;
-    private String ipAddress;
-    private String ipSource;
     private Integer isDisable;
-    private String browser;
-    private String os;
-    private LocalDateTime lastLoginTime;
 
     protected AuthenticatedUserPrincipal() {
     }
 
     public AuthenticatedUserPrincipal(Integer id, Integer userInfoId, String email, Integer loginType,
                                       String username, List<String> roleList, String nickname, String avatar,
-                                      String intro, String webSite, Set<Object> articleLikeSet,
-                                      Set<Object> commentLikeSet, Set<Object> talkLikeSet, String ipAddress,
-                                      String ipSource, Integer isDisable, String browser, String os,
-                                      LocalDateTime lastLoginTime) {
+                                      String intro, String webSite, Integer isDisable) {
         this.id = id;
         this.userInfoId = userInfoId;
         this.email = email;
@@ -61,24 +47,14 @@ public class AuthenticatedUserPrincipal implements UserDetails {
         this.avatar = avatar;
         this.intro = intro;
         this.webSite = webSite;
-        this.articleLikeSet = articleLikeSet;
-        this.commentLikeSet = commentLikeSet;
-        this.talkLikeSet = talkLikeSet;
-        this.ipAddress = ipAddress;
-        this.ipSource = ipSource;
         this.isDisable = isDisable;
-        this.browser = browser;
-        this.os = os;
-        this.lastLoginTime = lastLoginTime;
     }
 
     public static AuthenticatedUserPrincipal from(UserDetailDTO user) {
         return new AuthenticatedUserPrincipal(
                 user.getId(), user.getUserInfoId(), user.getEmail(), user.getLoginType(),
                 user.getUsername(), user.getRoleList(), user.getNickname(), user.getAvatar(),
-                user.getIntro(), user.getWebSite(), user.getArticleLikeSet(), user.getCommentLikeSet(),
-                user.getTalkLikeSet(), user.getIpAddress(), user.getIpSource(), user.getIsDisable(),
-                user.getBrowser(), user.getOs(), user.getLastLoginTime());
+                user.getIntro(), user.getWebSite(), user.getIsDisable());
     }
 
     public Integer getId() {
@@ -122,40 +98,8 @@ public class AuthenticatedUserPrincipal implements UserDetails {
         return webSite;
     }
 
-    public Set<Object> getArticleLikeSet() {
-        return articleLikeSet;
-    }
-
-    public Set<Object> getCommentLikeSet() {
-        return commentLikeSet;
-    }
-
-    public Set<Object> getTalkLikeSet() {
-        return talkLikeSet;
-    }
-
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public String getIpSource() {
-        return ipSource;
-    }
-
     public Integer getIsDisable() {
         return isDisable;
-    }
-
-    public String getBrowser() {
-        return browser;
-    }
-
-    public String getOs() {
-        return os;
-    }
-
-    public LocalDateTime getLastLoginTime() {
-        return lastLoginTime;
     }
 
     public boolean disabled() {
@@ -169,7 +113,6 @@ public class AuthenticatedUserPrincipal implements UserDetails {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    /** Deliberately returns no credential; this principal is never used for password verification. */
     @Override
     @JsonIgnore
     @JSONField(serialize = false)

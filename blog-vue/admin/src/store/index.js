@@ -1,5 +1,4 @@
 import { createStore } from "vuex";
-import createPersistedState from "vuex-persistedstate";
 
 export default createStore({
   state: {
@@ -24,5 +23,4 @@ export default createStore({
     updateAvatar(state, avatar) { state.avatar = avatar; },
     updateUserInfo(state, user) { Object.assign(state, { nickname: user.nickname, intro: user.intro, webSite: user.webSite }); }
   },
-  plugins: [createPersistedState({ storage: window.sessionStorage })]
 });

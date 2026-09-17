@@ -1,401 +1,187 @@
 <template>
   <div>
-    <!-- banner -->
     <div class="home-banner" :style="cover">
       <div class="banner-container">
-        <!-- 联系方式 -->
-        <h1 class="blog-title animated zoomIn">
-          {{ blogInfo.websiteConfig.websiteName }}
-        </h1>
-        <!-- 一言 -->
-        <div class="blog-intro">
-          {{ obj.output }} <span class="typed-cursor">|</span>
-        </div>
-        <!-- 联系方式 -->
+        <h1 class="blog-title">{{ blogInfo.websiteConfig.websiteName }}</h1>
+        <div class="blog-intro">{{ blogInfo.websiteConfig.websiteIntro }}</div>
         <div class="blog-contact">
           <a
             v-if="isShowSocial('qq')"
             class="mr-5 iconfont iconqq"
             target="_blank"
-            :href="
-              'http://wpa.qq.com/msgrd?v=3&uin=' +
-                blogInfo.websiteConfig.qq +
-                '&site=qq&menu=yes'
-            "
+            rel="noopener"
+            :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
           />
           <a
             v-if="isShowSocial('github')"
             target="_blank"
+            rel="noopener"
             :href="blogInfo.websiteConfig.github"
             class="mr-5 iconfont icongithub"
           />
           <a
             v-if="isShowSocial('gitee')"
             target="_blank"
+            rel="noopener"
             :href="blogInfo.websiteConfig.gitee"
             class="iconfont icongitee-fill-round"
           />
         </div>
       </div>
-      <!-- 向下滚动 -->
       <div class="scroll-down" @click="scrollDown">
-        <v-icon color="#fff" class="scroll-down-effects">
-          $mdi-chevron-down
-        </v-icon>
+        <v-icon color="#fff" class="scroll-down-effects">$mdi-chevron-down</v-icon>
       </div>
     </div>
-    <!-- 主页文章 -->
+
     <v-row class="home-container">
       <v-col md="9" cols="12">
-        <!-- 说说轮播 -->
-        <v-card class="animated zoomIn" v-if="talkList.length > 0">
-          <Swiper :list="talkList" />
-        </v-card>
         <v-card
-          class="animated zoomIn article-card"
-          style="border-radius: 12px 8px 8px 12px"
           v-for="(item, index) of articleList"
           :key="item.id"
+          class="article-card"
+          :class="index % 2 === 0 ? 'left-card' : 'right-card'"
         >
-          <!-- 文章封面图 -->
-          <div :class="isRight(index)">
+          <div class="article-cover">
             <router-link :to="'/articles/' + item.id">
-              <v-img
-                class="on-hover"
-                width="100%"
-                height="100%"
-                :src="item.articleCover"
-              />
+              <v-img class="on-hover" width="100%" height="100%" :src="item.articleCover" />
             </router-link>
           </div>
-          <!-- 文章信息 -->
           <div class="article-wrapper">
-            <div style="line-height:1.4">
-              <router-link :to="'/articles/' + item.id">
-                {{ item.articleTitle }}
-              </router-link>
+            <div class="article-title-line">
+              <router-link :to="'/articles/' + item.id">{{ item.articleTitle }}</router-link>
             </div>
             <div class="article-info">
-              <!-- 是否置顶 -->
-              <span v-if="item.isTop == 1">
-                <span style="color:#ff7242">
-                  <i class="iconfont iconzhiding" /> 置顶
-                </span>
-                <span class="separator">|</span>
-              </span>
-              <!-- 发表时间 -->
+              <span v-if="item.isTop == 1" class="top-mark"><i class="iconfont iconzhiding" /> 置顶</span>
+              <span v-if="item.isTop == 1" class="separator">|</span>
               <v-icon size="14">$mdi-calendar-month-outline</v-icon>
               {{ date(item.createTime) }}
-              <span class="separator">|</span>
-              <!-- 文章分类 -->
-              <router-link :to="'/categories/' + item.categoryId">
-                <v-icon size="14">$mdi-inbox-full</v-icon>
-                {{ item.categoryName }}
-              </router-link>
-              <span class="separator">|</span>
-              <!-- 文章标签 -->
-              <router-link
-                style="display:inline-block"
-                :to="'/tags/' + tag.id"
-                class="mr-1"
-                v-for="tag of item.tagDTOList"
-                :key="tag.id"
-              >
-                <v-icon size="14">$mdi-tag-multiple</v-icon>{{ tag.tagName }}
-              </router-link>
             </div>
-            <!-- 正文按需从文章内容接口读取，首页只保留轻量元数据。 -->
-            <div class="article-content article-content-hint">
-              点击标题阅读全文
-            </div>
+            <div class="article-content article-content-hint">点击标题阅读全文</div>
           </div>
         </v-card>
         <div class="load-more-wrapper" v-if="!articlesComplete">
-          <v-btn
-            color="primary"
-            variant="tonal"
-            :loading="loadingArticles"
-            @click="loadMoreArticles"
-          >
+          <v-btn color="primary" variant="tonal" :loading="loadingArticles" @click="loadMoreArticles">
             加载更多
           </v-btn>
         </div>
       </v-col>
-      <!-- 博主信息 -->
+
       <v-col md="3" cols="12" class="d-md-block d-none">
         <div class="blog-wrapper">
-          <v-card class="animated zoomIn blog-card mt-5">
+          <v-card class="blog-card mt-5">
             <div class="author-wrapper">
-              <!-- 博主头像 -->
               <v-avatar size="110">
                 <img
                   v-if="blogInfo.websiteConfig.websiteAvatar"
                   class="author-avatar"
                   :src="blogInfo.websiteConfig.websiteAvatar"
+                  :alt="blogInfo.websiteConfig.websiteAuthor"
                 />
               </v-avatar>
-              <div style="font-size: 1.375rem;margin-top:0.625rem">
-                {{ blogInfo.websiteConfig.websiteAuthor }}
-              </div>
-              <div style="font-size: 0.875rem;">
-                {{ blogInfo.websiteConfig.websiteIntro }}
-              </div>
+              <div class="author-name">{{ blogInfo.websiteConfig.websiteAuthor }}</div>
+              <div class="author-intro">{{ blogInfo.websiteConfig.websiteIntro }}</div>
             </div>
-            <!-- 博客信息 -->
             <div class="blog-info-wrapper">
-              <div class="blog-info-data">
-                <router-link to="/archives">
-                  <div style="font-size: 0.875rem">文章</div>
-                  <div style="font-size: 1.25rem">
-                    {{ blogInfo.articleCount }}
-                  </div>
-                </router-link>
-              </div>
-              <div class="blog-info-data">
-                <router-link to="/categories">
-                  <div style="font-size: 0.875rem">分类</div>
-                  <div style="font-size: 1.25rem">
-                    {{ blogInfo.categoryCount }}
-                  </div>
-                </router-link>
-              </div>
-              <div class="blog-info-data">
-                <router-link to="/tags">
-                  <div style="font-size: 0.875rem">标签</div>
-                  <div style="font-size: 1.25rem">{{ blogInfo.tagCount }}</div>
-                </router-link>
-              </div>
+              <router-link to="/archives" class="blog-info-data">
+                <div>文章</div>
+                <strong>{{ blogInfo.articleCount }}</strong>
+              </router-link>
             </div>
-            <!-- 收藏按钮 -->
-            <a class="collection-btn" @click="tip = true">
-              <v-icon color="#fff" size="18" class="mr-1">$mdi-bookmark</v-icon>
-              加入书签
-            </a>
-            <!-- 社交信息 -->
             <div class="card-info-social">
               <a
                 v-if="isShowSocial('qq')"
                 class="mr-5 iconfont iconqq"
                 target="_blank"
-                :href="
-                  'http://wpa.qq.com/msgrd?v=3&uin=' +
-                    blogInfo.websiteConfig.qq +
-                    '&site=qq&menu=yes'
-                "
+                rel="noopener"
+                :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
               />
               <a
                 v-if="isShowSocial('github')"
                 target="_blank"
+                rel="noopener"
                 :href="blogInfo.websiteConfig.github"
                 class="mr-5 iconfont icongithub"
               />
               <a
                 v-if="isShowSocial('gitee')"
                 target="_blank"
+                rel="noopener"
                 :href="blogInfo.websiteConfig.gitee"
                 class="iconfont icongitee-fill-round"
               />
             </div>
           </v-card>
-          <!-- 网站信息 -->
-          <v-card class="blog-card animated zoomIn mt-5 big">
-            <div class="web-info-title">
-              <v-icon size="18">$mdi-bell</v-icon>
-              公告
-            </div>
-            <div style="font-size:0.875rem">
-              {{ blogInfo.websiteConfig.websiteNotice }}
-            </div>
-          </v-card>
-          <!-- 网站信息 -->
-          <v-card class="blog-card animated zoomIn mt-5">
-            <div class="web-info-title">
-              <v-icon size="18">$mdi-chart-line</v-icon>
-              网站资讯
-            </div>
-            <div class="web-info">
-              <div style="padding:4px 0 0">
-                运行时间:<span class="float-right">{{ time }}</span>
-              </div>
-              <div style="padding:4px 0 0">
-                总访问量:<span class="float-right">
-                  {{ blogInfo.viewsCount }}
-                </span>
-              </div>
-            </div>
+          <v-card v-if="blogInfo.websiteConfig.websiteNotice" class="blog-card mt-5">
+            <div class="web-info-title"><v-icon size="18">$mdi-bell</v-icon> 公告</div>
+            <div class="notice">{{ blogInfo.websiteConfig.websiteNotice }}</div>
           </v-card>
         </div>
       </v-col>
     </v-row>
-    <!-- 提示消息 -->
-    <v-snackbar v-model="tip" location="top" color="#49b1f5" :timeout="2000">
-      按CTRL+D 键将本页加入书签
-    </v-snackbar>
   </div>
 </template>
 
 <script>
-import Swiper from "../../components/Swiper.vue";
-import EasyTyper from "easy-typer-js";
 export default {
-  components: {
-    Swiper
-  },
   created() {
-    this.init();
-    this.listHomeTalks();
     this.loadMoreArticles();
-    this.timer = setInterval(this.runTime, 1000);
   },
-  data: function() {
+  data() {
     return {
-      tip: false,
-      time: "",
-      obj: {
-        output: "",
-        isEnd: false,
-        speed: 300,
-        singleBack: false,
-        sleep: 0,
-        type: "rollback",
-        backSpeed: 40,
-        sentencePause: true
-      },
       articleList: [],
-      talkList: [],
       nextCursor: null,
       loadingArticles: false,
       articlesComplete: false
     };
   },
   methods: {
-    // 初始化
-    init() {
-      document.title = this.blogInfo.websiteConfig.websiteName;
-      // 一言Api进行打字机循环输出效果
-      fetch("https://v1.hitokoto.cn?c=i")
-        .then(res => {
-          return res.json();
-        })
-        .then(({ hitokoto }) => {
-          this.initTyped(hitokoto);
-        })
-        .catch(() => {
-          this.initTyped(this.blogInfo.websiteConfig.websiteIntro);
-        });
-    },
-    async requestWithRetry(request, config = {}) {
-      const retryDelays = [0, 800, 1600];
-      for (const delay of retryDelays) {
+    async requestWithRetry(request) {
+      for (const delay of [0, 800, 1600]) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
         try {
-          return await request({
-            ...config,
-            suppressErrorToast: true,
-            timeout: 5000
-          });
+          return await request({ suppressErrorToast: true, timeout: 5000 });
         } catch {
-          // Retry transient failures without replacing the current UI.
+          // Retry transient API failures without replacing the article list.
         }
       }
       return null;
-    },
-    async listHomeTalks() {
-      const response = await this.requestWithRetry(config => this.$api.public.homeTalks(config));
-      if (response?.data) this.talkList = response.data;
-    },
-    initTyped(input, fn, hooks) {
-      const obj = this.obj;
-
-      const typed = new EasyTyper(obj, input, fn, hooks);
-    },
-    scrollDown() {
-      window.scrollTo({
-        behavior: "smooth",
-        top: document.documentElement.clientHeight
-      });
-    },
-    runTime() {
-      var timeold =
-        new Date().getTime() -
-        new Date(this.blogInfo.websiteConfig.websiteCreateTime).getTime();
-      var msPerDay = 24 * 60 * 60 * 1000;
-      var daysold = Math.floor(timeold / msPerDay);
-      var str = "";
-      var day = new Date();
-      str += daysold + "天";
-      str += day.getHours() + "时";
-      str += day.getMinutes() + "分";
-      str += day.getSeconds() + "秒";
-      this.time = str;
     },
     async loadMoreArticles() {
       if (this.loadingArticles || this.articlesComplete) return;
       this.loadingArticles = true;
       try {
-        const response = await this.requestWithRetry(config => this.$api.article.home(config), {
-          params: {
-            cursor: this.nextCursor || undefined,
-            size: 10
-          }
-        });
+        const response = await this.requestWithRetry(config => this.$api.article.home({
+          ...config,
+          params: { cursor: this.nextCursor || undefined, size: 10 }
+        }));
         if (!response) return;
         const page = response.data || {};
         const items = Array.isArray(page.items) ? page.items : [];
-        if (!items.length) {
-          this.articlesComplete = true;
-          return;
-        }
         this.articleList.push(...items);
         this.nextCursor = page.nextCursor || null;
-        this.articlesComplete = !page.hasNext;
+        this.articlesComplete = items.length === 0 || !page.hasNext;
       } finally {
         this.loadingArticles = false;
       }
+    },
+    scrollDown() {
+      window.scrollTo({ behavior: "smooth", top: document.documentElement.clientHeight });
     }
   },
   computed: {
-    isRight() {
-      return function(index) {
-        if (index % 2 == 0) {
-          return "article-cover left-radius";
-        }
-        return "article-cover right-radius";
-      };
-    },
     blogInfo() {
       return this.$store.state.blogInfo;
     },
     isShowSocial() {
-      return social => {
-        return this.blogInfo.websiteConfig.socialUrlList.indexOf(social) != -1;
-      };
+      return social => (this.blogInfo.websiteConfig.socialUrlList || []).includes(social);
     },
     cover() {
-      var cover = "";
-      this.$store.state.blogInfo.pageList.forEach(item => {
-        if (item.pageLabel == "home") {
-          cover = item.pageCover;
-        }
-      });
-      return "background: url(" + cover + ") center center / cover no-repeat";
+      const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "home");
+      return page?.pageCover ? `background: url("${page.pageCover}") center center / cover no-repeat` : "";
     }
   }
 };
 </script>
-
-<style lang="stylus">
-.typed-cursor
-  opacity: 1
-  animation: blink 0.7s infinite
-@keyframes blink
-  0%
-    opacity: 1
-  50%
-    opacity: 0
-  100%
-    opacity: 1
-</style>
 
 <style scoped>
 .home-banner {
@@ -409,244 +195,232 @@ export default {
   color: #fff !important;
   animation: header-effect 1s;
 }
+
 .banner-container {
   margin-top: 43vh;
   line-height: 1.5;
   color: #eee;
 }
-.blog-contact a {
+
+.blog-title {
+  font-size: 2.5rem;
+}
+
+.blog-intro {
+  font-size: 1.5rem;
+}
+
+.blog-contact {
+  display: none;
+}
+
+.blog-contact a,
+.card-info-social a {
   color: #fff !important;
 }
+
 .card-info-social {
+  margin-top: 12px;
   line-height: 40px;
   text-align: center;
-  margin: 6px 0 -6px;
 }
+
 .card-info-social a {
   font-size: 1.5rem;
 }
+
 .load-more-wrapper {
   display: flex;
   justify-content: center;
   padding: 20px 0;
 }
-.left-radius {
-  border-radius: 8px 0 0 8px !important;
+
+.article-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 280px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.article-cover {
+  width: 45%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.left-card .article-cover {
   order: 0;
+  border-radius: 8px 0 0 8px;
 }
-.right-radius {
-  border-radius: 0 8px 8px 0 !important;
+
+.right-card .article-cover {
   order: 1;
+  border-radius: 0 8px 8px 0;
 }
+
+.on-hover {
+  transition: transform 0.6s;
+}
+
+.article-card:hover .on-hover {
+  transform: scale(1.1);
+}
+
 .article-wrapper {
+  width: 55%;
+  padding: 0 2.5rem;
   font-size: 14px;
 }
-@media (min-width: 760px) {
-  .blog-title {
-    font-size: 2.5rem;
-  }
-  .blog-intro {
-    font-size: 1.5rem;
-  }
-  .blog-contact {
-    display: none;
-  }
-  .home-container {
-    max-width: 1200px;
-    margin: calc(100vh - 48px) auto 28px auto;
-    padding: 0 5px;
-  }
-  .article-card {
-    display: flex;
-    align-items: center;
-    height: 280px;
-    width: 100%;
-    margin-top: 20px;
-  }
-  .article-cover {
-    overflow: hidden;
-    height: 100%;
-    width: 45%;
-  }
-  .on-hover {
-    transition: all 0.6s;
-  }
-  .article-card:hover .on-hover {
-    transform: scale(1.1);
-  }
-  .article-wrapper {
-    padding: 0 2.5rem;
-    width: 55%;
-  }
-  .article-wrapper a {
-    font-size: 1.5rem;
-    transition: all 0.3s;
-  }
+
+.right-card .article-wrapper {
+  order: 0;
 }
-@media (max-width: 759px) {
-  .blog-title {
-    font-size: 26px;
-  }
-  .blog-contact {
-    font-size: 1.25rem;
-    line-height: 2;
-  }
-  .home-container {
-    width: 100%;
-    margin: calc(100vh - 66px) auto 0 auto;
-  }
-  .article-card {
-    margin-top: 1rem;
-  }
-  .article-cover {
-    border-radius: 8px 8px 0 0 !important;
-    height: 230px !important;
-    width: 100%;
-  }
-  .article-cover div {
-    border-radius: 8px 8px 0 0 !important;
-  }
-  .article-wrapper {
-    padding: 1.25rem 1.25rem 1.875rem;
-  }
-  .article-wrapper a {
-    font-size: 1.25rem;
-    transition: all 0.3s;
-  }
+
+.article-title-line a {
+  font-size: 1.5rem;
 }
-.scroll-down {
-  cursor: pointer;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-}
-.scroll-down i {
-  font-size: 2rem;
-}
-.article-wrapper a:hover {
+
+.article-title-line a:hover {
   color: #8e8cd8;
 }
+
 .article-info {
+  margin: 0.375rem 0;
+  color: #858585;
   font-size: 95%;
+  line-height: 2;
+}
+
+.top-mark {
+  color: #ff7242;
+}
+
+.article-content {
+  display: -webkit-box;
+  overflow: hidden;
   color: #858585;
   line-height: 2;
-  margin: 0.375rem 0;
-}
-.article-info a {
-  font-size: 95%;
-  color: #858585 !important;
-}
-.article-content {
-  line-height: 2;
-  overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
+
+.home-container {
+  max-width: 1200px;
+  margin: calc(100vh - 48px) auto 28px;
+  padding: 0 5px;
+}
+
 .blog-wrapper {
   position: sticky;
   top: 10px;
 }
+
 .blog-card {
-  line-height: 2;
   padding: 1.25rem 1.5rem;
+  line-height: 2;
 }
+
 .author-wrapper {
   text-align: center;
 }
-.blog-info-wrapper {
-  display: flex;
-  justify-self: center;
-  padding: 0.875rem 0;
-}
-.blog-info-data {
-  flex: 1;
-  text-align: center;
-}
-.blog-info-data a {
-  text-decoration: none;
-}
-.collection-btn {
-  text-align: center;
-  z-index: 1;
-  font-size: 14px;
-  position: relative;
-  display: block;
-  background-color: #49b1f5;
-  color: #fff !important;
-  height: 32px;
-  line-height: 32px;
-  transition-duration: 1s;
-  transition-property: color;
-}
-.collection-btn:before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: -1;
-  background: #ff7242;
-  content: "";
-  transition-timing-function: ease-out;
-  transition-duration: 0.5s;
-  transition-property: transform;
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-}
-.collection-btn:hover:before {
-  transition-timing-function: cubic-bezier(0.45, 1.64, 0.47, 0.66);
-  transform: scaleX(1);
-}
+
 .author-avatar {
-  transition: all 0.5s;
+  transition: transform 0.5s;
 }
+
 .author-avatar:hover {
   transform: rotate(360deg);
 }
-.web-info {
-  padding: 0.25rem;
+
+.author-name {
+  margin-top: 0.625rem;
+  font-size: 1.375rem;
+}
+
+.author-intro,
+.notice {
   font-size: 0.875rem;
 }
-.scroll-down-effects {
-  color: #eee !important;
+
+.blog-info-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0.875rem 0;
   text-align: center;
-  text-shadow: 0.1rem 0.1rem 0.2rem rgba(0, 0, 0, 0.15);
-  line-height: 1.5;
+}
+
+.blog-info-data {
+  text-decoration: none;
+}
+
+.blog-info-data strong {
+  font-size: 1.25rem;
+}
+
+@media (max-width: 759px) {
+  .blog-title {
+    font-size: 26px;
+  }
+
+  .blog-intro {
+    font-size: 1.1rem;
+  }
+
+  .blog-contact {
+    display: block;
+    font-size: 1.25rem;
+    line-height: 2;
+  }
+
+  .home-container {
+    width: 100%;
+    margin: calc(100vh - 66px) auto 0;
+  }
+
+  .article-card {
+    display: block;
+    height: auto;
+    margin-top: 1rem;
+  }
+
+  .article-cover,
+  .left-card .article-cover,
+  .right-card .article-cover {
+    width: 100%;
+    height: 230px;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .article-wrapper,
+  .right-card .article-wrapper {
+    width: 100%;
+    padding: 1.25rem 1.25rem 1.875rem;
+  }
+
+  .article-title-line a {
+    font-size: 1.25rem;
+  }
+}
+
+.scroll-down {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.scroll-down-effects {
   display: inline-block;
-  text-rendering: auto;
-  -webkit-font-smoothing: antialiased;
+  color: #eee !important;
+  text-shadow: 0.1rem 0.1rem 0.2rem rgba(0, 0, 0, 0.15);
   animation: scroll-down-effect 1.5s infinite;
 }
+
 @keyframes scroll-down-effect {
-  0% {
-    top: 0;
-    opacity: 0.4;
-    filter: alpha(opacity=40);
-  }
-  50% {
-    top: -16px;
-    opacity: 1;
-    filter: none;
-  }
-  100% {
-    top: 0;
-    opacity: 0.4;
-    filter: alpha(opacity=40);
-  }
-}
-.big i {
-  color: #f00;
-  animation: big 0.8s linear infinite;
-}
-@keyframes big {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
+  0%, 100% { top: 0; opacity: 0.4; }
+  50% { top: -16px; opacity: 1; }
 }
 </style>

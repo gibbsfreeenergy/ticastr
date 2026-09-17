@@ -23,7 +23,6 @@ import org.mockito.InOrder;
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -377,26 +376,6 @@ class StorageConfigAdminServiceTest {
         order.verify(configDao).countAssetReferences(53L);
         order.verify(configDao).deleteById(53L);
         verify(registry).invalidate(53L);
-    }
-
-    @Test
-    void compatibilitySwitchRejectsAmbiguousProfiles() {
-        when(configDao.selectAll()).thenReturn(List.of(cloudConfig(61L, false), cloudConfig(62L, false)));
-
-        assertThrows(ConflictException.class, () -> service.switchProvider("oss", 3));
-        verify(configDao, never()).activateOnly(anyLong(), any(), any());
-    }
-
-    @Test
-    void compatibilityProviderOperationsRejectConfiguredProfileAlongsideDraft() {
-        StorageProviderConfig draft = StorageProviderConfig.builder().id(63L).configName("draft").provider("oss")
-                .publicUrl("https://cdn.example.com").lastValidationStatus("NEVER").usageStatus("NEVER").build();
-        when(configDao.selectAll()).thenReturn(List.of(cloudConfig(61L, false), draft));
-
-        assertThrows(ConflictException.class, () -> service.validateProvider("oss"));
-        assertThrows(ConflictException.class, () -> service.switchProvider("oss", 3));
-        verify(registry, never()).providerForConfig(anyLong());
-        verify(configDao, never()).activateOnly(anyLong(), any(), any());
     }
 
     @Test

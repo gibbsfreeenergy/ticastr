@@ -14,4 +14,4 @@ npm run build
 npm run verify:budget
 ```
 
-开发服务器默认使用 8080，并将 `/api`、`/uploads` 和 `/websocket` 代理到 API。生产构建可使用 `PUBLIC_SITE_ORIGIN`、`PRERENDER_API_URL` 执行 `npm run build:seo`，生成文章静态页、sitemap、robots、RSS/Atom feed；生产环境通过部署平台注入的相对路径代理访问 API。
+开发服务器默认使用 8080，并将 `/api` 和 `/uploads` 代理到 API。生产构建可使用 `PUBLIC_SITE_ORIGIN`、`PRERENDER_API_URL` 执行 `npm run build:seo`，生成文章静态页、sitemap、robots、RSS/Atom feed；生产环境通过部署平台注入的相对路径代理访问 API。

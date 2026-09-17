@@ -100,21 +100,11 @@
     <ArticleEditorForm
       v-model="addOrEdit"
       :article="article"
-      :category-list="categoryList"
-      :tag-list="tagList"
-      :category-name="categoryName"
-      :tag-name="tagName"
       :type-list="typeList"
       :before-upload="beforeUpload"
       :upload-request="uploadCoverRequest"
       @save="saveOrUpdateArticle"
       @update-article="updateArticle"
-      @search-categories="searchCategories"
-      @search-tags="searchTags"
-      @add-category="addCategory"
-      @remove-category="removeCategory"
-      @add-tag="addTag"
-      @remove-tag="removeTag"
     />
 
     <el-dialog v-model="previewVisible" title="文章预览" width="80%" top="5vh">
@@ -147,8 +137,6 @@ const newArticle = moment => ({
   id: null,
   articleTitle: moment(new Date()).format("YYYY-MM-DD"),
   articleCover: "",
-  categoryName: null,
-  tagNameList: [],
   originalUrl: "",
   isTop: 0,
   type: 1,
@@ -194,10 +182,6 @@ export default {
       editor: null,
       article: newArticle(this.$moment),
       articleContent: "",
-      categoryName: "",
-      tagName: "",
-      categoryList: [],
-      tagList: [],
       typeList: [
         { type: 1, desc: "原创" },
         { type: 2, desc: "转载" },
@@ -225,7 +209,8 @@ export default {
   },
   computed: {
     routeArticleId() {
-      return this.$route.params.articleId || this.$route.path.split("/")[2] || null;
+      const articleId = this.$route.params.articleId || this.$route.path.split("/")[2] || null;
+      return articleId && articleId !== "new" ? articleId : null;
     },
     editorStatusText() {
       const labels = {
@@ -249,13 +234,9 @@ export default {
       if (state.metadata) this.article = this.mergeArticleMetadata(state.metadata);
     },
     mergeArticleMetadata(metadata) {
-      const tags = metadata.tagNameList
-        || (metadata.tagDTOList || []).map(item => item.tagName)
-        || [];
       return {
         ...this.article,
         ...metadata,
-        tagNameList: tags,
         articleContent: undefined
       };
     },
@@ -303,14 +284,6 @@ export default {
         this.$message.error("文章内容不能为空");
         return false;
       }
-      if (requirePublishFields && !this.article.categoryName) {
-        this.$message.error("文章分类不能为空");
-        return false;
-      }
-      if (requirePublishFields && this.article.tagNameList.length === 0) {
-        this.$message.error("文章标签不能为空");
-        return false;
-      }
       if (requirePublishFields && !this.article.articleCover.trim()) {
         this.$message.error("文章封面不能为空");
         return false;
@@ -322,8 +295,6 @@ export default {
         id: this.article.id,
         articleTitle: this.article.articleTitle,
         articleCover: this.article.articleCover,
-        categoryName: this.article.categoryName,
-        tagNameList: this.article.tagNameList,
         originalUrl: this.article.originalUrl,
         isTop: this.article.isTop,
         type: this.article.type,
@@ -377,8 +348,6 @@ export default {
     },
     openModel() {
       if (!this.validateDraft()) return;
-      this.listCategories();
-      this.listTags();
       this.addOrEdit = true;
     },
     async saveOrUpdateArticle() {
@@ -502,47 +471,11 @@ export default {
       if (!response?.flag) throw new Error("图片上传失败");
       return response.data;
     },
-    listCategories() {
-      return this.$api.catalog.categorySearch().then(data => {
-        this.categoryList = data.data || [];
-      });
-    },
-    listTags() {
-      return this.$api.catalog.tagSearch().then(data => {
-        this.tagList = data.data || [];
-      });
-    },
-    searchCategories(keywords, callback) {
-      this.$api.catalog.categorySearch({ params: { keywords } })
-        .then(data => callback(data.data || []))
-        .catch(() => callback([]));
-    },
-    searchTags(keywords, callback) {
-      this.$api.catalog.tagSearch({ params: { keywords } })
-        .then(data => callback(data.data || []))
-        .catch(() => callback([]));
-    },
-    addCategory(item) {
-      this.article.categoryName = item.categoryName;
-    },
     updateArticle(value) {
       this.article = {
         ...this.article,
-        ...value,
-        tagNameList: [...(value.tagNameList || [])]
+        ...value
       };
-    },
-    removeCategory() {
-      this.article.categoryName = null;
-    },
-    addTag(item) {
-      if (item?.tagName && !this.article.tagNameList.includes(item.tagName)) {
-        this.article.tagNameList.push(item.tagName);
-      }
-    },
-    removeTag(item) {
-      const index = this.article.tagNameList.indexOf(item);
-      if (index >= 0) this.article.tagNameList.splice(index, 1);
     }
   }
 };

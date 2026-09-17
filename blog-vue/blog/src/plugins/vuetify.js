@@ -2,30 +2,12 @@ import "vuetify/styles";
 import { createVuetify } from "vuetify";
 import { aliases, mdi } from "vuetify/iconsets/mdi-svg";
 import {
-  mdiArrowRightDropCircle,
   mdiBell,
-  mdiBookmark,
+  mdiBookOpenVariant,
   mdiCalendarMonthOutline,
-  mdiChartLine,
-  mdiChat,
-  mdiChatOutline,
-  mdiCheckDecagram,
-  mdiChevronDoubleRight,
   mdiChevronDown,
-  mdiClockOutline,
   mdiClose,
-  mdiDotsHorizontalCircle,
-  mdiEye,
-  mdiEyeOff,
-  mdiInboxFull,
-  mdiKeyboard,
-  mdiLinkVariant,
   mdiMagnify,
-  mdiMicrophone,
-  mdiPauseCircle,
-  mdiShareVariant,
-  mdiTagMultiple,
-  mdiThumbUp
 } from "@mdi/js";
 import {
   VApp,
@@ -37,16 +19,13 @@ import {
   VCarouselItem,
   VCol,
   VDialog,
-  VDivider,
   VFooter,
   VIcon,
   VImg,
   VMain,
   VNavigationDrawer,
-  VPagination,
   VRow,
-  VSnackbar,
-  VTextField
+  VSnackbar
 } from "vuetify/components";
 
 export default createVuetify({
@@ -60,44 +39,23 @@ export default createVuetify({
     VCarouselItem,
     VCol,
     VDialog,
-    VDivider,
     VFooter,
     VIcon,
     VImg,
     VMain,
     VNavigationDrawer,
-    VPagination,
     VRow,
-    VSnackbar,
-    VTextField
+    VSnackbar
   },
   icons: {
     aliases: {
       ...aliases,
-      "mdi-arrow-right-drop-circle": mdiArrowRightDropCircle,
       "mdi-bell": mdiBell,
-      "mdi-bookmark": mdiBookmark,
+      "mdi-book-open-variant": mdiBookOpenVariant,
       "mdi-calendar-month-outline": mdiCalendarMonthOutline,
-      "mdi-chart-line": mdiChartLine,
-      "mdi-chat": mdiChat,
-      "mdi-chat-outline": mdiChatOutline,
-      "mdi-check-decagram": mdiCheckDecagram,
-      "mdi-chevron-double-right": mdiChevronDoubleRight,
       "mdi-chevron-down": mdiChevronDown,
-      "mdi-clock-outline": mdiClockOutline,
       "mdi-close": mdiClose,
-      "mdi-dots-horizontal-circle": mdiDotsHorizontalCircle,
-      "mdi-eye": mdiEye,
-      "mdi-eye-off": mdiEyeOff,
-      "mdi-inbox-full": mdiInboxFull,
-      "mdi-keyboard": mdiKeyboard,
-      "mdi-link-variant": mdiLinkVariant,
-      "mdi-magnify": mdiMagnify,
-      "mdi-microphone": mdiMicrophone,
-      "mdi-pause-circle": mdiPauseCircle,
-      "mdi-share-variant": mdiShareVariant,
-      "mdi-tag-multiple": mdiTagMultiple,
-      "mdi-thumb-up": mdiThumbUp
+      "mdi-magnify": mdiMagnify
     },
     defaultSet: "mdi",
     sets: { mdi }

@@ -1,6 +1,5 @@
 package com.wzh.blog.util;
 
-import com.github.houbb.sensitive.word.bs.SensitiveWordBs;
 import org.owasp.html.HtmlPolicyBuilder;
 import org.owasp.html.PolicyFactory;
 
@@ -10,18 +9,6 @@ import org.owasp.html.PolicyFactory;
  * it cannot safely parse malformed HTML or URL protocols.
  */
 public final class HTMLUtils {
-
-    private static final SensitiveWordBs WORD_BS = SensitiveWordBs.newInstance()
-            .ignoreCase(true)
-            .ignoreWidth(true)
-            .ignoreNumStyle(true)
-            .ignoreChineseStyle(true)
-            .ignoreEnglishStyle(true)
-            .ignoreRepeat(true)
-            .enableNumCheck(false)
-            .enableEmailCheck(false)
-            .enableUrlCheck(false)
-            .init();
 
     private static final PolicyFactory RICH_TEXT_POLICY = new HtmlPolicyBuilder()
             .allowElements("p", "br", "strong", "b", "em", "i", "u", "s", "del", "blockquote",
@@ -46,7 +33,7 @@ public final class HTMLUtils {
         if (source == null || source.isBlank()) {
             return "";
         }
-        return RICH_TEXT_POLICY.sanitize(WORD_BS.replace(source));
+        return RICH_TEXT_POLICY.sanitize(source);
     }
 
     /**
@@ -56,20 +43,6 @@ public final class HTMLUtils {
         if (source == null || source.isBlank()) {
             return "";
         }
-        return PLAIN_TEXT_POLICY.sanitize(WORD_BS.replace(source)).strip();
-    }
-
-    /**
-     * Backwards-compatible entry point for comments, messages and chat text.
-     */
-    public static String filter(String source) {
-        return sanitizeRichText(source);
-    }
-
-    /**
-     * Backwards-compatible entry point for plain-text previews.
-     */
-    public static String deleteHMTLTag(String source) {
-        return sanitizePlainText(source);
+        return PLAIN_TEXT_POLICY.sanitize(source).strip();
     }
 }

@@ -568,36 +568,14 @@ a {
   font-size: 13px;
 }
 
-/* Shared legacy content helpers */
-.v-note-wrapper.fullscreen {
-  height: 100vh !important;
-}
-
 .el-upload-list__item-thumbnail,
 .article-cover,
-.page-cover,
-.album-cover,
-.photo-img {
+.page-cover {
   object-fit: cover !important;
   border-radius: 11px;
 }
 
-.photo-container .el-checkbox__input {
-  position: absolute !important;
-  top: 0.3rem;
-  left: 0.8rem;
-}
-
-.album-check-item .el-radio__input {
-  position: absolute !important;
-  z-index: 1000;
-  top: 1.2rem;
-  left: 0.2rem;
-}
-
-.article-status-menu,
-.review-menu,
-.status-menu {
+.article-status-menu {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -613,9 +591,7 @@ a {
   font-weight: 650;
 }
 
-.article-status-menu > span:not(:first-child),
-.review-menu > span,
-.status-menu > span {
+.article-status-menu > span:not(:first-child) {
   padding: 6px 11px;
   margin: 0 !important;
   color: var(--admin-text-tertiary);
@@ -626,17 +602,12 @@ a {
   transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
-.article-status-menu > span:not(:first-child):hover,
-.review-menu > span:hover,
-.status-menu > span:hover {
+.article-status-menu > span:not(:first-child):hover {
   color: var(--admin-text-secondary);
   border-color: var(--admin-border);
 }
 
-.article-status-menu .active-status,
-.review-menu .active-review,
-.status-menu .active-status,
-.status-menu .secret {
+.article-status-menu .active-status {
   color: var(--admin-blue);
   font-weight: 650;
   background: var(--admin-blue-soft);

@@ -2,49 +2,35 @@ package com.wzh.blog.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.wzh.blog.dao.*;
+import com.wzh.blog.dao.RoleDao;
+import com.wzh.blog.dao.UserAuthDao;
+import com.wzh.blog.dao.UserInfoDao;
 import com.wzh.blog.dto.UserDetailDTO;
 import com.wzh.blog.entity.UserAuth;
 import com.wzh.blog.entity.UserInfo;
 import com.wzh.blog.exception.BizException;
-import com.wzh.blog.service.RedisService;
-import com.wzh.blog.util.IpUtils;
-import eu.bitwalker.useragentutils.UserAgent;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
-
-import static com.wzh.blog.constant.RedisPrefixConst.*;
-import static com.wzh.blog.enums.ZoneEnum.SHANGHAI;
-
+import java.util.List;
 
 /**
- * 用户详细信息服务
- *
- * @author yezhiqiu
- * @date 2021/08/10
+ * 管理员登录详情服务。
  */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
+
     private final UserAuthDao userAuthDao;
     private final UserInfoDao userInfoDao;
     private final RoleDao roleDao;
-    private final RedisService redisService;
-    private final HttpServletRequest request;
 
-    public UserDetailsServiceImpl(UserAuthDao userAuthDao, UserInfoDao userInfoDao,
-                                  RoleDao roleDao, RedisService redisService,
-                                  HttpServletRequest request) {
+    public UserDetailsServiceImpl(UserAuthDao userAuthDao,
+                                  UserInfoDao userInfoDao,
+                                  RoleDao roleDao) {
         this.userAuthDao = userAuthDao;
         this.userInfoDao = userInfoDao;
         this.roleDao = roleDao;
-        this.redisService = redisService;
-        this.request = request;
     }
 
     @Override
@@ -52,38 +38,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (StringUtils.isBlank(username)) {
             throw new BizException("用户名不能为空！");
         }
-        // 查询账号是否存在
         UserAuth userAuth = userAuthDao.selectOne(new LambdaQueryWrapper<UserAuth>()
-                .select(UserAuth::getId, UserAuth::getUserInfoId, UserAuth::getUsername, UserAuth::getPassword, UserAuth::getLoginType)
+                .select(UserAuth::getId, UserAuth::getUserInfoId, UserAuth::getUsername,
+                        UserAuth::getPassword, UserAuth::getLoginType)
                 .eq(UserAuth::getUsername, username));
-        if (Objects.isNull(userAuth)) {
+        if (userAuth == null) {
             throw new BizException("用户名不存在!");
         }
-        // 封装登录信息
-        return convertUserDetail(userAuth, request);
+        return convertUserDetail(userAuth);
     }
 
-    /**
-     * 封装用户登录信息
-     *
-     * @param user    用户账号
-     * @param request 请求
-     * @return 用户登录信息
-     */
-    public UserDetailDTO convertUserDetail(UserAuth user, HttpServletRequest request) {
-        // 查询账号信息
+    public UserDetailDTO convertUserDetail(UserAuth user) {
         UserInfo userInfo = userInfoDao.selectById(user.getUserInfoId());
-        // 查询账号角色
+        if (userInfo == null) {
+            throw new BizException("管理员资料不存在");
+        }
         List<String> roleList = roleDao.listRolesByUserInfoId(userInfo.getId());
-        // 查询账号点赞信息
-        Set<Object> articleLikeSet = redisService.sMembers(ARTICLE_USER_LIKE + userInfo.getId());
-        Set<Object> commentLikeSet = redisService.sMembers(COMMENT_USER_LIKE + userInfo.getId());
-        Set<Object> talkLikeSet = redisService.sMembers(TALK_USER_LIKE + userInfo.getId());
-        // 获取设备信息
-        String ipAddress = IpUtils.getIpAddress(request);
-        String ipSource = IpUtils.getIpSource(ipAddress);
-        UserAgent userAgent = IpUtils.getUserAgent(request);
-        // 封装权限集合
         return UserDetailDTO.builder()
                 .id(user.getId())
                 .loginType(user.getLoginType())
@@ -96,16 +66,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .avatar(userInfo.getAvatar())
                 .intro(userInfo.getIntro())
                 .webSite(userInfo.getWebSite())
-                .articleLikeSet(articleLikeSet)
-                .commentLikeSet(commentLikeSet)
-                .talkLikeSet(talkLikeSet)
-                .ipAddress(ipAddress)
-                .ipSource(ipSource)
                 .isDisable(userInfo.getIsDisable())
-                .browser(userAgent.getBrowser().getName())
-                .os(userAgent.getOperatingSystem().getName())
-                .lastLoginTime(LocalDateTime.now(ZoneId.of(SHANGHAI.getZone())))
                 .build();
     }
-
 }

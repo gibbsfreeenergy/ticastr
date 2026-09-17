@@ -16,9 +16,5 @@ public interface OutboxEventDao extends BaseMapper<OutboxEvent> {
 
     long countByStatus(@Param("status") String status);
 
-    long countAll();
-
-    List<OutboxEvent> listRecent(@Param("offset") long offset, @Param("size") int size);
-
     boolean existsOpen(@Param("eventType") String eventType, @Param("aggregateId") String aggregateId);
 }

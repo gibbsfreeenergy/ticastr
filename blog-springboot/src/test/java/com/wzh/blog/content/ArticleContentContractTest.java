@@ -1,11 +1,9 @@
 package com.wzh.blog.content;
 
-import com.wzh.blog.dto.ArticleMetadataDTO;
 import com.wzh.blog.vo.ArticleContentRequest;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,9 +38,6 @@ class ArticleContentContractTest {
 
         assertEquals(content, sanitizer.sanitize(content));
         assertTrue(content.getBytes(StandardCharsets.UTF_8).length < 1_048_576);
-        assertTrue(Arrays.stream(ArticleMetadataDTO.class.getDeclaredFields())
-                .noneMatch(field -> field.getName().equals("articleContent")));
-
         ArticleContentRequest request = new ArticleContentRequest(content, 2);
         assertEquals(content, request.content());
         assertEquals(2, request.expectedVersion());

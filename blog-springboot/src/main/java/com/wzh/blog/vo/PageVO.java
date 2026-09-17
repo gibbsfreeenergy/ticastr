@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * 页面信息
@@ -38,6 +39,7 @@ public class PageVO {
      * 页面标签
      */
     @NotBlank(message = "页面标签不能为空")
+    @Pattern(regexp = "^(home|archive|about)$", message = "页面标签只能是 home、archive 或 about")
     @Schema(description = "页面标签")
     private String pageLabel;
 

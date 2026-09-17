@@ -49,16 +49,6 @@ public class UserAuth {
     private Integer loginType;
 
     /**
-     * 用户登录ip
-     */
-    private String ipAddress;
-
-    /**
-     * ip来源
-     */
-    private String ipSource;
-
-    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)
@@ -69,10 +59,5 @@ public class UserAuth {
      */
     @TableField(fill = FieldFill.UPDATE)
     private LocalDateTime updateTime;
-
-    /**
-     * 最近登录时间
-     */
-    private LocalDateTime lastLoginTime;
 
 }

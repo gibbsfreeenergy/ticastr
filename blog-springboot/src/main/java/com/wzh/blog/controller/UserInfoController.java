@@ -1,129 +1,42 @@
 package com.wzh.blog.controller;
 
-
-import com.wzh.blog.annotation.OptLog;
-import com.wzh.blog.vo.PageResult;
-import com.wzh.blog.dto.UserOnlineDTO;
 import com.wzh.blog.service.UserInfoService;
-import com.wzh.blog.vo.*;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
+import com.wzh.blog.vo.Result;
+import com.wzh.blog.vo.UserInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.web.bind.annotation.*;
-
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
-
-
-import static com.wzh.blog.constant.OptTypeConst.UPDATE;
-
 /**
- * 用户信息控制器
- *
- * @author yezhiqiu
- * @date 2021/07/29
+ * 管理员个人资料控制器。
  */
-@Tag(name = "用户信息模块")
+@Tag(name = "管理员资料模块")
 @RestController
 public class UserInfoController {
+
     private final UserInfoService userInfoService;
 
     public UserInfoController(UserInfoService userInfoService) {
         this.userInfoService = userInfoService;
     }
 
-    /**
-     * 更新用户信息
-     *
-     * @param userInfoVO 用户信息
-     * @return {@link Result<>}
-     */
-    @Operation(summary = "更新用户信息")
+    @Operation(summary = "更新管理员资料")
     @PutMapping("/users/info")
     public Result<?> updateUserInfo(@Valid @RequestBody UserInfoVO userInfoVO) {
         userInfoService.updateUserInfo(userInfoVO);
         return Result.ok();
     }
 
-    /**
-     * 更新用户头像
-     *
-     * @param file 文件
-     * @return {@link Result<String>} 头像地址
-     */
-    @Operation(summary = "更新用户头像")
-    @Parameter(name = "file", description = "用户头像", required = true)
+    @Operation(summary = "更新管理员头像")
+    @Parameter(name = "file", description = "管理员头像", required = true)
     @PostMapping("/users/avatar")
     public Result<String> updateUserAvatar(MultipartFile file) {
         return Result.ok(userInfoService.updateUserAvatar(file));
     }
-
-    /**
-     * 绑定用户邮箱
-     *
-     * @param emailVO 邮箱信息
-     * @return {@link Result<>}
-     */
-    @Operation(summary = "绑定用户邮箱")
-    @PostMapping("/users/email")
-    public Result<?> saveUserEmail(@Valid @RequestBody EmailVO emailVO) {
-        userInfoService.saveUserEmail(emailVO);
-        return Result.ok();
-    }
-
-    /**
-     * 修改用户角色
-     *
-     * @param userRoleVO 用户角色信息
-     * @return {@link Result<>}
-     */
-    @OptLog(optType = UPDATE)
-    @Operation(summary = "修改用户角色")
-    @PutMapping("/admin/users/role")
-    public Result<?> updateUserRole(@Valid @RequestBody UserRoleVO userRoleVO) {
-        userInfoService.updateUserRole(userRoleVO);
-        return Result.ok();
-    }
-
-    /**
-     * 修改用户禁用状态
-     *
-     * @param userDisableVO 用户禁用信息
-     * @return {@link Result<>}
-     */
-    @OptLog(optType = UPDATE)
-    @Operation(summary = "修改用户禁用状态")
-    @PutMapping("/admin/users/disable")
-    public Result<?> updateUserDisable(@Valid @RequestBody UserDisableVO userDisableVO) {
-        userInfoService.updateUserDisable(userDisableVO);
-        return Result.ok();
-    }
-
-    /**
-     * 查看在线用户
-     *
-     * @param conditionVO 条件
-     * @return {@link Result<UserOnlineDTO>} 在线用户列表
-     */
-    @Operation(summary = "查看在线用户")
-    @GetMapping("/admin/users/online")
-    public Result<PageResult<UserOnlineDTO>> listOnlineUsers(SearchQueryVO conditionVO) {
-        return Result.ok(userInfoService.listOnlineUsers(conditionVO, conditionVO.toPageQuery()));
-    }
-
-    /**
-     * 下线用户
-     *
-     * @param userInfoId 用户信息
-     * @return {@link Result<>}
-     */
-    @Operation(summary = "下线用户")
-    @DeleteMapping("/admin/users/{userInfoId}/online")
-    public Result<?> removeOnlineUser(@PathVariable("userInfoId") Integer userInfoId) {
-        userInfoService.removeOnlineUser(userInfoId);
-        return Result.ok();
-    }
-
 }
-

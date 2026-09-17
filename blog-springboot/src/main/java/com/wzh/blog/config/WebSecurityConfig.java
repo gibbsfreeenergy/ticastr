@@ -90,7 +90,7 @@ public class WebSecurityConfig {
                         .logoutSuccessHandler(logoutSuccessHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/login", "/actuator/health/**", "/actuator/prometheus", "/uploads/**", "/websocket").permitAll()
+                        .requestMatchers("/login", "/actuator/health/**", "/actuator/prometheus", "/uploads/**").permitAll()
                         .anyRequest().access(dynamicAuthorizationManager))
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
@@ -113,9 +113,8 @@ public class WebSecurityConfig {
                     headers.contentSecurityPolicy(csp -> csp.policyDirectives(
                             "default-src 'self'; base-uri 'self'; object-src 'none'; "
                                     + "frame-ancestors 'none'; img-src 'self' data: https:; "
-                                    + "style-src 'self' 'unsafe-inline'; script-src 'self' https://ssl.captcha.qq.com "
-                                    + "https://connect.qq.com https://tjs.sjs.sinajs.cn; "
-                                    + "connect-src 'self' https: wss:; font-src 'self' data:"));
+                                    + "style-src 'self' 'unsafe-inline'; script-src 'self'; "
+                                    + "connect-src 'self'; font-src 'self' data:"));
                     if (isProductionLike()) {
                         headers.httpStrictTransportSecurity(hsts -> hsts
                                 .includeSubDomains(true).maxAgeInSeconds(31_536_000));

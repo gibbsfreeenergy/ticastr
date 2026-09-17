@@ -18,7 +18,7 @@
 
 ## 删除与对账
 
-PENDING -> RETIRED -> DELETE_PENDING -> DELETED；删除失败进入 DELETE_FAILED。任何删除前都要通过有界、带索引的引用检查，保护文章内容、文章封面、相册、照片、说说、网站配置、头像等引用。provider 删除通过 MEDIA_DELETE/CONTENT_DELETE Outbox handler 异步执行并保持幂等；被内容或媒体资产引用的存储配置档案不能删除，active 档案也不能删除。
+PENDING -> RETIRED -> DELETE_PENDING -> DELETED；删除失败进入 DELETE_FAILED。任何删除前都要通过有界、带索引的引用检查，保护文章封面、页面封面、管理员头像、关于内容和网站配置中的图片引用。provider 删除通过 `MEDIA_DELETE` Outbox handler 异步执行并保持幂等；被内容或媒体资产引用的存储配置档案不能删除，active 档案也不能删除。
 
 reconciliation job 按页扫描 PENDING/RETIRED/DELETE_FAILED 和过期临时资产，创建或重试 Outbox，不在持有数据库事务时调用 provider。对账和清理必须保留失败原因、时间和 provider 延时，后台只允许针对已识别的资产/event 重试，不提供任意 object key 删除。
 

@@ -1,4 +1,3 @@
-import { nextTick } from "vue";
 import { mount } from "@vue/test-utils";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -48,7 +47,7 @@ afterAll(() => {
 });
 
 describe("TopNavBar", () => {
-  it("allows discovery and entertainment submenus to extend beyond the toolbar", () => {
+  it("keeps the navigation content visible inside the toolbar", () => {
     const wrapper = mountTopNav();
     const toolbarContent = wrapper.find(".v-toolbar__content");
 
@@ -56,15 +55,11 @@ describe("TopNavBar", () => {
     expect(getComputedStyle(toolbarContent.element).overflow).toBe("visible");
   });
 
-  it("keeps submenu labels readable on the orbit page", async () => {
-    const wrapper = mountTopNav("/orbit");
-    await nextTick();
-    const submenuLinks = wrapper.findAll(".menus-submenu a");
-
-    expect(wrapper.vm.$route.path).toBe("/orbit");
-    expect(wrapper.vm.navClass).toContain("orbit-nav");
-    expect(wrapper.find(".v-app-bar").attributes("class")).toContain("orbit-nav");
-    expect(submenuLinks.length).toBeGreaterThan(0);
-    expect(getComputedStyle(submenuLinks[0].element).color).toBe("rgb(76, 73, 72)");
+  it("only exposes the retained reader pages", () => {
+    const wrapper = mountTopNav();
+    expect(wrapper.findAll(".menu-btn")).toHaveLength(4);
+    expect(wrapper.text()).toContain("首页");
+    expect(wrapper.text()).toContain("归档");
+    expect(wrapper.text()).toContain("关于");
   });
 });

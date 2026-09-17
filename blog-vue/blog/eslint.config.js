@@ -2,12 +2,12 @@ import vue from "eslint-plugin-vue";
 import globals from "globals";
 
 export default [
-  { ignores: ["dist/**", "node_modules/**", "src/components/zw-player/**"] },
+  { ignores: ["dist/**", "node_modules/**"] },
   ...vue.configs["flat/essential"],
   {
     files: ["**/*.{js,vue}"],
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node, TencentCaptcha: "readonly" }
+      globals: { ...globals.browser, ...globals.node }
     },
     rules: {
       "vue/multi-word-component-names": "off",

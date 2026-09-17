@@ -47,30 +47,12 @@ class RedisServiceImplIntegrationTest {
     }
 
     @Test
-    void incrementsWithExpiryAtomically() {
-        assertThat(redisService.incrExpire("test:rate", 60)).isEqualTo(1);
-        assertThat(redisService.incrExpire("test:rate", 60)).isEqualTo(2);
-        assertThat(redisService.getExpire("test:rate")).isBetween(1L, 60L);
-    }
+    void storesAndDeletesCacheEntries() {
+        redisService.set("test:cache", "value", 60);
+        assertThat(redisService.get("test:cache")).isEqualTo("value");
 
-    @Test
-    void togglesLikesWithoutCounterDrift() {
-        assertThat(redisService.toggleMemberAndCount("test:user:likes", 42, "test:like:count")).isTrue();
-        assertThat(redisService.hGet("test:like:count", "42")).isEqualTo(1);
-
-        assertThat(redisService.toggleMemberAndCount("test:user:likes", 42, "test:like:count")).isFalse();
-        assertThat(redisService.hGet("test:like:count", "42")).isEqualTo(0);
-    }
-
-    @Test
-    void recordsAVisitorOnlyOnce() {
-        assertThat(redisService.recordUniqueVisitor(
-                "test:visitors", "visitor-1", "test:views", "test:areas", "上海")).isTrue();
-        assertThat(redisService.recordUniqueVisitor(
-                "test:visitors", "visitor-1", "test:views", "test:areas", "上海")).isFalse();
-
-        assertThat(redisService.get("test:views")).isEqualTo(1);
-        assertThat(redisService.hGet("test:areas", "上海")).isEqualTo(1);
+        assertThat(redisService.del("test:cache")).isTrue();
+        assertThat(redisService.get("test:cache")).isNull();
     }
 
     @Test

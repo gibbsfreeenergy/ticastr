@@ -43,13 +43,13 @@ describe("shared API boundary", () => {
     const api = createApi(client);
 
     await api.public.home();
-    await api.album.photos(12, { params: { current: 2 } });
-    await api.public.sendVoice("audio", { headers: { "Content-Type": "audio/wav" } });
+    await api.article.archives({ params: { size: 20 } });
+    await api.article.search({ params: { keywords: "vue" } });
 
     expect(calls).toEqual([
       { method: "get", url: "/api/", config: undefined },
-      { method: "get", url: "/api/albums/12/photos", config: { params: { current: 2 } } },
-      { method: "post", url: "/api/voice", data: "audio", config: { headers: { "Content-Type": "audio/wav" } } }
+      { method: "get", url: "/api/articles/archives", config: { params: { size: 20 } } },
+      { method: "get", url: "/api/articles/search", config: { params: { keywords: "vue" } } }
     ]);
   });
 });

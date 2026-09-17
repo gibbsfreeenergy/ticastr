@@ -37,7 +37,7 @@ class MenuRouteContractTest {
         assertThat(menu.getCode()).isEqualTo("articleList");
         assertThat(menu.getRouteKey()).isEqualTo("articleList");
         assertThat(menu.getSection()).isEqualTo("content");
-        assertThat(menu.getIconKey()).isEqualTo("list");
+        assertThat(menu.getIconKey()).isEqualTo("pen");
     }
 
     @Test

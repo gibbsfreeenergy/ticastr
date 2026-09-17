@@ -42,15 +42,6 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-  mail:
-    host: ${MAIL_HOST:smtp.qq.com}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    default-encoding: UTF-8
-    port: ${MAIL_PORT:587}
-    properties:
-      "[mail.smtp.auth]": true
-      "[mail.smtp.starttls.enable]": true
   servlet:
     multipart:
       max-file-size: ${MULTIPART_MAX_FILE_SIZE:20MB}
@@ -92,19 +83,6 @@ storage:
 website:
   url: ${WEBSITE_URL:http://localhost:8080}
 
-qq:
-  app-id: ${QQ_APP_ID:}
-  check-token-url: https://graph.qq.com/oauth2.0/me?access_token={access_token}
-  user-info-url: https://graph.qq.com/user/get_user_info?openid={openid}&access_token={access_token}&oauth_consumer_key={oauth_consumer_key}
-
-weibo:
-  app-id: ${WEIBO_APP_ID:}
-  app-secret: ${WEIBO_APP_SECRET:}
-  grant-type: authorization_code
-  redirect-url: ${WEIBO_REDIRECT_URL:http://localhost:8080/oauth/login/weibo}
-  access-token-url: https://api.weibo.com/oauth2/access_token
-  user-info-url: https://api.weibo.com/2/users/show.json?uid={uid}&access_token={access_token}
-
 app:
   redis:
     enabled: ${APP_REDIS_ENABLED:false}
@@ -133,10 +111,6 @@ app:
     queue-capacity: ${ASYNC_QUEUE_CAPACITY:200}
   outbox:
     dispatch-interval-ms: ${OUTBOX_DISPATCH_INTERVAL_MS:5000}
-    batch-size: ${OUTBOX_BATCH_SIZE:20}
-    claim-timeout-seconds: ${OUTBOX_CLAIM_TIMEOUT_SECONDS:600}
-    max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
-    max-backoff-seconds: ${OUTBOX_MAX_BACKOFF_SECONDS:300}
   search:
     data-root: ${SEARCH_DATA_ROOT:./data}
     index-path: ${SEARCH_INDEX_PATH:search-index}
@@ -145,10 +119,6 @@ app:
   pagination:
     cursor-secret: ${PAGINATION_CURSOR_SECRET:local-dev-cursor-secret-change-me}
     cursor-lifetime-seconds: ${PAGINATION_CURSOR_LIFETIME_SECONDS:900}
-  audit:
-    retention-days: ${AUDIT_RETENTION_DAYS:90}
-    max-payload-length: ${AUDIT_MAX_PAYLOAD_LENGTH:8000}
-    cleanup-cron: ${AUDIT_CLEANUP_CRON:0 30 3 * * ?}
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
@@ -174,8 +144,6 @@ management:
   health:
     redis:
       enabled: ${APP_REDIS_ENABLED:false}
-    mail:
-      enabled: ${MANAGEMENT_HEALTH_MAIL_ENABLED:false}
   metrics:
     tags:
       application: ticastr-api

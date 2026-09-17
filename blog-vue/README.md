@@ -13,4 +13,4 @@ npm ci
 npm run dev -- --port 8081
 ```
 
-提交前分别执行 `npm run lint`、`npm run test:run` 和 `npm run build`。业务请求使用 `/api`、`/uploads`、`/websocket` 相对路径，由 Vite/Nginx/Vercel 代理到 API。
+提交前分别执行 `npm run lint`、`npm run test:run` 和 `npm run build`。业务请求使用 `/api`、`/uploads` 相对路径，由 Vite/Nginx/Vercel 代理到 API。

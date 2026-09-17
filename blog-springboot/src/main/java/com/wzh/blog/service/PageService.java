@@ -22,13 +22,6 @@ public interface PageService extends IService<Page> {
     void saveOrUpdatePage(PageVO pageVO);
 
     /**
-     * 删除页面
-     *
-     * @param pageId 页面id
-     */
-    void deletePage(Integer pageId);
-
-    /**
      * 获取页面列表
      *
      * @return {@link List<PageVO>} 页面列表

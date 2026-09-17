@@ -4,7 +4,7 @@ import com.wzh.blog.dto.UserDetailDTO;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-/** Converts authentication-phase details into the password-free session principal. */
+/** 将密码校验主体替换为无密码会话主体。 */
 public final class SessionPrincipalFactory {
 
     private SessionPrincipalFactory() {

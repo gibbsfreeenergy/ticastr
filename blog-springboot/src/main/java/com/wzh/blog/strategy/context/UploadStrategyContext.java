@@ -6,7 +6,6 @@ import com.wzh.blog.media.ObjectKeyPolicy;
 import com.wzh.blog.media.StorageProvider;
 import com.wzh.blog.media.StorageProviderRegistry;
 import com.wzh.blog.media.StorageProviderType;
-import com.wzh.blog.util.FileUtils;
 import com.wzh.blog.security.UploadValidationService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -61,11 +60,6 @@ public class UploadStrategyContext implements MediaAssetStore {
         }
     }
 
-    /** Compatibility name for controllers that have not yet migrated. */
-    public String executeUploadStrategy(MultipartFile file, String path) {
-        return upload(file, path);
-    }
-
     @Override
     public void delete(String fileReference) {
         MediaAssetLedger.MediaAssetLocation location = assetLedger.locationFor(fileReference);
@@ -78,11 +72,6 @@ public class UploadStrategyContext implements MediaAssetStore {
         } catch (IOException exception) {
             throw new IllegalStateException("文件删除失败", exception);
         }
-    }
-
-    /** Compatibility name for the old strategy context API. */
-    public void deleteFile(String filePath) {
-        delete(filePath);
     }
 
     @Override
@@ -132,7 +121,6 @@ public class UploadStrategyContext implements MediaAssetStore {
         return switch (extension) {
             case ".jpg", ".jpeg" -> "image/jpeg";
             case ".png" -> "image/png";
-            case ".wav" -> "audio/wav";
             default -> "application/octet-stream";
         };
     }

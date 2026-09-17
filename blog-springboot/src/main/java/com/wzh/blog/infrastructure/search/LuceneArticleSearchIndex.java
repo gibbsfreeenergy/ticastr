@@ -54,9 +54,7 @@ public class LuceneArticleSearchIndex implements ArticleSearchIndex {
 
     private static final String ARTICLE_ID = "articleId";
     private static final String TITLE = "title";
-    private static final String TAGS = "tags";
     private static final String BODY = "body";
-    private static final String CATEGORY_ID = "categoryId";
     private static final String SNIPPET_SOURCE = "snippetSource";
     private static final int MAX_SNIPPET_CODE_UNITS = 2_000;
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
@@ -234,9 +232,6 @@ public class LuceneArticleSearchIndex implements ArticleSearchIndex {
         Document document = new Document();
         document.add(new StringField(ARTICLE_ID, String.valueOf(source.articleId()), Field.Store.YES));
         document.add(new TextField(TITLE, source.title(), Field.Store.YES));
-        document.add(new StringField(CATEGORY_ID,
-                source.categoryId() == null ? "" : String.valueOf(source.categoryId()), Field.Store.YES));
-        document.add(new TextField(TAGS, String.join(" ", source.tagNames()), Field.Store.YES));
         document.add(new TextField(BODY, source.body(), Field.Store.NO));
         document.add(new StoredField(SNIPPET_SOURCE, truncate(source.body(), MAX_SNIPPET_CODE_UNITS)));
         return document;
@@ -244,7 +239,7 @@ public class LuceneArticleSearchIndex implements ArticleSearchIndex {
 
     private Query buildQuery(String query) throws Exception {
         BooleanQuery.Builder fields = new BooleanQuery.Builder();
-        for (String field : new String[]{TITLE, TAGS, BODY}) {
+        for (String field : new String[]{TITLE, BODY}) {
             QueryParser parser = new QueryParser(field, analyzer);
             parser.setDefaultOperator(QueryParser.Operator.AND);
             fields.add(parser.parse(QueryParser.escape(query)), BooleanClause.Occur.SHOULD);

@@ -28,20 +28,10 @@ class UploadValidationServiceTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ImageIO.write(image, "png", output);
         UploadValidationService service = new UploadValidationService(
-                new MarkdownSanitizer(), 1024 * 1024, 1024 * 1024,
-                100, 100, 3, 48_000, 2, 60);
+                new MarkdownSanitizer(), 1024 * 1024, 100, 100, 3);
         MockMultipartFile file = new MockMultipartFile("file", "image.png", "image/png", output.toByteArray());
 
         assertThrows(RuntimeException.class, () -> service.validateImage(file));
-    }
-
-    @Test
-    void rejectsMalformedRiffAudio() {
-        UploadValidationService service = new UploadValidationService(new MarkdownSanitizer());
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "voice.wav", "audio/wav", "RIFF-bad".getBytes(StandardCharsets.US_ASCII));
-
-        assertThrows(RuntimeException.class, () -> service.validateAudio(file));
     }
 
     @Test

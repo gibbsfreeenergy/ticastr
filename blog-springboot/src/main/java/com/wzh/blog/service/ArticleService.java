@@ -1,116 +1,45 @@
 package com.wzh.blog.service;
 
-import com.wzh.blog.dto.*;
-import com.wzh.blog.entity.Article;
 import com.baomidou.mybatisplus.spring.service.IService;
-import com.wzh.blog.vo.*;
-import com.wzh.blog.web.PageQuery;
+import com.wzh.blog.dto.ArchiveDTO;
+import com.wzh.blog.dto.ArticleBackDTO;
+import com.wzh.blog.dto.ArticleDTO;
+import com.wzh.blog.dto.ArticleHomeDTO;
+import com.wzh.blog.dto.ArticleSearchDTO;
+import com.wzh.blog.entity.Article;
+import com.wzh.blog.vo.ArticleQueryVO;
+import com.wzh.blog.vo.ArticleTopVO;
+import com.wzh.blog.vo.ArticleVO;
+import com.wzh.blog.vo.DeleteVO;
+import com.wzh.blog.vo.PageResult;
 import com.wzh.blog.web.CursorPageQuery;
 import com.wzh.blog.web.CursorPageResult;
+import com.wzh.blog.web.PageQuery;
 
 import java.util.List;
 
 /**
- * 文章服务
- *
- * @author yezhiqiu
- * @date 2021/07/29
+ * 文章服务。
  */
 public interface ArticleService extends IService<Article> {
 
-    /**
-     * 查询文章归档
-     *
-     * @return 文章归档
-     */
-    PageResult<ArchiveDTO> listArchives(PageQuery pageQuery);
-
     CursorPageResult<ArchiveDTO> listArchives(CursorPageQuery pageQuery);
 
-    /**
-     * 查询后台文章
-     *
-     * @param condition 条件
-     * @return 文章列表
-     */
     PageResult<ArticleBackDTO> listArticleBacks(ArticleQueryVO condition, PageQuery pageQuery);
-
-    /**
-     * 查询首页文章
-     *
-     * @return 文章列表
-     */
-    List<ArticleHomeDTO> listArticles(PageQuery pageQuery);
 
     CursorPageResult<ArticleHomeDTO> listArticles(CursorPageQuery pageQuery);
 
-    /**
-     * 根据条件查询文章列表
-     *
-     * @param condition 条件
-     * @return 文章列表
-     */
-    ArticlePreviewListDTO listArticlesByCondition(ArticleQueryVO condition, PageQuery pageQuery);
-
-    /**
-     * 搜索文章
-     *
-     * @param condition 条件
-     * @return 文章列表
-     */
-    List<ArticleSearchDTO> listArticlesBySearch(ArticleQueryVO condition, PageQuery pageQuery);
-
     CursorPageResult<ArticleSearchDTO> listArticlesBySearch(String keywords, CursorPageQuery pageQuery);
 
-    /**
-     * 根据id查看后台文章
-     *
-     * @param articleId 文章id
-     * @return 文章列表
-     */
     ArticleVO getArticleBackById(Integer articleId);
 
-    /**
-     * 根据id查看文章
-     *
-     * @param articleId 文章id
-     * @return {@link ArticleDTO} 文章信息
-     */
     ArticleDTO getArticleById(Integer articleId);
 
-    /**
-     * 点赞文章
-     *
-     * @param articleId 文章id
-     */
-    void saveArticleLike(Integer articleId);
-
-    /**
-     * 添加或修改文章
-     *
-     * @param articleVO 文章信息
-     */
     Integer saveOrUpdateArticle(ArticleVO articleVO);
 
-    /**
-     * 修改文章置顶
-     *
-     * @param articleTopVO 文章置顶信息
-     */
     void updateArticleTop(ArticleTopVO articleTopVO);
 
-    /**
-     * 删除或恢复文章
-     *
-     * @param deleteVO 逻辑删除对象
-     */
     void updateArticleDelete(DeleteVO deleteVO);
 
-    /**
-     * 物理删除文章
-     *
-     * @param articleIdList 文章id集合
-     */
     void deleteArticles(List<Integer> articleIdList);
-
 }

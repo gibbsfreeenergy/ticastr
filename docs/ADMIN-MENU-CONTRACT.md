@@ -1,40 +1,31 @@
 # 管理端菜单与路由契约
 
-管理端菜单是“后端授权元数据 + 前端路由注册”的边界，不是前端源文件路径的远程执行机制。契约的目标是允许修改展示文案、图标和排序，而不改变权限 key 或前端构建目录。
+管理端菜单由后端授权元数据和前端显式路由注册共同组成。菜单只负责展示和导航，接口权限仍由后端资源授权控制。
+
+## 保留的 route key
+
+当前只保留以下菜单：
+
+| route key | 用途 |
+| --- | --- |
+| `home` | 管理端首页 |
+| `articleGroup` | 文章管理分组 |
+| `articleList` | 文章列表 |
+| `article` | 文章编辑器（隐藏菜单项） |
+| `about` | 关于我内容 |
+| `page` | 首页、归档、关于页面封面 |
+| `website` | 网站基础配置 |
+| `setting` | 管理员资料和密码 |
+| `storage` | 图片和 Markdown 的对象存储配置 |
+
+分组只有 `workspace`、`content`、`settings` 三类。`routeKey` 只允许从 `blog-vue/admin/src/assets/js/routeRegistry.js` 显式注册的页面中选择，未知 key 必须在菜单加载时失败，不能把数据库字段当作远程组件路径执行。
 
 ## 返回字段
 
-`GET /api/admin/user/menus` 返回统一 `Result`，`data` 为树形菜单。每个节点使用以下字段：
+`GET /api/admin/user/menus` 返回树形菜单。`code`、`routeKey`、`section`、`iconKey` 是稳定协议字段；`name` 和 `orderNum` 只影响展示；`children` 表示子菜单。旧的 `component`、`icon` 字段仅用于历史迁移数据，不再驱动动态组件发现。
 
-| 字段 | 责任 | 是否稳定 |
-| --- | --- | --- |
-| `code` | 菜单/能力的稳定标识；兼容期间默认与 `routeKey` 相同 | 是 |
-| `routeKey` | 前端 route registry 的查找 key | 是 |
-| `section` | 侧栏分组，例如 `workspace`、`content`、`community`、`settings` | 是 |
-| `iconKey` | 前端图标映射 key | 是 |
-| `name` | 展示名称 | 否，可改名/国际化 |
-| `path` | 管理端 URL path | 路由节点稳定；不要用来推导组件文件 |
-| `orderNum` | 同级排序 | 否 |
-| `children` | 子菜单 | 结构字段 |
+## 数据库与权限
 
-`component` 和旧 `icon` 字段仅为 V7 滚动迁移兼容保留。新数据不得把 `/src/views/...` 当成业务协议；前端只接受显式 `routeKey`，未知 key 会在菜单加载/测试阶段失败。
+Flyway `V26__trim_to_core_blog.sql` 会清空旧菜单、资源和角色关联，并重建上述菜单与公开/管理员 API 资源。迁移后只保留管理员角色，隐藏的 `article` 路由仍保留用于编辑器导航，但不会作为独立侧栏入口显示。
 
-## 已知 route key
-
-当前 registry 覆盖 `home`、`article`、`articleList`、`category`、`tag`、`album`、`photo`、`albumDelete`、`comment`、`message`、`user`、`online`、`role`、`resource`、`menu`、`friendLink`、`about`、`operation`、`page`、`website`、`setting`、`talk`、`talkList`，以及对应的 `articleGroup`、`messageGroup`、`systemGroup`、`userGroup`、`permissionGroup`、`albumGroup`、`talkGroup`、`logGroup` 分组节点。
-
-后端的 `MenuRouteContract` 负责把旧 `path/component` 映射为稳定 key；Flyway `V7__menu_route_contract.sql` 为已有数据补齐字段。迁移期间保留旧字段是为了支持滚动发布，不代表恢复三方耦合。
-
-## 权限与显示边界
-
-- 后端 URL 资源权限独立于前端是否显示菜单；隐藏菜单不能绕过后端鉴权。
-- `routeKey` 只决定可加载的前端页面，不能作为安全授权凭据。
-- `name`、`iconKey`、`section` 只影响展示，不参与权限判断。
-- 新增菜单必须同时更新 `MenuRouteContract`、前端 `routeRegistry.js`、本文件和相应测试；未知 key 不允许静默降级到任意组件。
-
-## 变更验收
-
-1. 修改名称后，route key、路径、分组和后端授权不变。
-2. 管理端菜单单测能覆盖成功加载和未知 route key 失败。
-3. Flyway 在 legacy baseline 和 fresh schema 上都能完成字段补齐。
-4. 数据库中不再新增前端源文件路径依赖。
+修改菜单时必须同步后端迁移/授权资源、`menuMetadata.js`、`routeRegistry.js` 和相应测试；隐藏菜单不能绕过后端鉴权。

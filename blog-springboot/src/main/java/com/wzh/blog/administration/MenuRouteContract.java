@@ -5,84 +5,40 @@ import com.wzh.blog.entity.Menu;
 import java.util.Map;
 
 /**
- * Stable menu metadata shared by the administration application boundary.
- *
- * <p>The database still contains the legacy component and icon columns for
- * rolling upgrades. They are read only as a migration fallback; UI behavior
- * is keyed by routeKey/code instead of display text or source file paths.</p>
+ * Stable identifiers for the small administrator navigation surface.
  */
 public final class MenuRouteContract {
 
-    private static final Map<String, String> PATH_KEYS = Map.ofEntries(
-            Map.entry("/", "home"),
-            Map.entry("/articles", "article"),
-            Map.entry("/articles/*", "article"),
-            Map.entry("/article-list", "articleList"),
-            Map.entry("/categories", "category"),
-            Map.entry("/tags", "tag"),
-            Map.entry("/albums", "album"),
-            Map.entry("/albums/:albumId", "photo"),
-            Map.entry("/photos/delete", "albumDelete"),
-            Map.entry("/comments", "comment"),
-            Map.entry("/messages", "message"),
-            Map.entry("/users", "user"),
-            Map.entry("/online/users", "online"),
-            Map.entry("/roles", "role"),
-            Map.entry("/resources", "resource"),
-            Map.entry("/menus", "menu"),
-            Map.entry("/links", "friendLink"),
-            Map.entry("/about", "about"),
-            Map.entry("/operation/log", "operation"),
-            Map.entry("/pages", "page"),
-            Map.entry("/website", "website"),
-            Map.entry("/setting", "setting"),
-            Map.entry("/storage", "storage"),
-            Map.entry("/talks", "talk"),
-            Map.entry("/talks/:talkId", "talk"),
-            Map.entry("/talk-list", "talkList"),
-            Map.entry("/article-submenu", "articleGroup"),
-            Map.entry("/message-submenu", "messageGroup"),
-            Map.entry("/system-submenu", "systemGroup"),
-            Map.entry("/users-submenu", "userGroup"),
-            Map.entry("/permission-submenu", "permissionGroup"),
-            Map.entry("/album-submenu", "albumGroup"),
-            Map.entry("/talk-submenu", "talkGroup"),
-            Map.entry("/log-submenu", "logGroup")
-    );
+    private static final Map<String, String> PATH_KEYS = Map.of(
+            "/", "home",
+            "/articles", "articleList",
+            "/articles/:articleId", "article",
+            "/articles/*", "article",
+            "/about", "about",
+            "/pages", "page",
+            "/website", "website",
+            "/setting", "setting",
+            "/storage", "storage");
 
-    private static final Map<String, String> COMPONENT_KEYS = Map.ofEntries(
-            Map.entry("/home/Home.vue", "home"),
-            Map.entry("/article/Article.vue", "article"),
-            Map.entry("/article/ArticleList.vue", "articleList"),
-            Map.entry("/category/Category.vue", "category"),
-            Map.entry("/tag/Tag.vue", "tag"),
-            Map.entry("/album/Album.vue", "album"),
-            Map.entry("/album/Photo.vue", "photo"),
-            Map.entry("/album/Delete.vue", "albumDelete"),
-            Map.entry("/comment/Comment.vue", "comment"),
-            Map.entry("/message/Message.vue", "message"),
-            Map.entry("/user/User.vue", "user"),
-            Map.entry("/user/Online.vue", "online"),
-            Map.entry("/role/Role.vue", "role"),
-            Map.entry("/resource/Resource.vue", "resource"),
-            Map.entry("/menu/Menu.vue", "menu"),
-            Map.entry("/friendLink/FriendLink.vue", "friendLink"),
-            Map.entry("/about/About.vue", "about"),
-            Map.entry("/log/Operation.vue", "operation"),
-            Map.entry("/page/Page.vue", "page"),
-            Map.entry("/website/Website.vue", "website"),
-            Map.entry("/setting/Setting.vue", "setting"),
-            Map.entry("/storage/Storage.vue", "storage"),
-            Map.entry("/talk/Talk.vue", "talk"),
-            Map.entry("/talk/TalkList.vue", "talkList")
-    );
+    private static final Map<String, String> COMPONENT_KEYS = Map.of(
+            "/home/Home.vue", "home",
+            "/article/Article.vue", "article",
+            "/article/ArticleList.vue", "articleList",
+            "/about/About.vue", "about",
+            "/page/Page.vue", "page",
+            "/website/Website.vue", "website",
+            "/setting/Setting.vue", "setting",
+            "/storage/Storage.vue", "storage");
 
     private MenuRouteContract() {
     }
 
     public static void normalize(Menu menu) {
-        String key = firstNonBlank(menu.getRouteKey(), lookup(PATH_KEYS, menu.getPath()),
-                lookup(COMPONENT_KEYS, menu.getComponent()), "menu-" + menu.getId());
+        String key = firstNonBlank(
+                menu.getRouteKey(),
+                lookup(PATH_KEYS, menu.getPath()),
+                lookup(COMPONENT_KEYS, menu.getComponent()),
+                "menu-" + menu.getId());
         if (isBlank(menu.getCode())) {
             menu.setCode(key);
         }
@@ -97,50 +53,26 @@ public final class MenuRouteContract {
         }
     }
 
-    public static String routeKey(Menu menu) {
-        normalize(menu);
-        return menu.getRouteKey();
-    }
-
     public static String sectionFor(String routeKey) {
-        if (routeKey == null) {
-            return "settings";
-        }
-        if (routeKey.equals("home")) {
+        if ("home".equals(routeKey)) {
             return "workspace";
         }
-        if (routeKey.matches("article.*|category|tag|album.*|photo|talk.*")) {
+        if ("article".equals(routeKey) || "articleList".equals(routeKey)
+                || "about".equals(routeKey)) {
             return "content";
-        }
-        if (routeKey.matches("comment|message|user|online")) {
-            return "community";
         }
         return "settings";
     }
 
     public static String iconFor(String routeKey) {
-        if (routeKey == null) {
-            return "grid";
-        }
         return switch (routeKey) {
             case "home" -> "home";
-            case "article", "articleGroup" -> "pen";
-            case "articleList", "talkList", "menu" -> "list";
-            case "category", "album", "photo", "albumGroup", "storage" -> "folder";
-            case "tag" -> "tag";
-            case "talk", "talkGroup" -> "bubble";
-            case "comment" -> "comment";
-            case "message" -> "message";
-            case "user", "userGroup" -> "users";
-            case "online" -> "user";
-            case "role", "permissionGroup" -> "shield";
-            case "resource" -> "code";
-            case "website" -> "globe";
-            case "page" -> "page";
-            case "friendLink" -> "link";
+            case "article", "articleList" -> "pen";
             case "about" -> "info";
-            case "operation", "logGroup" -> "history";
-            case "setting", "systemGroup" -> "settings";
+            case "page" -> "page";
+            case "website" -> "globe";
+            case "storage" -> "folder";
+            case "setting" -> "settings";
             default -> "grid";
         };
     }

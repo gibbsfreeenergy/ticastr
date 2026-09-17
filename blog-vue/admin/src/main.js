@@ -7,7 +7,6 @@ import "element-plus/es/components/button/style/css";
 import "element-plus/es/components/form/style/css";
 import "element-plus/es/components/input/style/css";
 import "./assets/css/index.css";
-import "./assets/css/iconfont.css";
 import config from "./assets/js/config";
 import { installHttp } from "./api/http";
 import { installSafeHtml } from "./plugins/safeHtml";

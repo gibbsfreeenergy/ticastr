@@ -14,7 +14,7 @@ if rg -n '\$api\.(get|post|put|delete|request)[[:space:]]*\(' \
   fail=1
 fi
 
-if rg -n '(["'"'"'`])/(api|uploads|websocket)(/|["'"'"'`])' \
+if rg -n '/(api|uploads)/' \
     blog-vue/blog/src/views blog-vue/blog/src/components \
     blog-vue/admin/src/views blog-vue/admin/src/components; then
   echo 'Frontend views/components must not own proxy endpoint paths.' >&2
@@ -53,7 +53,7 @@ if rg -n 'SELECT[[:space:]]+\*|select[[:space:]]+\*' \
   fail=1
 fi
 
-if rg -n 'localhost:8090|https?://[^"'"'"'` ]*oss|https?://[^"'"'"'` ]*cos|https?://[^"'"'"'` ]*tos' \
+if rg -n 'localhost:8090|https?://[^" ]*oss|https?://[^" ]*cos|https?://[^" ]*tos' \
     blog-vue/blog/src/views blog-vue/blog/src/components \
     blog-vue/admin/src/views blog-vue/admin/src/components; then
   echo 'Frontend business components must not own backend/provider endpoints.' >&2
@@ -64,12 +64,6 @@ if rg -n 'Rabbit|AMQP|Elasticsearch|spring\.elasticsearch|@Rabbit' \
     blog-springboot/src/main/java blog-springboot/src/main/resources \
     compose.yaml compose.redis.yaml deploy/backend; then
   echo 'Removed broker/search runtime integrations must not reappear.' >&2
-  fail=1
-fi
-
-if rg -n 'static[[:space:]].*(CopyOnWriteArraySet|Set<.*Session|Map<.*Session)' \
-    blog-springboot/src/main/java/com/wzh/blog; then
-  echo 'WebSocket/session business state must not use static mutable collections.' >&2
   fail=1
 fi
 

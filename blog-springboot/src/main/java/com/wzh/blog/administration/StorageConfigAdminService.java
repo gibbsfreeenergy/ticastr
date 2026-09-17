@@ -13,9 +13,6 @@ import com.wzh.blog.media.StorageUsage;
 import com.wzh.blog.vo.StorageConfigListResponse;
 import com.wzh.blog.vo.StorageConfigRequest;
 import com.wzh.blog.vo.StorageConfigSummaryVO;
-import com.wzh.blog.vo.StorageProviderSelectionResponse;
-import com.wzh.blog.vo.StorageProviderStatusVO;
-import com.wzh.blog.vo.StorageProviderValidationVO;
 import com.wzh.blog.vo.StorageUsageVO;
 import com.wzh.blog.vo.StorageValidationVO;
 import lombok.extern.log4j.Log4j2;
@@ -31,7 +28,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -172,46 +168,6 @@ public class StorageConfigAdminService {
             return new StorageUsageVO("FAILED", config.getUsageObjectCount(), config.getUsageBytes(),
                     config.getUsageLastModified(), checkedAt, USAGE_FAILURE);
         }
-    }
-
-    /** Deprecated provider-only read adapter. */
-    @Deprecated
-    public StorageProviderSelectionResponse current() {
-        StorageProviderConfig active = configDao.selectActive();
-        if (active == null) {
-            return new StorageProviderSelectionResponse(null, null, supportedProviderCodes());
-        }
-        return new StorageProviderSelectionResponse(active.getProvider(), active.getId(), supportedProviderCodes());
-    }
-
-    /** Deprecated provider-only aggregate read adapter. */
-    @Deprecated
-    public List<StorageProviderStatusVO> providers() {
-        List<StorageProviderConfig> configs = configDao.selectAll();
-        return Arrays.stream(StorageProviderType.values()).map(type -> {
-            List<StorageProviderConfig> sameType = configs.stream()
-                    .filter(config -> type.code().equalsIgnoreCase(config.getProvider())).toList();
-            int usable = (int) sameType.stream().filter(this::isConfigured).count();
-            boolean active = sameType.stream().anyMatch(config -> Boolean.TRUE.equals(config.getActive()));
-            return new StorageProviderStatusVO(type.code(), active, usable > 0, usable > 0, true, usable);
-        }).toList();
-    }
-
-    /** Deprecated provider-only validation adapter. */
-    @Deprecated
-    public StorageProviderValidationVO validateProvider(String providerCode) {
-        StorageProviderConfig config = uniqueUsableProfile(providerCode);
-        StorageValidationVO result = validateProfile(config, true);
-        return new StorageProviderValidationVO(config.getProvider(), config.getId(), result.success(),
-                result.success(), result.success(), result.success(), result.message());
-    }
-
-    /** Deprecated provider-only switch adapter. */
-    @Deprecated
-    public StorageProviderSelectionResponse switchProvider(String providerCode, Integer userId) {
-        StorageProviderConfig config = uniqueUsableProfile(providerCode);
-        activate(config.getId(), userId);
-        return current();
     }
 
     private StorageProviderConfig activateLocked(StorageProviderConfig candidate,
@@ -394,16 +350,6 @@ public class StorageConfigAdminService {
         return config;
     }
 
-    private StorageProviderConfig uniqueUsableProfile(String providerCode) {
-        StorageProviderType type = provider(providerCode);
-        List<StorageProviderConfig> matches = configDao.selectAll().stream()
-                .filter(config -> type.code().equalsIgnoreCase(config.getProvider())).toList();
-        if (matches.size() != 1) {
-            throw new ConflictException("该 provider 无法唯一确定配置，请使用配置 ID");
-        }
-        return matches.getFirst();
-    }
-
     private void logProviderFailure(String operation, Long configId, Exception exception) {
         log.warn("Storage {} failed: {}", operation, safeProviderFailureDiagnostic(configId, exception));
     }
@@ -411,10 +357,6 @@ public class StorageConfigAdminService {
     static String safeProviderFailureDiagnostic(Long configId, Exception exception) {
         String type = exception == null ? "Unknown" : exception.getClass().getSimpleName();
         return "configId=" + configId + ", exceptionType=" + type;
-    }
-
-    private List<String> supportedProviderCodes() {
-        return Arrays.stream(StorageProviderType.values()).map(StorageProviderType::code).toList();
     }
 
     private boolean isConfigured(StorageProviderConfig config) {

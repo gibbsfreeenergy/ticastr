@@ -8,25 +8,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Compatibility reference checker for URL-based media columns. New media
- * records should migrate to an asset id; until then deletion fails safe when
- * any known business reference still points at the object.
- */
+/** Checks the retained article, page, profile and content references. */
 @Service
 @Log4j2
 public class DatabaseMediaReferenceChecker implements MediaReferenceChecker {
 
     private static final List<String> REFERENCE_QUERIES = List.of(
             "SELECT EXISTS (SELECT 1 FROM tb_article WHERE article_cover = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_friend_link WHERE link_avatar = ?)",
             "SELECT EXISTS (SELECT 1 FROM tb_page WHERE page_cover = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_photo WHERE photo_src = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_photo_album WHERE album_cover = ?)",
             "SELECT EXISTS (SELECT 1 FROM tb_user_info WHERE avatar = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_message WHERE avatar = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_chat_record WHERE type = 5 AND content = ?)",
-            "SELECT EXISTS (SELECT 1 FROM tb_talk WHERE images LIKE CONCAT('%', ?, '%'))",
+            "SELECT EXISTS (SELECT 1 FROM tb_about WHERE content LIKE CONCAT('%', ?, '%'))",
             "SELECT EXISTS (SELECT 1 FROM tb_website_config WHERE JSON_SEARCH(config, 'one', ?) IS NOT NULL)"
     );
 

@@ -86,7 +86,7 @@ describe("StorageConfigPanel", () => {
     const unsafeResponse = {
       ...localConfig,
       provider: "oss",
-      endpoint: "https://oss.example.test",
+      endpoint: "https://storage.example.test",
       region: "cn-shanghai",
       bucket: "blog-assets",
       accessKeyId: "response-key-must-not-escape",
@@ -107,7 +107,7 @@ describe("StorageConfigPanel", () => {
     expect(admin.updateStorageConfig).toHaveBeenCalledWith(7, {
       name: "本地上传",
       provider: "oss",
-      endpoint: "https://oss.example.test",
+      endpoint: "https://storage.example.test",
       region: "cn-shanghai",
       bucket: "blog-assets",
       localRoot: "C:/storage/uploads",

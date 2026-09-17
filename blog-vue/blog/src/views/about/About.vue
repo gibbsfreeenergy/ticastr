@@ -31,7 +31,7 @@ export default {
     this.getAboutContent();
   },
   unmounted() {
-    this.clipboard.destroy();
+    this.clipboard?.destroy();
   },
   data: function() {
     return {

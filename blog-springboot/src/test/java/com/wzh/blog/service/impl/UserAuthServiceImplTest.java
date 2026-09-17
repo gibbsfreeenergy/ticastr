@@ -1,59 +1,58 @@
 package com.wzh.blog.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.wzh.blog.dao.UserAuthDao;
 import com.wzh.blog.entity.UserAuth;
-import com.wzh.blog.service.RedisService;
-import com.wzh.blog.vo.UserVO;
+import com.wzh.blog.security.AuthenticatedUserPrincipal;
+import com.wzh.blog.security.CurrentUser;
+import com.wzh.blog.vo.PasswordVO;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.apache.ibatis.builder.MapperBuilderAssistant;
 
-import static com.wzh.blog.constant.RedisPrefixConst.USER_CODE_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserAuthServiceImplTest {
 
-    @BeforeAll
-    static void initializeMybatisMetadata() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), UserAuth.class);
-    }
-
     @InjectMocks
     private UserAuthServiceImpl userAuthService;
 
     @Mock
-    private RedisService redisService;
-    @Mock
     private UserAuthDao userAuthDao;
+
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private CurrentUser currentUser;
+
+    @Mock
+    private AuthenticatedUserPrincipal principal;
+
     @Test
-    void passwordResetConsumesTheVerificationCode() {
-        UserVO user = UserVO.builder()
-                .username("reader@example.com")
-                .password("new-password")
-                .code("123456")
-                .build();
-        when(redisService.consumeIfEquals(USER_CODE_KEY + user.getUsername(), user.getCode())).thenReturn(true);
-        when(userAuthDao.selectOne(any())).thenReturn(UserAuth.builder().username(user.getUsername()).build());
-        when(passwordEncoder.encode(user.getPassword())).thenReturn("encoded-password");
+    void updatesTheAuthenticatedAdministratorPassword() {
+        UserAuth account = UserAuth.builder().id(7).password("old-hash").build();
+        when(currentUser.require()).thenReturn(principal);
+        when(principal.getId()).thenReturn(7);
+        when(userAuthDao.selectOne(any())).thenReturn(account);
+        when(passwordEncoder.matches("old-password", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("new-password")).thenReturn("new-hash");
 
-        userAuthService.updatePassword(user);
+        userAuthService.updateAdminPassword(PasswordVO.builder()
+                .oldPassword("old-password")
+                .newPassword("new-password")
+                .build());
 
-        verify(redisService).consumeIfEquals(USER_CODE_KEY + user.getUsername(), user.getCode());
-        verify(userAuthDao).update(any(UserAuth.class), any(LambdaUpdateWrapper.class));
+        ArgumentCaptor<UserAuth> captured = ArgumentCaptor.forClass(UserAuth.class);
+        verify(userAuthDao).updateById(captured.capture());
+        assertThat(captured.getValue().getId()).isEqualTo(7);
+        assertThat(captured.getValue().getPassword()).isEqualTo("new-hash");
     }
 }

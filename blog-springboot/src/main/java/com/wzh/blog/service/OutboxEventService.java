@@ -4,12 +4,7 @@ import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.wzh.blog.dao.OutboxEventDao;
 import com.wzh.blog.dto.DurableEventEnvelope;
-import com.wzh.blog.dto.EmailDTO;
 import com.wzh.blog.entity.OutboxEvent;
-import com.wzh.blog.vo.OutboxEventAdminVO;
-import com.wzh.blog.vo.PageResult;
-import com.wzh.blog.web.PageQuery;
-import com.wzh.blog.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,11 +35,6 @@ public class OutboxEventService {
 
     public OutboxEventService(OutboxEventDao outboxEventDao) {
         this.outboxEventDao = outboxEventDao;
-    }
-
-    @Transactional
-    public String enqueueEmail(EmailDTO email, String aggregateId) {
-        return enqueue("EMAIL_SEND", 1, aggregateId, null, email);
     }
 
     /** Creates the only durable-event shape used by business services. */
@@ -232,56 +222,6 @@ public class OutboxEventService {
                 .set(OutboxEvent::getProcessingStartedAt, null)
                 .set(OutboxEvent::getProcessedAt, null)
                 .set(OutboxEvent::getLastError, null));
-    }
-
-    public PageResult<OutboxEventAdminVO> list(PageQuery pageQuery) {
-        List<OutboxEventAdminVO> rows = outboxEventDao.listRecent(pageQuery.offset(),
-                        Math.toIntExact(pageQuery.size()))
-                .stream()
-                .map(this::toAdminView)
-                .toList();
-        return new PageResult<>(rows, Math.toIntExact(Math.min(Integer.MAX_VALUE, outboxEventDao.countAll())));
-    }
-
-    @Transactional
-    public void retryFromAdmin(String eventId) {
-        OutboxEvent event = outboxEventDao.selectById(eventId);
-        if (event == null) {
-            throw new NotFoundException("事件不存在");
-        }
-        outboxEventDao.update(null, new LambdaUpdateWrapper<OutboxEvent>()
-                .eq(OutboxEvent::getEventId, eventId)
-                .in(OutboxEvent::getStatus, DEAD, ENQUEUED, PROCESSING)
-                .set(OutboxEvent::getStatus, PENDING)
-                .set(OutboxEvent::getAttempts, 0)
-                .set(OutboxEvent::getNextAttemptAt, LocalDateTime.now())
-                .set(OutboxEvent::getClaimedAt, null)
-                .set(OutboxEvent::getProcessingStartedAt, null)
-                .set(OutboxEvent::getProcessedAt, null)
-                .set(OutboxEvent::getLastError, null));
-    }
-
-    public java.util.Map<String, Long> metrics() {
-        return java.util.Map.of(
-                PENDING, outboxEventDao.countByStatus(PENDING),
-                ENQUEUED, outboxEventDao.countByStatus(ENQUEUED),
-                PROCESSING, outboxEventDao.countByStatus(PROCESSING),
-                PUBLISHED, outboxEventDao.countByStatus(PUBLISHED),
-                DEAD, outboxEventDao.countByStatus(DEAD));
-    }
-
-    private OutboxEventAdminVO toAdminView(OutboxEvent event) {
-        return new OutboxEventAdminVO(event.getEventId(), event.getEventType(), event.getEventVersion(),
-                event.getAggregateId(), event.getStatus(), event.getAttempts(), event.getNextAttemptAt(),
-                event.getCreatedAt(), event.getPublishedAt(), event.getProcessedAt(), safeError(event.getLastError()));
-    }
-
-    private String safeError(String error) {
-        if (error == null) {
-            return null;
-        }
-        String normalized = error.replaceAll("[\\r\\n\\t]+", " ").trim();
-        return normalized.length() <= 300 ? normalized : normalized.substring(0, 300) + "…";
     }
 
     private Duration backoff(int attempts) {

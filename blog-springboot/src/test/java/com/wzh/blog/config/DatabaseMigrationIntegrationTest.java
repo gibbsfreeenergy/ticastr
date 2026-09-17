@@ -12,11 +12,23 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers(disabledWithoutDocker = true)
 class DatabaseMigrationIntegrationTest {
+
+    private static final List<String> RETAINED_TABLES = List.of(
+            "tb_about", "tb_article", "tb_content_asset", "tb_media_asset", "tb_menu",
+            "tb_outbox_event", "tb_page", "tb_resource", "tb_role", "tb_role_menu",
+            "tb_role_resource", "tb_storage_bootstrap_state", "tb_storage_provider_config",
+            "tb_user_auth", "tb_user_info", "tb_user_role", "tb_website_config");
+
+    private static final List<String> REMOVED_TABLES = List.of(
+            "tb_article_tag", "tb_category", "tb_tag", "tb_article_like", "tb_article_engagement",
+            "tb_comment", "tb_friend_link", "tb_message", "tb_photo", "tb_photo_album",
+            "tb_talk", "tb_chat_record", "tb_site_visitor", "tb_unique_view", "tb_operation_log");
 
     @Container
     static final GenericContainer<?> MYSQL = new GenericContainer<>("mysql:8.4")
@@ -24,252 +36,72 @@ class DatabaseMigrationIntegrationTest {
             .withExposedPorts(3306);
 
     @Test
-    void grantsStandaloneStorageMenuAndResourceAccessOnlyToExistingSettingsRoles() throws Exception {
-        createDatabase("storage_menu_blog");
-        Flyway.configure().dataSource(jdbcUrl("storage_menu_blog"), "root", "test-root")
-                .locations("classpath:db/migration").target("21").load().migrate();
-        try (Connection connection = connection("storage_menu_blog");
-             Statement statement = connection.createStatement()) {
-            statement.execute("INSERT INTO tb_role (id, role_name, role_label, create_time) "
-                    + "VALUES (9001, 'Settings', 'storage-test-settings', NOW()), "
-                    + "(9002, 'Other', 'storage-test-other', NOW())");
-            statement.execute("INSERT INTO tb_menu (id, name, path, component, icon, route_key, create_time, order_num) "
-                    + "VALUES (9001, 'Settings', '/setting', '/setting/Setting.vue', 'settings', 'setting', NOW(), 1)");
-            statement.execute("INSERT INTO tb_role_menu (role_id, menu_id) VALUES (9001, 9001)");
-        }
+    void migratesFreshDatabaseToTheCoreSchema() throws Exception {
+        createDatabase("core_blog");
+        migrate("core_blog", false);
 
-        migrate("storage_menu_blog", false);
-        migrate("storage_menu_blog", false);
+        try (Connection connection = connection("core_blog")) {
+            for (String table : RETAINED_TABLES) {
+                assertThat(tableExists(connection, table)).as("retained table %s", table).isTrue();
+            }
+            for (String table : REMOVED_TABLES) {
+                assertThat(tableExists(connection, table)).as("removed table %s", table).isFalse();
+            }
 
-        try (Connection connection = connection("storage_menu_blog")) {
-            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE code = 'storage' "
-                    + "AND path = '/storage' AND route_key = 'storage' AND parent_id IS NULL"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role_menu rm "
-                    + "JOIN tb_menu m ON m.id = rm.menu_id WHERE m.code = 'storage' AND rm.role_id = 9001"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role_menu rm "
-                    + "JOIN tb_menu m ON m.id = rm.menu_id WHERE m.code = 'storage' AND rm.role_id = 9002"))
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE parent_id IS NULL")).isEqualTo(7);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu")).isEqualTo(9);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE code IN "
+                    + "('album', 'category', 'comment', 'friendLink', 'message', 'tag', 'talk', 'user', 'role', 'resource', 'menu')"))
                     .isZero();
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) FROM tb_role_resource rr "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE rr.role_id = 9001 AND resource.parent_id IS NOT NULL "
-                    + "AND resource.is_anonymous = 0 AND resource.request_method IS NOT NULL "
-                    + "AND (resource.url = '/admin/storage/configs' "
-                    + "OR resource.url LIKE '/admin/storage/configs/%')"))
-                    .isEqualTo(8);
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) FROM tb_role_resource rr "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE rr.role_id = 9002 AND resource.parent_id IS NOT NULL "
-                    + "AND resource.is_anonymous = 0 AND resource.request_method IS NOT NULL "
-                    + "AND (resource.url = '/admin/storage/configs' "
-                    + "OR resource.url LIKE '/admin/storage/configs/%')"))
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu "
+                    + "WHERE code = 'article' AND is_hidden = 1 AND parent_id IS NOT NULL")).isEqualTo(1);
+
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role WHERE role_label = 'admin'")).isEqualTo(1);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role WHERE role_label <> 'admin'")).isZero();
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_resource WHERE parent_id IS NULL")).isEqualTo(2);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_resource "
+                    + "WHERE url LIKE '/admin/outbox%' OR url LIKE '/admin/storage/provider%' "
+                    + "OR url IN ('/categories', '/tags', '/comments', '/messages', '/links', '/photos/albums', '/talks', '/report')"))
                     .isZero();
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_resource "
+                    + "WHERE url = '/admin/pages/*' AND request_method = 'DELETE'"))
+                    .isZero();
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_page "
+                    + "WHERE page_label IS NULL OR page_label NOT IN ('home', 'archive', 'about')"))
+                    .isZero();
+
+            assertThat(columnExists(connection, "tb_article", "category_id")).isFalse();
+            assertThat(columnExists(connection, "tb_article", "article_content")).isFalse();
+            assertThat(columnExists(connection, "tb_article", "content_asset_id")).isTrue();
+            assertThat(columnExists(connection, "tb_user_auth", "ip_address")).isFalse();
+            assertThat(columnExists(connection, "tb_user_auth", "ip_source")).isFalse();
+            assertThat(columnExists(connection, "tb_user_auth", "last_login_time")).isFalse();
+            assertThat(columnExists(connection, "tb_media_asset", "source_type")).isFalse();
+            assertThat(queryInt(connection, "SELECT JSON_CONTAINS_PATH(config, 'one', "
+                    + "'$.isCommentReview', '$.isMessageReview', '$.isReward', '$.isChatRoom', '$.isMusicPlayer', '$.websocketUrl') "
+                    + "FROM tb_website_config WHERE id = 1")).isZero();
         }
     }
 
     @Test
-    void grantsOutboxResourceAccessToAdministratorsOnly() throws Exception {
-        createDatabase("outbox_access_blog");
-        Flyway.configure().dataSource(jdbcUrl("outbox_access_blog"), "root", "test-root")
-                .locations("classpath:db/migration").target("23").load().migrate();
-
-        migrate("outbox_access_blog", false);
-        migrate("outbox_access_blog", false);
-
-        try (Connection connection = connection("outbox_access_blog")) {
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
-                    + "FROM tb_role_resource rr "
-                    + "JOIN tb_role role ON role.id = rr.role_id "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE role.role_label = 'admin' "
-                    + "AND resource.url IN ('/admin/outbox', '/admin/outbox/metrics', '/admin/outbox/*/retry')"))
-                    .isEqualTo(3);
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
-                    + "FROM tb_role_resource rr "
-                    + "JOIN tb_role role ON role.id = rr.role_id "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE role.role_label = 'test' "
-                    + "AND resource.url IN ('/admin/outbox', '/admin/outbox/metrics', '/admin/outbox/*/retry')"))
-                    .isZero();
-        }
-    }
-
-    @Test
-    void grantsArticleContentAndLegacyStorageAccessWithLeastPrivilege() throws Exception {
-        createDatabase("content_access_blog");
-        Flyway.configure().dataSource(jdbcUrl("content_access_blog"), "root", "test-root")
-                .locations("classpath:db/migration").target("24").load().migrate();
-        try (Connection connection = connection("content_access_blog");
-             Statement statement = connection.createStatement()) {
-            statement.execute("INSERT INTO tb_role (id, role_name, role_label, create_time) "
-                    + "VALUES (9001, 'Read only', 'test', NOW())");
-        }
-
-        migrate("content_access_blog", false);
-        migrate("content_access_blog", false);
-
-        try (Connection connection = connection("content_access_blog")) {
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
-                    + "FROM tb_role_resource rr "
-                    + "JOIN tb_role role ON role.id = rr.role_id "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE role.role_label = 'admin' "
-                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions', "
-                    + "'/admin/articles/*/versions/*/restore', '/admin/storage/provider', "
-                    + "'/admin/storage/providers', '/admin/storage/providers/*/validate')"))
-                    .isEqualTo(8);
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
-                    + "FROM tb_role_resource rr "
-                    + "JOIN tb_role role ON role.id = rr.role_id "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE role.role_label = 'test' "
-                    + "AND resource.request_method = 'GET' "
-                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions')"))
-                    .isEqualTo(2);
-            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
-                    + "FROM tb_role_resource rr "
-                    + "JOIN tb_role role ON role.id = rr.role_id "
-                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
-                    + "WHERE role.role_label = 'test' "
-                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions', "
-                    + "'/admin/articles/*/versions/*/restore', '/admin/storage/provider', "
-                    + "'/admin/storage/providers', '/admin/storage/providers/*/validate') "
-                    + "AND NOT (resource.request_method = 'GET' "
-                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions'))"))
-                    .isZero();
-        }
-    }
-
-    @Test
-    void migratesAnEmptyDatabase() throws Exception {
-        createDatabase("fresh_blog");
-
-        migrate("fresh_blog", false);
-
-        try (Connection connection = connection("fresh_blog")) {
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()"))
-                    .isGreaterThanOrEqualTo(25);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = DATABASE()"))
-                    .isGreaterThanOrEqualTo(8);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics "
-                            + "WHERE table_schema = DATABASE() AND index_name = 'idx_article_public_order'"))
-                    .isEqualTo(1);
-        }
-    }
-
-    @Test
-    void installsTheContentAssetEngagementAndProviderContracts() throws Exception {
-        createDatabase("phase_one_blog");
-
-        migrate("phase_one_blog", false);
-
-        try (Connection connection = connection("phase_one_blog")) {
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article' "
-                            + "AND column_name = 'article_content'"))
-                    .isZero();
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article' "
-                            + "AND column_name = 'content_asset_id'"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                            + "WHERE table_schema = DATABASE() AND table_name IN "
-                            + "('tb_content_asset', 'tb_article_engagement', 'tb_article_like', "
-                            + "'tb_storage_provider_config')"))
-                    .isEqualTo(4);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_provider_config' "
-                            + "AND column_name IN ('config_name', 'provider', 'is_active', 'usage_bytes')"))
-                    .isEqualTo(4);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.tables "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_bootstrap_state'"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_storage_provider_config WHERE is_active = 1"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_storage_provider_config "
-                            + "WHERE id = 1 AND config_name = '本地默认配置' "
-                            + "AND provider = 'local' AND is_active = 1"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.table_constraints "
-                            + "WHERE table_schema = DATABASE() "
-                            + "AND table_name = 'tb_storage_provider_config' "
-                            + "AND constraint_name = 'ck_storage_provider_config_provider' "
-                            + "AND constraint_type = 'CHECK'"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() "
-                            + "AND table_name IN ('tb_content_asset', 'tb_media_asset') "
-                            + "AND column_name = 'storage_config_id'"))
-                    .isEqualTo(2);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_resource WHERE url LIKE '/admin/storage/configs%'"))
-                    .isGreaterThanOrEqualTo(5);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.statistics "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_article_like' "
-                            + "AND index_name = 'PRIMARY' AND seq_in_index = 2"))
-                    .isEqualTo(1);
-        }
-    }
-
-    @Test
-    void upgradesTheLegacySeedDatabase() throws Exception {
+    void upgradesTheLegacySeedDatabaseAndRemovesRetiredDataStructures() throws Exception {
         createDatabase("legacy_blog");
         try (Connection connection = connection("legacy_blog")) {
-            ScriptUtils.executeSqlScript(connection,
-                    new ClassPathResource("db/legacy-schema.sql"));
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource("db/legacy-schema.sql"));
         }
 
         migrate("legacy_blog", true);
 
         try (Connection connection = connection("legacy_blog")) {
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_article WHERE id = 54")).isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.table_constraints "
-                            + "WHERE table_schema = DATABASE() AND constraint_name = 'uk_article_tag'"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() AND table_name = 'tb_storage_provider_config' "
-                            + "AND column_name IN ('config_name', 'provider', 'is_active', 'usage_bytes')"))
-                    .isEqualTo(4);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_storage_bootstrap_state "
-                            + "WHERE id = 1 AND legacy_import_completed = 0 "
-                            + "AND legacy_active_provider = 'local' AND completed_at IS NULL"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM tb_storage_provider_config "
-                            + "WHERE id = 1 AND config_name = '本地默认配置' "
-                            + "AND provider = 'local' AND is_active = 1"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.table_constraints "
-                            + "WHERE table_schema = DATABASE() "
-                            + "AND table_name = 'tb_storage_provider_config' "
-                            + "AND constraint_name = 'ck_storage_provider_config_provider' "
-                            + "AND constraint_type = 'CHECK'"))
-                    .isEqualTo(1);
-            assertThat(queryInt(connection,
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                            + "WHERE table_schema = DATABASE() "
-                            + "AND table_name IN ('tb_content_asset', 'tb_media_asset') "
-                            + "AND column_name = 'storage_config_id'"))
-                    .isEqualTo(2);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_article WHERE id = 54")).isEqualTo(1);
+            assertThat(columnExists(connection, "tb_article", "category_id")).isFalse();
+            assertThat(columnExists(connection, "tb_article", "content_asset_id")).isTrue();
+            for (String table : REMOVED_TABLES) {
+                assertThat(tableExists(connection, table)).as("removed table %s", table).isFalse();
+            }
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_page "
+                    + "WHERE page_label IS NULL OR page_label NOT IN ('home', 'archive', 'about')"))
+                    .isZero();
         }
     }
 
@@ -305,5 +137,15 @@ class DatabaseMigrationIntegrationTest {
             resultSet.next();
             return resultSet.getInt(1);
         }
+    }
+
+    private static boolean tableExists(Connection connection, String table) throws Exception {
+        return queryInt(connection, "SELECT COUNT(*) FROM information_schema.tables "
+                + "WHERE table_schema = DATABASE() AND table_name = '" + table + "'") == 1;
+    }
+
+    private static boolean columnExists(Connection connection, String table, String column) throws Exception {
+        return queryInt(connection, "SELECT COUNT(*) FROM information_schema.columns "
+                + "WHERE table_schema = DATABASE() AND table_name = '" + table + "' AND column_name = '" + column + "'") == 1;
     }
 }

@@ -12,22 +12,17 @@
         新建页面
       </el-button>
     </div>
-    <!-- 相册列表 -->
     <el-row class="page-container" :gutter="12" v-loading="loading">
       <!-- 空状态 -->
       <el-empty v-if="pageList.length == 0" description="暂无页面" />
       <el-col v-for="item of pageList" :key="item.id" :md="6">
         <div class="page-item">
-          <!-- 相册操作 -->
           <div class="page-opreation">
             <el-dropdown @command="handleCommand">
               <i class="el-icon-more" style="color:#fff" />
               <template #dropdown><el-dropdown-menu>
                 <el-dropdown-item :command="'update' + JSON.stringify(item)">
                   <i class="el-icon-edit" />编辑
-                </el-dropdown-item>
-                <el-dropdown-item :command="'delete' + item.id">
-                  <i class="el-icon-delete" />删除
                 </el-dropdown-item>
               </el-dropdown-menu></template>
             </el-dropdown>
@@ -45,7 +40,11 @@
           <el-input style="width:220px" v-model="pageForum.pageName" />
         </el-form-item>
         <el-form-item label="页面标签">
-          <el-input style="width:220px" v-model="pageForum.pageLabel" />
+          <el-input
+            style="width:220px"
+            v-model="pageForum.pageLabel"
+            :disabled="pageForum.id != null"
+          />
         </el-form-item>
         <el-form-item label="页面封面">
           <el-upload
@@ -80,19 +79,6 @@
         </el-button>
       </div></template>
     </el-dialog>
-    <!-- 删除对话框 -->
-    <el-dialog v-model="isdeletePage" width="30%">
-      <template #header><div class="dialog-title-container">
-        <i class="el-icon-warning" style="color:#ff9900" />提示
-      </div></template>
-      <div style="font-size:1rem">是否删除该页面？</div>
-      <template #footer><div>
-        <el-button @click="isdeletePage = false">取 消</el-button>
-        <el-button type="primary" @click="deletePage">
-          确 定
-        </el-button>
-      </div></template>
-    </el-dialog>
   </el-card>
 </template>
 
@@ -110,7 +96,6 @@ export default {
       current: 1,
       size: 8,
       count: 0,
-      isdeletePage: false,
       addOrEdit: false,
       dialogTitle: "新建页面",
       pageForum: {
@@ -153,7 +138,13 @@ export default {
         this.$message.error("页面标签不能为空");
         return false;
       }
-      if (this.pageForum.pageCover == null) {
+      const pageLabel = this.pageForum.pageLabel.trim();
+      if (!["home", "archive", "about"].includes(pageLabel)) {
+        this.$message.error("页面标签只能是 home、archive 或 about");
+        return false;
+      }
+      this.pageForum.pageLabel = pageLabel;
+      if (!this.pageForum.pageCover) {
         this.$message.error("页面封面不能为空");
         return false;
       }
@@ -195,31 +186,9 @@ export default {
     handleCommand(command) {
       const type = command.substring(0, 6);
       const data = command.substring(6);
-      if (type == "delete") {
-        this.pageForum.id = data;
-        this.isdeletePage = true;
-      } else {
+      if (type == "update") {
         this.openModel(data);
       }
-    },
-    deletePage() {
-      this.$api.admin
-        .removePage(this.pageForum.id)
-        .then(data => {
-          if (data.flag) {
-            this.$notify.success({
-              title: "成功",
-              message: data.message
-            });
-            this.listPages();
-          } else {
-            this.$notify.error({
-              title: "失败",
-              message: data.message
-            });
-          }
-          this.isdeletePage = false;
-        });
     }
   },
   computed: {

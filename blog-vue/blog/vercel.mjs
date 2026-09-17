@@ -28,7 +28,6 @@ export const config = {
     { source: "/api", destination: upstream + "/" },
     { source: "/api/:path*", destination: upstream + "/:path*" },
     { source: "/uploads/:path*", destination: upstream + "/uploads/:path*" },
-    { source: "/websocket", destination: upstream + "/websocket" },
     { source: "/articles/:articleId", destination: "/articles/:articleId/index.html" },
     { source: "/articles/:articleId/", destination: "/articles/:articleId/index.html" },
     { source: "/:path*", destination: "/index.html" },

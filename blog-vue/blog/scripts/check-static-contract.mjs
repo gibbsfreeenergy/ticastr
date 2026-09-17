@@ -3,11 +3,7 @@ import path from "node:path";
 import process from "node:process";
 
 const distDirectory = path.resolve(process.env.DIST_DIR || "dist");
-const allowedScriptOrigins = new Set([
-  "https://ssl.captcha.qq.com",
-  "https://connect.qq.com",
-  "https://tjs.sjs.sinajs.cn"
-]);
+const allowedScriptOrigins = new Set();
 
 async function htmlFiles(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true, recursive: true });
