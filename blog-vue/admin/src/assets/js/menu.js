@@ -44,7 +44,10 @@ async function loadMenus() {
       normalizedRoute.component = component;
       return normalizedRoute;
     });
-    router.addRoute(normalizedItem);
+    const sharesChildName = normalizedItem.children.some(child => child.name === normalizedItem.name);
+    router.addRoute(sharesChildName
+      ? { ...normalizedItem, name: `${normalizedItem.code || normalizedItem.path}:layout` }
+      : normalizedItem);
     return normalizedItem;
   });
   store.commit("saveUserMenuList", normalizedMenuList);

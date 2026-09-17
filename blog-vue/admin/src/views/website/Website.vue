@@ -12,8 +12,11 @@
             <el-upload
               class="avatar-uploader"
               :action="$api.admin.uploadConfigImageUrl"
+              :headers="uploadHeaders"
+              :with-credentials="true"
               :show-file-list="false"
               :on-success="handleWebsiteAvatarSuccess"
+              :on-error="uploadError"
             >
               <img
                 v-if="websiteConfigForm.websiteAvatar"
@@ -137,8 +140,11 @@
                 <el-upload
                   class="avatar-uploader"
                   :action="$api.admin.uploadConfigImageUrl"
+                  :headers="uploadHeaders"
+                  :with-credentials="true"
                   :show-file-list="false"
                   :on-success="handleUserAvatarSuccess"
+                  :on-error="uploadError"
                 >
                   <img
                     v-if="websiteConfigForm.userAvatar"
@@ -154,8 +160,11 @@
                 <el-upload
                   class="avatar-uploader"
                   :action="$api.admin.uploadConfigImageUrl"
+                  :headers="uploadHeaders"
+                  :with-credentials="true"
                   :show-file-list="false"
                   :on-success="handleTouristAvatarSuccess"
+                  :on-error="uploadError"
                 >
                   <img
                     v-if="websiteConfigForm.touristAvatar"
@@ -197,8 +206,11 @@
                 <el-upload
                   class="avatar-uploader"
                   :action="$api.admin.uploadConfigImageUrl"
+                  :headers="uploadHeaders"
+                  :with-credentials="true"
                   :show-file-list="false"
                   :on-success="handleWeiXinSuccess"
+                  :on-error="uploadError"
                 >
                   <img
                     v-if="websiteConfigForm.weiXinQRCode"
@@ -214,8 +226,11 @@
                 <el-upload
                   class="avatar-uploader"
                   :action="$api.admin.uploadConfigImageUrl"
+                  :headers="uploadHeaders"
+                  :with-credentials="true"
                   :show-file-list="false"
                   :on-success="handleAlipaySuccess"
+                  :on-error="uploadError"
                 >
                   <img
                     v-if="websiteConfigForm.alipayQRCode"
@@ -264,6 +279,8 @@
 </template>
 
 <script>
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
+
 export default {
   created() {
     this.getWebsiteConfig();
@@ -321,6 +338,9 @@ export default {
     handleAlipaySuccess(response) {
       this.websiteConfigForm.alipayQRCode = response.data;
     },
+    uploadError() {
+      this.$message.error("图片上传失败，请刷新页面后重试");
+    },
     updateWebsiteConfig() {
       this.$api.admin
         .updateWebsiteConfig(this.websiteConfigForm)
@@ -337,6 +357,11 @@ export default {
             });
           }
         });
+    }
+  },
+  computed: {
+    uploadHeaders() {
+      return getCsrfHeaders();
     }
   }
 };

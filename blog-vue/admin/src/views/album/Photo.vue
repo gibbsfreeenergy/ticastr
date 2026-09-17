@@ -111,11 +111,14 @@
         <el-upload
           v-show="uploadList.length > 0"
           :action="$api.admin.uploadAlbumCoverUrl"
+          :headers="uploadHeaders"
+          :with-credentials="true"
           list-type="picture-card"
           :file-list="uploadList"
           multiple
           :before-upload="beforeUpload"
           :on-success="upload"
+          :on-error="uploadError"
           :on-remove="handleRemove"
         >
           <i class="el-icon-plus" />
@@ -124,10 +127,13 @@
           <el-upload
             v-show="uploadList.length == 0"
             drag
-          :action="$api.admin.uploadAlbumCoverUrl"
+            :action="$api.admin.uploadAlbumCoverUrl"
+            :headers="uploadHeaders"
+            :with-credentials="true"
             multiple
             :before-upload="beforeUpload"
             :on-success="upload"
+            :on-error="uploadError"
             :show-file-list="false"
           >
             <i class="el-icon-upload"></i>
@@ -235,6 +241,7 @@
 
 <script>
 import * as imageConversion from "image-conversion";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 export default {
   created() {
     this.getAlbumInfo();
@@ -391,6 +398,9 @@ export default {
     upload(response) {
       this.uploadList.push({ url: response.data });
     },
+    uploadError() {
+      this.$message.error("图片上传失败，请刷新页面后重试");
+    },
     beforeUpload(file) {
       return new Promise(resolve => {
         if (file.size / 1024 < this.config.UPLOAD_SIZE) {
@@ -440,6 +450,11 @@ export default {
         }
       });
       this.batchDeletePhoto = false;
+    }
+  },
+  computed: {
+    uploadHeaders() {
+      return getCsrfHeaders();
     }
   },
   watch: {

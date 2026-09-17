@@ -10,6 +10,18 @@ import { api } from "../../api/http";
 import { generaMenu, isMenuReady, resetMenuLoader } from "./menu";
 
 describe("dynamic menu loading", () => {
+  it("registers the standalone storage menu supplied by the API", async () => {
+    api.admin.menus.mockResolvedValue({
+      flag: true,
+      data: [{
+        path: "/storage", name: "存储源配置", component: "Layout", routeKey: "storage",
+        children: [{ path: "", name: "存储源配置", routeKey: "storage", component: "/storage/Storage.vue" }]
+      }]
+    });
+    await generaMenu();
+    expect(router.resolve("/storage").matched.at(-1).components.default).toBeDefined();
+    expect(store.state.userMenuList[0].section).toBe("settings");
+  });
   beforeEach(() => {
     resetRouter();
     resetMenuLoader();

@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: [],
+    css: true,
     clearMocks: true,
     exclude: ["**/node_modules/**", "scripts/**/*.test.mjs"]
   }

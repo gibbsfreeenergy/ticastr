@@ -20,13 +20,7 @@
               :key="index"
               @click="addEmoji(key, value)"
             >
-              <img
-                :src="value"
-                :title="key"
-                class="emoji"
-                width="24"
-                height="24"
-              />
+              <span :title="key" class="emoji">{{ value }}</span>
             </span>
             <template #reference>
               <i class="iconfont el-icon-mybiaoqing operation-btn" />
@@ -35,9 +29,12 @@
           <!-- 图片上传 -->
           <el-upload
             :action="$api.admin.uploadTalkImageUrl"
+            :headers="uploadHeaders"
+            :with-credentials="true"
             multiple
             :before-upload="beforeUpload"
             :on-success="upload"
+            :on-error="uploadError"
             :show-file-list="false"
           >
             <i class="iconfont el-icon-mytupian operation-btn" />
@@ -86,11 +83,14 @@
         class="talk-image-upload"
         v-show="uploadList.length > 0"
         :action="$api.admin.uploadTalkImageUrl"
+        :headers="uploadHeaders"
+        :with-credentials="true"
         list-type="picture-card"
         :file-list="uploadList"
         multiple
         :before-upload="beforeUpload"
         :on-success="upload"
+        :on-error="uploadError"
         :on-remove="handleRemove"
       >
         <i class="el-icon-plus" />
@@ -103,6 +103,7 @@
 import * as imageConversion from "image-conversion";
 import EmojiList from "../../assets/js/emoji";
 import Editor from "../../components/Editor.vue";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 export default {
   components: {
     Editor
@@ -143,13 +144,7 @@ export default {
       this.talk.status = command;
     },
     addEmoji(key, value) {
-      this.$refs.editor.addText(
-        "<img src= '" +
-          value +
-          "' width='24'height='24' alt=" +
-          key +
-          " style='margin: 0 1px;vertical-align: text-bottom'/>"
-      );
+      this.$refs.editor.addText(value);
     },
     handleRemove(file) {
       this.uploadList.forEach((item, index) => {
@@ -160,6 +155,9 @@ export default {
     },
     upload(response) {
       this.uploadList.push({ url: response.data });
+    },
+    uploadError() {
+      this.$message.error("图片上传失败，请刷新页面后重试");
     },
     beforeUpload(file) {
       return new Promise(resolve => {
@@ -205,6 +203,9 @@ export default {
     }
   },
   computed: {
+    uploadHeaders() {
+      return getCsrfHeaders();
+    },
     dropdownTitle() {
       var desc = "";
       this.statusList.forEach(item => {

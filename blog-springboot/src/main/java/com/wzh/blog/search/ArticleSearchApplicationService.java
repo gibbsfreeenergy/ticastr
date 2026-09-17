@@ -54,50 +54,62 @@ public class ArticleSearchApplicationService {
     }
 
     public List<ArticleSearchDTO> search(String query, PageQuery pageQuery) {
-        return index.search(query, Math.toIntExact(Math.min(Integer.MAX_VALUE, pageQuery.offset())),
-                        Math.toIntExact(Math.min(20L, pageQuery.size())))
-                .stream()
-                .map(result -> ArticleSearchDTO.builder()
-                        .id(result.articleId())
-                        .articleTitle(result.title())
-                        .snippet(result.snippet())
-                        .isDelete(FALSE)
-                        .status(PUBLIC.getStatus())
-                        .build())
-                .toList();
+        return visibleResults(query, Math.toIntExact(Math.min(Integer.MAX_VALUE, pageQuery.offset())),
+                Math.toIntExact(Math.min(20L, pageQuery.size()))).stream().map(VisibleResult::article).toList();
     }
 
     public CursorPageResult<ArticleSearchDTO> search(String query, CursorPageQuery pageQuery) {
         String normalizedQuery = query == null ? "" : query.trim();
         String fingerprint = cursorCodec.fingerprint("search:" + normalizedQuery);
         int offset = pageQuery.cursor() == null ? 0 : cursorCodec.decodeOffset(pageQuery.cursor(), fingerprint);
-        List<ArticleSearchDTO> rows = index.search(normalizedQuery, offset,
-                        Math.min(pageQuery.size() + 1, 50))
-                .stream()
-                .map(result -> ArticleSearchDTO.builder()
-                        .id(result.articleId())
-                        .articleTitle(result.title())
-                        .snippet(result.snippet())
-                        .isDelete(FALSE)
-                        .status(PUBLIC.getStatus())
-                        .build())
-                .toList();
+        List<VisibleResult> rows = visibleResults(normalizedQuery, offset, pageQuery.size() + 1);
         boolean hasNext = rows.size() > pageQuery.size();
-        List<ArticleSearchDTO> items = hasNext ? rows.subList(0, pageQuery.size()) : rows;
+        List<ArticleSearchDTO> items = rows.stream().limit(pageQuery.size()).map(VisibleResult::article).toList();
         String nextCursor = hasNext
-                ? cursorCodec.encodeOffset(offset + pageQuery.size(), fingerprint) : null;
+                ? cursorCodec.encodeOffset(rows.get(pageQuery.size()).offset(), fingerprint) : null;
         return new CursorPageResult<>(items, nextCursor, hasNext);
     }
+
+    private List<VisibleResult> visibleResults(String query, int offset, int limit) {
+        List<VisibleResult> visible = new ArrayList<>();
+        int position = offset;
+        while (visible.size() < limit && position < Integer.MAX_VALUE) {
+            // The index may return fewer rows than requested because of its own batch cap.
+            List<ArticleSearchResult> candidates = index.search(query, position, limit - visible.size());
+            if (candidates.isEmpty()) {
+                break;
+            }
+            Map<Integer, Article> current = new HashMap<>();
+            articleDao.selectByIds(candidates.stream().map(ArticleSearchResult::articleId).toList())
+                    .forEach(article -> current.put(article.getId(), article));
+            for (ArticleSearchResult candidate : candidates) {
+                Article article = current.get(candidate.articleId());
+                if (article != null && Integer.valueOf(FALSE).equals(article.getIsDelete())
+                        && PUBLIC.getStatus().equals(article.getStatus())) {
+                    visible.add(new VisibleResult(ArticleSearchDTO.builder()
+                            .id(article.getId()).articleTitle(article.getArticleTitle())
+                            .snippet(candidate.snippet()).isDelete(FALSE).status(PUBLIC.getStatus()).build(), position));
+                }
+                position++;
+                if (visible.size() == limit || position == Integer.MAX_VALUE) {
+                    break;
+                }
+            }
+        }
+        return visible;
+    }
+
+    private record VisibleResult(ArticleSearchDTO article, int offset) { }
 
     /** Adds an index event to the same transaction as article metadata changes. */
     public void scheduleIndex(Integer articleId) {
         if (articleId != null) {
-            outboxEventService.enqueueIfAbsent("ARTICLE_CONTENT_INDEX", 1, String.valueOf(articleId), null,
+            outboxEventService.enqueue("ARTICLE_CONTENT_INDEX", 1, String.valueOf(articleId), null,
                     Map.of("articleId", articleId));
         }
     }
 
-    public void indexArticle(Integer articleId) {
+    public synchronized void indexArticle(Integer articleId) {
         if (articleId == null) {
             return;
         }
@@ -118,7 +130,7 @@ public class ArticleSearchApplicationService {
                 article.getCategoryId(), tags, body));
     }
 
-    public void rebuildAll() {
+    public synchronized void rebuildAll() {
         List<ArticleSearchDocument> documents = new ArrayList<>();
         int afterId = 0;
         while (true) {
@@ -135,7 +147,8 @@ public class ArticleSearchApplicationService {
                                 readContent(article.getId())));
                     }
                 } catch (RuntimeException exception) {
-                    log.warn("Skipping article {} during search rebuild", article.getId(), exception);
+                    // Keep the existing index instead of replacing it with a partial projection.
+                    throw new IllegalStateException("Unable to rebuild search for article " + article.getId(), exception);
                 }
                 afterId = article.getId();
             }

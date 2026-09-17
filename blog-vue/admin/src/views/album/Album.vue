@@ -97,8 +97,11 @@
             :show-file-list="false"
             :before-upload="beforeUpload"
             :action="$api.admin.uploadAlbumCoverUrl"
+            :headers="uploadHeaders"
+            :with-credentials="true"
             multiple
             :on-success="uploadCover"
+            :on-error="uploadError"
           >
             <i class="el-icon-upload" v-if="albumForum.albumCover == ''" />
             <div class="el-upload__text" v-if="albumForum.albumCover == ''">
@@ -144,6 +147,7 @@
 
 <script>
 import * as imageConversion from "image-conversion";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 export default {
   created() {
     this.listAlbums();
@@ -240,6 +244,9 @@ export default {
     uploadCover(response) {
       this.albumForum.albumCover = response.data;
     },
+    uploadError() {
+      this.$message.error("图片上传失败，请刷新页面后重试");
+    },
     beforeUpload(file) {
       return new Promise(resolve => {
         if (file.size / 1024 < this.config.UPLOAD_SIZE) {
@@ -293,6 +300,11 @@ export default {
     currentChange(current) {
       this.current = current;
       this.listAlbums();
+    }
+  },
+  computed: {
+    uploadHeaders() {
+      return getCsrfHeaders();
     }
   }
 };

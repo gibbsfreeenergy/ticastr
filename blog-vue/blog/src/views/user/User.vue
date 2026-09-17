@@ -17,7 +17,9 @@
           <avatar-cropper
             v-model="showCropper"
             @uploaded="uploadAvatar"
+            @error="uploadAvatarError"
             :upload-url="$api.auth.avatarUploadUrl"
+            :request-options="avatarUploadRequestOptions"
           />
         </v-col>
         <v-col md="7" cols="12">
@@ -61,6 +63,7 @@
 
 <script>
 import AvatarCropper from "vue-avatar-cropper";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 export default {
   components: { AvatarCropper },
   data: function() {
@@ -94,6 +97,21 @@ export default {
         this.$toast({ type: "error", message: data.message });
       }
     },
+    async uploadAvatarError({ context }) {
+      const response = context?.response;
+      let message = "头像上传失败，请刷新页面后重试";
+
+      if (response) {
+        try {
+          const data = await response.json();
+          message = data.message || message;
+        } catch {
+          // Keep the safe fallback when the server does not return JSON.
+        }
+      }
+
+      this.$toast({ type: "error", message });
+    },
     openEmailModel() {
       this.$store.state.emailFlag = true;
     }
@@ -113,6 +131,13 @@ export default {
         }
       });
       return "background: url(" + cover + ") center center / cover no-repeat";
+    },
+    avatarUploadRequestOptions() {
+      return {
+        method: "POST",
+        credentials: "same-origin",
+        headers: getCsrfHeaders()
+      };
     }
   }
 };

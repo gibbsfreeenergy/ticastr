@@ -13,10 +13,56 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DynamicAuthorizationManagerTest {
+
+    @Test
+    void invalidationCannotBeOverwrittenByAnOlderInFlightLoad() throws Exception {
+        var queryStarted = new CountDownLatch(1);
+        var finishOldQuery = new CountDownLatch(1);
+        var invalidationStarted = new CountDownLatch(1);
+        var calls = new AtomicInteger();
+        RoleDao dao = mock(RoleDao.class);
+        when(dao.listResourceRoles()).thenAnswer(call -> {
+            if (calls.incrementAndGet() == 1) {
+                queryStarted.countDown();
+                if (!finishOldQuery.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("test timed out");
+                return List.of(resource("/admin/articles", false, List.of("OLD_ROLE")));
+            }
+            return List.of(resource("/admin/articles", false, List.of("NEW_ROLE")));
+        });
+        var source = new FilterInvocationSecurityMetadataSourceImpl(dao);
+        var request = new MockHttpServletRequest("GET", "/admin/articles");
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var loading = executor.submit(() -> source.findRequiredRoles(request));
+            assertThat(queryStarted.await(5, TimeUnit.SECONDS)).isTrue();
+            var invalidating = executor.submit(() -> {
+                invalidationStarted.countDown();
+                source.clearDataSource();
+            });
+            try {
+                assertThat(invalidationStarted.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThatThrownBy(() -> invalidating.get(100, TimeUnit.MILLISECONDS))
+                        .isInstanceOf(TimeoutException.class);
+            } finally {
+                finishOldQuery.countDown();
+            }
+            loading.get(5, TimeUnit.SECONDS);
+            invalidating.get(5, TimeUnit.SECONDS);
+        } finally {
+            finishOldQuery.countDown();
+        }
+        assertThat(source.findRequiredRoles(request).orElseThrow()).containsExactly("NEW_ROLE");
+    }
 
     @Test
     void deniesAnUnregisteredEndpoint() {

@@ -53,9 +53,12 @@
             drag
             :show-file-list="false"
             :action="$api.admin.uploadConfigImageUrl"
+            :headers="uploadHeaders"
+            :with-credentials="true"
             multiple
             :before-upload="beforeUpload"
             :on-success="uploadCover"
+            :on-error="uploadError"
           >
             <i class="el-icon-upload" v-if="pageForum.pageCover == ''" />
             <div class="el-upload__text" v-if="pageForum.pageCover == ''">
@@ -95,6 +98,7 @@
 
 <script>
 import * as imageConversion from "image-conversion";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 export default {
   created() {
     this.listPages();
@@ -172,6 +176,9 @@ export default {
     uploadCover(response) {
       this.pageForum.pageCover = response.data;
     },
+    uploadError() {
+      this.$message.error("图片上传失败，请刷新页面后重试");
+    },
     beforeUpload(file) {
       return new Promise(resolve => {
         if (file.size / 1024 < this.config.UPLOAD_SIZE) {
@@ -213,6 +220,11 @@ export default {
           }
           this.isdeletePage = false;
         });
+    }
+  },
+  computed: {
+    uploadHeaders() {
+      return getCsrfHeaders();
     }
   }
 };

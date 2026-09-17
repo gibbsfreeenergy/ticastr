@@ -1,6 +1,6 @@
 import { nextTick } from "vue";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import Orbit from "./Orbit.vue";
 
 async function settle() {
@@ -49,6 +49,10 @@ const response = {
   }
 };
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 describe("Orbit page", () => {
   it("renders, filters, selects, and links to a real article", async () => {
     const wrapper = mountOrbit(vi.fn().mockResolvedValue(response));
@@ -74,5 +78,28 @@ describe("Orbit page", () => {
     expect(wrapper.text()).toContain("阅读星图");
     expect(wrapper.text()).toContain("暂时无法读取文章元数据，请稍后重试。");
     expect(wrapper.find('[data-testid="retry-articles"]').exists()).toBe(true);
+  });
+
+  it("saves the selected article and reveals it in the persistent shelf", async () => {
+    const wrapper = mountOrbit(vi.fn().mockResolvedValue(response));
+    await settle();
+
+    await wrapper.find('[data-testid="save-article"]').trigger("click");
+    expect(wrapper.find('[data-testid="save-article"]').text()).toContain("已在书架");
+
+    await wrapper.find('[data-testid="shelf-toggle"]').trigger("click");
+    expect(wrapper.find('[data-testid="shelf-panel"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="shelf-item"]').text()).toContain("Redis 的第二条路");
+  });
+
+  it("removes an article from the shelf", async () => {
+    const wrapper = mountOrbit(vi.fn().mockResolvedValue(response));
+    await settle();
+
+    await wrapper.find('[data-testid="save-article"]').trigger("click");
+    await wrapper.find('[data-testid="shelf-toggle"]').trigger("click");
+    await wrapper.find('[data-testid="remove-shelf-item"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="shelf-empty"]').exists()).toBe(true);
   });
 });

@@ -29,8 +29,20 @@
           </li>
         </ul>
         <!-- 搜索结果不存在提示 -->
+        <p v-if="loading" role="status">搜索中…</p>
+        <div v-if="error" role="alert">
+          搜索失败，请重试。
+          <button type="button" class="search-more" @click="loadSearch(articleList.length > 0)">重试</button>
+        </div>
+        <button
+          v-if="nextCursor && !error"
+          type="button"
+          class="search-more"
+          :disabled="loading"
+          @click="loadSearch(true)"
+        >加载更多</button>
         <div
-          v-show="flag && articleList.length == 0"
+          v-show="flag && !loading && !error && articleList.length == 0"
           style="font-size:0.875rem"
         >
           找不到您查询的内容：{{ keywords }}
@@ -44,6 +56,7 @@
 export default {
   unmounted() {
     clearTimeout(this.searchTimer);
+    this.searchRequestId++;
   },
   data: function() {
     return {
@@ -51,13 +64,35 @@ export default {
       articleList: [],
       flag: false,
       searchTimer: null,
-      searchRequestId: 0
+      searchRequestId: 0,
+      nextCursor: null,
+      loading: false,
+      error: false
     };
   },
   methods: {
     goTo(articleId) {
       this.$store.state.searchFlag = false;
       this.$router.push({ path: "/articles/" + articleId });
+    },
+    async loadSearch(append = false) {
+      if (this.loading || !this.keywords.trim()) return;
+      const requestId = this.searchRequestId;
+      const params = { size: 10, keywords: this.keywords };
+      if (append && this.nextCursor) params.cursor = this.nextCursor;
+      this.loading = true;
+      this.error = false;
+      try {
+        const data = await this.$api.article.search({ params });
+        if (requestId !== this.searchRequestId) return;
+        const page = data.data || {};
+        this.articleList = append ? [...this.articleList, ...(page.items || [])] : (page.items || []);
+        this.nextCursor = page.hasNext ? page.nextCursor : null;
+      } catch {
+        if (requestId === this.searchRequestId) this.error = true;
+      } finally {
+        if (requestId === this.searchRequestId) this.loading = false;
+      }
     }
   },
   computed: {
@@ -81,21 +116,16 @@ export default {
     keywords(value) {
       this.flag = value.trim() != "" ? true : false;
       clearTimeout(this.searchTimer);
-      const requestId = ++this.searchRequestId;
+      ++this.searchRequestId;
+      this.articleList = [];
+      this.nextCursor = null;
+      this.loading = false;
+      this.error = false;
       if (!this.flag) {
-        this.articleList = [];
         return;
       }
       this.searchTimer = setTimeout(() => {
-        this.$api.article
-          .search({
-            params: { size: 10, keywords: value }
-          })
-          .then(data => {
-            if (requestId === this.searchRequestId) {
-              this.articleList = data.data?.items || [];
-            }
-          });
+        this.loadSearch();
       }, 240);
     }
   }
@@ -103,6 +133,18 @@ export default {
 </script>
 
 <style scoped>
+.search-more {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: #49b1f5;
+  cursor: pointer;
+}
+.search-more:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
 .search-wrapper {
   padding: 1.25rem;
   height: 100%;

@@ -141,6 +141,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
                         .build())
                 .collect(Collectors.toList());
         userRoleService.saveBatch(userRoleList);
+        onlineSessionService.expireAfterCommit(userRoleVO.getUserInfoId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -154,6 +155,9 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoDao, UserInfo> impl
                 .isDisable(userDisableVO.getIsDisable())
                 .build();
         userInfoDao.updateById(userInfo);
+        if (!Integer.valueOf(0).equals(userDisableVO.getIsDisable())) {
+            onlineSessionService.expireAfterCommit(userDisableVO.getId());
+        }
     }
 
 

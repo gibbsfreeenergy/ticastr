@@ -36,6 +36,7 @@ public final class MenuRouteContract {
             Map.entry("/pages", "page"),
             Map.entry("/website", "website"),
             Map.entry("/setting", "setting"),
+            Map.entry("/storage", "storage"),
             Map.entry("/talks", "talk"),
             Map.entry("/talks/:talkId", "talk"),
             Map.entry("/talk-list", "talkList"),
@@ -71,6 +72,7 @@ public final class MenuRouteContract {
             Map.entry("/page/Page.vue", "page"),
             Map.entry("/website/Website.vue", "website"),
             Map.entry("/setting/Setting.vue", "setting"),
+            Map.entry("/storage/Storage.vue", "storage"),
             Map.entry("/talk/Talk.vue", "talk"),
             Map.entry("/talk/TalkList.vue", "talkList")
     );
@@ -124,7 +126,7 @@ public final class MenuRouteContract {
             case "home" -> "home";
             case "article", "articleGroup" -> "pen";
             case "articleList", "talkList", "menu" -> "list";
-            case "category", "album", "photo", "albumGroup" -> "folder";
+            case "category", "album", "photo", "albumGroup", "storage" -> "folder";
             case "tag" -> "tag";
             case "talk", "talkGroup" -> "bubble";
             case "comment" -> "comment";

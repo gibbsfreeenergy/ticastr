@@ -122,7 +122,11 @@ canvas {
   animation: to_show 4s;
 }
 
-.home-banner,
+.home-banner {
+  background-color: #1d4ed8;
+  background-image: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #7c3aed 100%);
+}
+
 .banner,
 .message-banner {
   background-color: #1d4ed8 !important;

@@ -24,6 +24,124 @@ class DatabaseMigrationIntegrationTest {
             .withExposedPorts(3306);
 
     @Test
+    void grantsStandaloneStorageMenuAndResourceAccessOnlyToExistingSettingsRoles() throws Exception {
+        createDatabase("storage_menu_blog");
+        Flyway.configure().dataSource(jdbcUrl("storage_menu_blog"), "root", "test-root")
+                .locations("classpath:db/migration").target("21").load().migrate();
+        try (Connection connection = connection("storage_menu_blog");
+             Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO tb_role (id, role_name, role_label, create_time) "
+                    + "VALUES (9001, 'Settings', 'storage-test-settings', NOW()), "
+                    + "(9002, 'Other', 'storage-test-other', NOW())");
+            statement.execute("INSERT INTO tb_menu (id, name, path, component, icon, route_key, create_time, order_num) "
+                    + "VALUES (9001, 'Settings', '/setting', '/setting/Setting.vue', 'settings', 'setting', NOW(), 1)");
+            statement.execute("INSERT INTO tb_role_menu (role_id, menu_id) VALUES (9001, 9001)");
+        }
+
+        migrate("storage_menu_blog", false);
+        migrate("storage_menu_blog", false);
+
+        try (Connection connection = connection("storage_menu_blog")) {
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE code = 'storage' "
+                    + "AND path = '/storage' AND route_key = 'storage' AND parent_id IS NULL"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role_menu rm "
+                    + "JOIN tb_menu m ON m.id = rm.menu_id WHERE m.code = 'storage' AND rm.role_id = 9001"))
+                    .isEqualTo(1);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_role_menu rm "
+                    + "JOIN tb_menu m ON m.id = rm.menu_id WHERE m.code = 'storage' AND rm.role_id = 9002"))
+                    .isZero();
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) FROM tb_role_resource rr "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE rr.role_id = 9001 AND resource.parent_id IS NOT NULL "
+                    + "AND resource.is_anonymous = 0 AND resource.request_method IS NOT NULL "
+                    + "AND (resource.url = '/admin/storage/configs' "
+                    + "OR resource.url LIKE '/admin/storage/configs/%')"))
+                    .isEqualTo(8);
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) FROM tb_role_resource rr "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE rr.role_id = 9002 AND resource.parent_id IS NOT NULL "
+                    + "AND resource.is_anonymous = 0 AND resource.request_method IS NOT NULL "
+                    + "AND (resource.url = '/admin/storage/configs' "
+                    + "OR resource.url LIKE '/admin/storage/configs/%')"))
+                    .isZero();
+        }
+    }
+
+    @Test
+    void grantsOutboxResourceAccessToAdministratorsOnly() throws Exception {
+        createDatabase("outbox_access_blog");
+        Flyway.configure().dataSource(jdbcUrl("outbox_access_blog"), "root", "test-root")
+                .locations("classpath:db/migration").target("23").load().migrate();
+
+        migrate("outbox_access_blog", false);
+        migrate("outbox_access_blog", false);
+
+        try (Connection connection = connection("outbox_access_blog")) {
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
+                    + "FROM tb_role_resource rr "
+                    + "JOIN tb_role role ON role.id = rr.role_id "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE role.role_label = 'admin' "
+                    + "AND resource.url IN ('/admin/outbox', '/admin/outbox/metrics', '/admin/outbox/*/retry')"))
+                    .isEqualTo(3);
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
+                    + "FROM tb_role_resource rr "
+                    + "JOIN tb_role role ON role.id = rr.role_id "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE role.role_label = 'test' "
+                    + "AND resource.url IN ('/admin/outbox', '/admin/outbox/metrics', '/admin/outbox/*/retry')"))
+                    .isZero();
+        }
+    }
+
+    @Test
+    void grantsArticleContentAndLegacyStorageAccessWithLeastPrivilege() throws Exception {
+        createDatabase("content_access_blog");
+        Flyway.configure().dataSource(jdbcUrl("content_access_blog"), "root", "test-root")
+                .locations("classpath:db/migration").target("24").load().migrate();
+        try (Connection connection = connection("content_access_blog");
+             Statement statement = connection.createStatement()) {
+            statement.execute("INSERT INTO tb_role (id, role_name, role_label, create_time) "
+                    + "VALUES (9001, 'Read only', 'test', NOW())");
+        }
+
+        migrate("content_access_blog", false);
+        migrate("content_access_blog", false);
+
+        try (Connection connection = connection("content_access_blog")) {
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
+                    + "FROM tb_role_resource rr "
+                    + "JOIN tb_role role ON role.id = rr.role_id "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE role.role_label = 'admin' "
+                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions', "
+                    + "'/admin/articles/*/versions/*/restore', '/admin/storage/provider', "
+                    + "'/admin/storage/providers', '/admin/storage/providers/*/validate')"))
+                    .isEqualTo(8);
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
+                    + "FROM tb_role_resource rr "
+                    + "JOIN tb_role role ON role.id = rr.role_id "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE role.role_label = 'test' "
+                    + "AND resource.request_method = 'GET' "
+                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions')"))
+                    .isEqualTo(2);
+            assertThat(queryInt(connection, "SELECT COUNT(DISTINCT rr.resource_id) "
+                    + "FROM tb_role_resource rr "
+                    + "JOIN tb_role role ON role.id = rr.role_id "
+                    + "JOIN tb_resource resource ON resource.id = rr.resource_id "
+                    + "WHERE role.role_label = 'test' "
+                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions', "
+                    + "'/admin/articles/*/versions/*/restore', '/admin/storage/provider', "
+                    + "'/admin/storage/providers', '/admin/storage/providers/*/validate') "
+                    + "AND NOT (resource.request_method = 'GET' "
+                    + "AND resource.url IN ('/admin/articles/*/content', '/admin/articles/*/versions'))"))
+                    .isZero();
+        }
+    }
+
+    @Test
     void migratesAnEmptyDatabase() throws Exception {
         createDatabase("fresh_blog");
 

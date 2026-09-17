@@ -13,6 +13,8 @@ import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -68,6 +70,19 @@ public class OnlineSessionService {
                 .sorted(Comparator.comparing(UserOnlineDTO::getLastLoginTime,
                         Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .toList();
+    }
+
+    public void expireAfterCommit(Integer userInfoId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    expireForUser(userInfoId);
+                }
+            });
+        } else {
+            expireForUser(userInfoId);
+        }
     }
 
     public int expireForUser(Integer userInfoId) {

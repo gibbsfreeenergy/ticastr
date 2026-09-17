@@ -41,3 +41,78 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.banner {
+  color: #eee !important;
+}
+
+.banner::before {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  content: "";
+}
+
+.article-info-container {
+  position: absolute;
+  bottom: 6.25rem;
+  z-index: 1;
+  width: 100%;
+  padding: 0 8%;
+  text-align: center;
+}
+
+.article-title {
+  margin: 20px 0 8px;
+  font-size: 35px;
+}
+
+.article-info {
+  display: inline-block;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.article-info span {
+  font-size: 95%;
+}
+
+.article-info i {
+  font-size: 14px;
+}
+
+.second-line,
+.third-line {
+  display: inline;
+}
+
+.article-category a {
+  color: #fff !important;
+}
+
+@media (max-width: 759px) {
+  .banner {
+    height: 360px;
+  }
+
+  .article-info span {
+    font-size: 90%;
+  }
+
+  .separator:first-child {
+    display: none;
+  }
+
+  .article-info-container {
+    bottom: 1.3rem;
+    padding: 0 5%;
+    text-align: left;
+  }
+
+  .article-title {
+    margin-bottom: 0.4rem;
+    font-size: 1.5rem;
+  }
+}
+</style>

@@ -4,6 +4,7 @@ import com.aliyun.oss.ClientBuilderConfiguration;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.ServiceException;
+import com.aliyun.oss.model.CannedAccessControlList;
 import com.aliyun.oss.model.ListObjectsRequest;
 import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.OSSObjectSummary;
@@ -78,6 +79,7 @@ public final class OssStorageProvider implements StorageProvider {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(size);
         metadata.setContentType(contentType);
+        metadata.setObjectAcl(CannedAccessControlList.PublicRead);
         try {
             client().putObject(new PutObjectRequest(profile.bucket(), objectKey, digesting, metadata));
             if (digesting.count() != size) {

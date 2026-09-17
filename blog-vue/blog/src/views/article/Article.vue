@@ -13,7 +13,7 @@
           <v-card class="article-wrapper">
             <ArticleContent ref="contentView" :rendered-content="renderedContent" :loading="contentLoading" :error="contentError" @retry="loadContent" />
             <ArticleNavigation :article="article" :blog-info="blogInfo" :article-href="articleHref" :is-like="isLike" @like="like" @share="shareArticle" />
-            <hr />
+            <hr class="article-divider" />
             <Comment :type="commentType" @get-comment-count="getCommentCount" />
           </v-card>
         </v-col>
@@ -229,54 +229,5 @@ export default {
 <style scoped>
 .article-state { max-width: 760px; margin: 3rem auto; padding: 2rem; text-align: center; }
 .article-state-error { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
-.article-info-container { position: absolute; bottom: 6.25rem; width: 100%; padding: 0 8%; text-align: center; }
-.article-title { margin: 20px 0 8px; font-size: 35px; }
-.article-info { display: inline-block; font-size: 14px; line-height: 1.9; }
-.article-info span { font-size: 95%; }
-.article-info i { font-size: 14px; }
-.article-category a { color: #fff !important; }
-.article-operation { display: flex; align-items: center; }
-.tag-container a { display: inline-block; margin: 0.5rem 0.5rem 0.5rem 0; padding: 0 0.75rem; border: 1px solid #49b1f5; border-radius: 1rem; color: #49b1f5 !important; font-size: 12px; line-height: 2; }
-.aritcle-copyright { position: relative; margin: 40px 0 10px; padding: 0.625rem 1rem; border: 1px solid #eee; font-size: 0.875rem; line-height: 2; }
-.aritcle-copyright span { color: #49b1f5; font-weight: bold; }
-.aritcle-copyright a { color: #99a9bf !important; text-decoration: underline !important; }
-.article-reward { display: flex; align-items: center; justify-content: center; margin-top: 5rem; }
-.like-btn, .like-btn-active { display: inline-block; width: 100px; border: 0; color: #fff; line-height: 36px; font-size: 0.875rem; cursor: pointer; }
-.like-btn { background: #969696; }
-.like-btn-active { background: #ec7259; }
-.reward-btn { position: relative; display: inline-block; width: 100px; margin: 0 1rem; background: #49b1f5; color: #fff; text-align: center; line-height: 36px; font-size: 0.875rem; }
-.reward-main { position: absolute; bottom: 40px; left: 0; display: none; width: 100%; padding-bottom: 15px; }
-.reward-btn:hover .reward-main, .reward-btn:focus .reward-main { display: block; }
-.reward-all { display: inline-flex; width: 320px; margin-left: -110px; padding: 20px 10px 8px; border-radius: 4px; background: #f5f5f5; }
-.reward-item { display: inline-flex; flex-direction: column; padding: 0 8px; list-style: none; }
-.reward-img { display: block; width: 130px; height: 130px; }
-.reward-desc { margin: -5px 0; color: #858585; text-align: center; }
-.pagination-post { display: flex; width: 100%; margin-top: 40px; overflow: hidden; background: #000; }
-.post { position: relative; width: 50%; height: 150px; overflow: hidden; }
-.post-info { position: absolute; top: 50%; width: 100%; padding: 20px 40px; transform: translateY(-50%); line-height: 2; font-size: 14px; }
-.post-cover, .recommend-cover { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
-.post-cover { position: absolute; transition: transform 0.6s; }
-.post:hover .post-cover, .recommend-item:hover .recommend-cover { opacity: 0.8; transform: scale(1.1); }
-.label { color: #eee; font-size: 90%; }
-.post-title { color: #fff; font-weight: 500; }
-.recommend-container { margin-top: 40px; }
-.recommend-title { margin-bottom: 5px; font-size: 20px; font-weight: bold; line-height: 2; }
-.recommend-item { position: relative; display: inline-block; width: calc(33.333% - 6px); height: 200px; margin: 3px; overflow: hidden; background: #000; vertical-align: bottom; }
-.recommend-info { position: absolute; top: 50%; width: 100%; padding: 0 20px; transform: translateY(-50%); color: #fff; text-align: center; line-height: 2; font-size: 14px; }
-.right-container { padding: 20px 24px; font-size: 14px; }
-.right-title { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 16.8px; line-height: 2; }
-.article-item { display: flex; align-items: center; padding: 6px 0; }
-.article-item:not(:last-child) { border-bottom: 1px dashed #f5f5f5; }
-.article-item img { width: 100%; height: 100%; object-fit: cover; }
-.content { flex: 1; padding-left: 10px; overflow: hidden; word-break: break-all; }
-.content-cover { width: 58.8px; height: 58.8px; overflow: hidden; }
-.content-title a { font-size: 95%; }
-.content-time { color: #858585; font-size: 85%; line-height: 2; }
-@media (max-width: 759px) {
-  .article-info-container { bottom: 1.3rem; padding: 0 5%; text-align: left; }
-  .article-title { font-size: 1.5rem; }
-  .pagination-post { display: block; }
-  .post { width: 100%; }
-  .recommend-item { width: calc(100% - 4px); height: 150px; margin: 2px; }
-}
+.article-divider { position: relative; margin: 40px auto; border: 2px dashed #d2ebfd; width: calc(100% - 4px); }
 </style>

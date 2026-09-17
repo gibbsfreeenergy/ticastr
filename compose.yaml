@@ -31,11 +31,18 @@ services:
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
       BOOTSTRAP_ADMIN_NICKNAME: ${BOOTSTRAP_ADMIN_NICKNAME:-Administrator}
       STORAGE_ACTIVE_PROVIDER: ${STORAGE_ACTIVE_PROVIDER:-local}
+      STORAGE_CONFIG_ENCRYPTION_KEY: ${STORAGE_CONFIG_ENCRYPTION_KEY:-}
       STORAGE_LOCAL_ROOT: /data/uploads/
       STORAGE_LOCAL_PUBLIC_URL: /uploads/
+      OSS_ENDPOINT: ${OSS_ENDPOINT:-}
+      OSS_BUCKET: ${OSS_BUCKET:-}
+      OSS_REGION: ${OSS_REGION:-}
+      OSS_PUBLIC_URL: ${OSS_PUBLIC_URL:-}
+      OSS_ACCESS_KEY_ID: ${OSS_ACCESS_KEY_ID:-}
+      OSS_ACCESS_KEY_SECRET: ${OSS_ACCESS_KEY_SECRET:-}
       SEARCH_DATA_ROOT: /data/search
-      WEBSITE_URL: http://localhost:8080
-      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:8081
+      WEBSITE_URL: ${WEBSITE_URL:-http://localhost:8080}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080,http://localhost:8081}
     depends_on:
       mysql:
         condition: service_healthy

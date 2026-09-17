@@ -7,6 +7,8 @@
 3. Redis 模式启动：docker compose -f compose.yaml -f compose.redis.yaml up -d。
 4. 检查 /actuator/health/liveness、/actuator/health/readiness；再访问公共站点、后台和 WebSocket。
 
+局域网手机访问时，将 `.env` 中的 `WEBSITE_URL`、`API_PUBLIC_URL`、`CORS_ALLOWED_ORIGINS` 和需要使用的 OAuth 回调地址改为主机的局域网 IP，再执行 `docker compose up -d --build`。公共站点默认使用 `:8080`，管理后台使用 `:8081`。
+
 Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不应因 Redis 缺失而阻塞 API。
 
 ## 监控
@@ -29,7 +31,7 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 对象存储
 
-后台“基础设施”页以 `/api/admin/storage/configs` 为主接口管理托管档案：
+后台独立菜单“存储源配置”（`/storage`）以 `/api/admin/storage/configs` 为主接口管理托管档案。V22 迁移为原有设置菜单的角色授予此菜单权限，其他角色可在角色管理中授权：
 
 - provider 仅 `local`、`cos`、`oss`、`tos`；同 provider 可保留多条档案，但数据库 `is_active` 只允许一条 active。
 - `local` 档案要求 `localRoot` 与 `publicUrl`；cloud 档案要求 `endpoint`、`region`、`bucket`、`publicUrl`、`accessKeyId`、`accessKeySecret`，并且 catalog 中只要存在 cloud profile 行就必须配置 `STORAGE_CONFIG_ENCRYPTION_KEY`。
@@ -43,7 +45,11 @@ Redis readiness 只在 Redis-enabled profile 中作为依赖。默认模式不�
 
 ## 搜索重建
 
-停止或隔离 API 的搜索写入后备份索引目录，删除/移动 SEARCH_INDEX_PATH，调用管理员重建任务或重启触发 rebuild，再检查文章标题/标签/正文搜索。重建从对象存储读取 Markdown，不从 MySQL 恢复正文。
+API 每次启动时，在托管存储初始化完成后自动重建本机搜索索引，从 MySQL 分页读取公开文章元数据、从对象存储读取 Markdown。恢复时先停止 API 并备份 SEARCH_INDEX_PATH，再启动 API，检查文章标题/标签/正文搜索；不需要提前删除旧索引，也没有单独的管理员重建接口。
+
+重建完成后原子替换旧索引；读取失败时保留旧索引并记录 `Search rebuild failed` 告警，修复存储访问后重启重试。首次部署没有旧索引且重建失败时，搜索可能为空，但 API 仍可启动。启动耗时随公开文章数量和存储读取延迟增加。
+
+搜索返回前会批量复核文章当前是否公开、是否删除；异步索引中的撤回文章不会直接对外返回。标题、状态和正文变更各自生成持久化索引事件，不因旧事件正在处理或进入死信而跳过新事件。
 
 ## 浏览器/SEO 发布
 

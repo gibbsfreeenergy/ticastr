@@ -20,7 +20,8 @@ const MENU_METADATA = Object.freeze({
   friendLink: { section: "settings", iconKey: "link" },
   about: { section: "settings", iconKey: "info" },
   operation: { section: "settings", iconKey: "history" },
-  setting: { section: "settings", iconKey: "settings" }
+  setting: { section: "settings", iconKey: "settings" },
+  storage: { section: "settings", iconKey: "folder" }
 });
 
 const SECTION_LABELS = Object.freeze({

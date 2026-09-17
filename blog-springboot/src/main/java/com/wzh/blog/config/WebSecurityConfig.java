@@ -22,6 +22,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.session.FindByIndexNameSessionRepository;
@@ -94,6 +95,7 @@ public class WebSecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                         .ignoringRequestMatchers("/login"))
                 .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
                 .addFilterBefore(monitoringTokenFilter, AuthorizationFilter.class)

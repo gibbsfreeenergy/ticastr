@@ -8,10 +8,27 @@
             <h1 id="orbit-title">阅读星图</h1>
             <p class="orbit-lede">把写过的东西，放回同一片天空。</p>
           </div>
-          <div class="orbit-count" aria-live="polite">
-            <span>当前视野</span>
-            <strong>{{ visibleArticles.length }}</strong>
-            <span>/ {{ articles.length }} 篇</span>
+          <div class="orbit-heading-actions">
+            <button
+              class="shelf-toggle"
+              :class="{ active: shelfOpen || shelfArticles.length }"
+              data-testid="shelf-toggle"
+              type="button"
+              :aria-expanded="shelfOpen"
+              aria-controls="reading-shelf-panel"
+              @click="shelfOpen = !shelfOpen"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3-6 3z" />
+              </svg>
+              <span>书架</span>
+              <strong>{{ shelfArticles.length }}</strong>
+            </button>
+            <div class="orbit-count" aria-live="polite">
+              <span>当前视野</span>
+              <strong>{{ visibleArticles.length }}</strong>
+              <span>/ {{ articles.length }} 篇</span>
+            </div>
           </div>
         </div>
 
@@ -76,6 +93,84 @@
           </nav>
         </div>
       </header>
+
+      <transition name="shelf-drawer">
+        <section
+          v-if="shelfOpen"
+          id="reading-shelf-panel"
+          class="shelf-panel"
+          data-testid="shelf-panel"
+          aria-labelledby="reading-shelf-title"
+        >
+          <div class="shelf-panel-heading">
+            <div>
+              <span class="detail-label">PERSONAL SHELF</span>
+              <h2 id="reading-shelf-title">稍后阅读</h2>
+            </div>
+            <div class="shelf-panel-actions">
+              <span class="shelf-count">{{ shelfArticles.length }} 篇</span>
+              <button
+                v-if="shelfArticles.length"
+                class="shelf-clear"
+                type="button"
+                @click="clearShelf"
+              >
+                清空
+              </button>
+              <button
+                class="shelf-close"
+                type="button"
+                aria-label="关闭书架"
+                @click="shelfOpen = false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="shelfArticles.length" class="shelf-items">
+            <div
+              v-for="(article, index) in shelfArticles"
+              :key="article.id"
+              class="shelf-item"
+              data-testid="shelf-item"
+            >
+              <router-link
+                class="shelf-item-link"
+                :to="'/articles/' + article.id"
+                @click="shelfOpen = false"
+              >
+                <span class="shelf-item-index">{{ String(index + 1).padStart(2, "0") }}</span>
+                <span class="shelf-item-copy">
+                  <strong>{{ article.title }}</strong>
+                  <small>{{ article.categoryName }} · {{ formatDate(article.createTime) }}</small>
+                </span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </router-link>
+              <button
+                class="shelf-remove"
+                data-testid="remove-shelf-item"
+                type="button"
+                :aria-label="'从书架移除 ' + article.title"
+                @click="removeFromShelf(article)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 7h10M9 7V5h6v2M9 10v7M12 10v7M15 10v7M6 7l1 14h10l1-14" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div v-else class="shelf-empty" data-testid="shelf-empty">
+            <span class="shelf-empty-mark" aria-hidden="true">+</span>
+            <strong>书架还是空的。</strong>
+            <span>在文章详情里存下一篇，留给下次慢慢读。</span>
+          </div>
+        </section>
+      </transition>
 
       <div class="orbit-content">
         <section class="orbit-visual" aria-labelledby="orbit-field-title">
@@ -248,16 +343,30 @@
             <div v-if="selectedArticle.tags.length" class="detail-tags" aria-label="文章标签">
               <span v-for="tag in selectedArticle.tags" :key="tag">#{{ tag }}</span>
             </div>
-            <router-link
-              class="detail-link"
-              data-testid="router-link"
-              :to="'/articles/' + selectedArticle.id"
-            >
-              打开文章
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 12h13M13 6l6 6-6 6" />
-              </svg>
-            </router-link>
+            <div class="detail-actions">
+              <router-link
+                class="detail-link"
+                data-testid="router-link"
+                :to="'/articles/' + selectedArticle.id"
+              >
+                打开文章
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6" />
+                </svg>
+              </router-link>
+              <button
+                class="shelf-save-button"
+                :class="{ saved: isArticleSaved(selectedArticle) }"
+                data-testid="save-article"
+                type="button"
+                @click="toggleShelf(selectedArticle)"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3-6 3z" />
+                </svg>
+                {{ isArticleSaved(selectedArticle) ? "已在书架" : "存入书架" }}
+              </button>
+            </div>
           </template>
           <template v-else>
             <span class="detail-label">OBSERVATORY LOG</span>
@@ -279,6 +388,12 @@ import {
   normalizeArticles,
   sortOrbitArticles
 } from "./orbitState";
+import {
+  getShelfArticles,
+  readShelfIds,
+  toggleShelfId,
+  writeShelfIds
+} from "./readingShelf";
 
 export default {
   name: "OrbitPage",
@@ -289,6 +404,8 @@ export default {
       category: "全部",
       sortMode: "latest",
       selectedId: null,
+      shelfIds: [],
+      shelfOpen: false,
       loading: false,
       error: false,
       sortOptions: [
@@ -306,6 +423,7 @@ export default {
     };
   },
   created() {
+    this.shelfIds = readShelfIds();
     this.loadArticles();
   },
   computed: {
@@ -328,6 +446,9 @@ export default {
         position: getOrbitPosition(index, this.visibleArticles.length)
       }));
     },
+    shelfArticles() {
+      return getShelfArticles(this.articles, this.shelfIds);
+    },
     selectedArticle() {
       return this.visibleArticles.find(article => String(article.id) === String(this.selectedId))
         || this.visibleArticles[0]
@@ -339,6 +460,9 @@ export default {
     }
   },
   watch: {
+    shelfIds(next) {
+      writeShelfIds(next);
+    },
     visibleArticles(next) {
       if (!next.some(article => String(article.id) === String(this.selectedId))) {
         this.selectedId = next[0]?.id ?? null;
@@ -367,6 +491,21 @@ export default {
     },
     selectArticle(article) {
       this.selectedId = article.id;
+    },
+    isArticleSaved(article) {
+      return Boolean(article && this.shelfIds.includes(String(article.id)));
+    },
+    toggleShelf(article) {
+      if (!article) return;
+      this.shelfIds = toggleShelfId(this.shelfIds, article.id);
+    },
+    removeFromShelf(article) {
+      if (!article) return;
+      const id = String(article.id);
+      this.shelfIds = this.shelfIds.filter(savedId => savedId !== id);
+    },
+    clearShelf() {
+      this.shelfIds = [];
     },
     surpriseMe() {
       const article = chooseSurprise(this.visibleArticles, this.selectedId);
@@ -466,6 +605,49 @@ export default {
   color: var(--orbit-muted);
   font-size: 1.05rem;
   letter-spacing: 0.04em;
+}
+.orbit-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding-bottom: 8px;
+}
+.shelf-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--orbit-border);
+  border-radius: 11px;
+  background: rgba(20, 26, 57, 0.72);
+  color: var(--orbit-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.shelf-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+.shelf-toggle strong {
+  min-width: 14px;
+  color: var(--orbit-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+.shelf-toggle:hover,
+.shelf-toggle:focus-visible,
+.shelf-toggle.active {
+  border-color: rgba(246, 201, 120, 0.45);
+  background: rgba(246, 201, 120, 0.1);
+  color: var(--orbit-gold);
 }
 .orbit-count {
   display: flex;
@@ -616,6 +798,194 @@ export default {
   border-color: rgba(246, 201, 120, 0.34);
   background: rgba(246, 201, 120, 0.12);
   color: var(--orbit-gold);
+}
+.shelf-drawer-enter-active,
+.shelf-drawer-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.shelf-drawer-enter-from,
+.shelf-drawer-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.shelf-panel {
+  margin: -10px 0 22px;
+  padding: 20px 24px;
+  border: 1px solid var(--orbit-border);
+  border-radius: 18px;
+  background: rgba(21, 27, 59, 0.78);
+  box-shadow: 0 18px 44px rgba(4, 7, 24, 0.18);
+}
+.shelf-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.shelf-panel-heading h2 {
+  margin: 8px 0 0;
+  color: var(--orbit-text);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+.shelf-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.shelf-count {
+  color: var(--orbit-faint);
+  font-size: 11px;
+}
+.shelf-clear,
+.shelf-close,
+.shelf-remove {
+  border: 0;
+  background: transparent;
+  color: var(--orbit-muted);
+  cursor: pointer;
+  font: inherit;
+}
+.shelf-clear {
+  padding: 5px 0;
+  font-size: 11px;
+}
+.shelf-clear:hover,
+.shelf-clear:focus-visible {
+  color: var(--orbit-gold);
+}
+.shelf-close {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 5px;
+  border-radius: 50%;
+}
+.shelf-close:hover,
+.shelf-close:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--orbit-text);
+}
+.shelf-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+.shelf-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+.shelf-item {
+  display: flex;
+  min-width: 0;
+  border: 1px solid rgba(169, 183, 255, 0.11);
+  border-radius: 10px;
+  background: rgba(16, 21, 47, 0.6);
+}
+.shelf-item-link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 13px;
+  color: var(--orbit-text) !important;
+  text-decoration: none;
+}
+.shelf-item-link:hover {
+  background: rgba(140, 168, 255, 0.08);
+}
+.shelf-item-index {
+  flex: 0 0 auto;
+  color: var(--orbit-gold);
+  font-size: 10px;
+}
+.shelf-item-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.shelf-item-copy strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shelf-item-copy small {
+  overflow: hidden;
+  color: var(--orbit-faint);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shelf-item-link > svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--orbit-faint);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+.shelf-remove {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  padding: 0;
+  border-left: 1px solid rgba(169, 183, 255, 0.1);
+  border-radius: 0 10px 10px 0;
+}
+.shelf-remove:hover,
+.shelf-remove:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--orbit-gold);
+}
+.shelf-remove svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+.shelf-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  margin-top: 18px;
+  color: var(--orbit-faint);
+  font-size: 12px;
+}
+.shelf-empty strong {
+  color: var(--orbit-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+.shelf-empty-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(246, 201, 120, 0.35);
+  border-radius: 50%;
+  color: var(--orbit-gold);
+  font-size: 16px;
+  line-height: 1;
 }
 .orbit-content {
   display: grid;
@@ -1001,11 +1371,17 @@ export default {
   color: var(--orbit-blue);
   font-size: 10px;
 }
+.detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 17px;
+  margin-top: 28px;
+}
 .detail-link {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-top: 28px;
   padding-bottom: 7px;
   border-bottom: 1px solid rgba(246, 201, 120, 0.52);
   color: var(--orbit-gold) !important;
@@ -1026,6 +1402,38 @@ export default {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.6;
+}
+.shelf-save-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--orbit-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.shelf-save-button:hover,
+.shelf-save-button:focus-visible,
+.shelf-save-button.saved {
+  border-color: rgba(246, 201, 120, 0.52);
+  color: var(--orbit-gold);
+}
+.shelf-save-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+.shelf-save-button.saved svg {
+  fill: rgba(246, 201, 120, 0.2);
 }
 .detail-rail > .detail-label {
   display: block;
@@ -1144,8 +1552,13 @@ input:focus-visible {
   .orbit-heading-row h1 {
     font-size: clamp(2.8rem, 16vw, 4.2rem);
   }
-  .orbit-count {
+  .orbit-heading-actions {
+    justify-content: space-between;
     margin-top: 22px;
+    padding-bottom: 0;
+  }
+  .orbit-count {
+    margin-top: 0;
   }
   .orbit-toolbar {
     display: block;
@@ -1172,6 +1585,25 @@ input:focus-visible {
   }
   .orbit-category-row {
     display: block;
+  }
+  .shelf-panel {
+    margin-top: -10px;
+    padding: 18px;
+  }
+  .shelf-panel-heading {
+    align-items: flex-start;
+  }
+  .shelf-panel-heading h2 {
+    font-size: 1.25rem;
+  }
+  .shelf-panel-actions {
+    gap: 10px;
+  }
+  .shelf-items {
+    grid-template-columns: 1fr;
+  }
+  .shelf-item-link {
+    padding: 11px 12px;
   }
   .orbit-category-label {
     display: block;
@@ -1275,6 +1707,9 @@ input:focus-visible {
   .detail-rail {
     min-height: 0;
     padding: 20px;
+  }
+  .detail-actions {
+    gap: 15px;
   }
   .detail-category {
     margin-top: 28px;

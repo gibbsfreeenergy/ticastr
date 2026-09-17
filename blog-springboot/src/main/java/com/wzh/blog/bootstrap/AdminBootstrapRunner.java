@@ -22,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(prefix = "app.bootstrap-admin", name = "enabled", havingValue = "true")
 public class AdminBootstrapRunner implements ApplicationRunner {
 
-    private static final String DEFAULT_AVATAR = "https://static.talkxj.com/avatar/user.png";
+    private static final String DEFAULT_AVATAR =
+            "https://ticastr-photo.oss-cn-hangzhou.aliyuncs.com/generated/repair/anonymous-avatar.png";
 
     private final UserInfoDao userInfoDao;
     private final UserAuthDao userAuthDao;

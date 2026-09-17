@@ -337,6 +337,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleDao, Article> impleme
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateArticleDelete(DeleteVO deleteVO) {
         // 修改文章逻辑删除状态
         List<Article> articleList = deleteVO.getIdList().stream()

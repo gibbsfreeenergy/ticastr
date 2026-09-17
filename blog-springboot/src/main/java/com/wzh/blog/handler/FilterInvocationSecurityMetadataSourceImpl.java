@@ -60,8 +60,14 @@ public class FilterInvocationSecurityMetadataSourceImpl {
     }
 
     public void clearDataSource() {
-        resourceRoleList = null;
-        lastLoadAttemptMillis = 0;
+        // A load begun before commit must not overwrite this invalidation afterward.
+        loadLock.lock();
+        try {
+            resourceRoleList = null;
+            lastLoadAttemptMillis = 0;
+        } finally {
+            loadLock.unlock();
+        }
     }
 
     public long version() {

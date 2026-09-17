@@ -8,6 +8,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MenuRouteContractTest {
 
     @Test
+    void derivesStandaloneStorageMetadata() {
+        Menu menu = Menu.builder()
+                .path("/storage")
+                .component("/storage/Storage.vue")
+                .name("存储源配置")
+                .build();
+
+        MenuRouteContract.normalize(menu);
+
+        assertThat(menu.getCode()).isEqualTo("storage");
+        assertThat(menu.getRouteKey()).isEqualTo("storage");
+        assertThat(menu.getSection()).isEqualTo("settings");
+        assertThat(menu.getIconKey()).isEqualTo("folder");
+    }
+
+    @Test
     void derivesStableMetadataFromLegacyRouteFields() {
         Menu menu = Menu.builder()
                 .id(10)

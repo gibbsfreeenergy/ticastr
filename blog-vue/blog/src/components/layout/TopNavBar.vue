@@ -189,6 +189,10 @@ export default {
 </script>
 
 <style scoped>
+:global(.v-app-bar .v-toolbar__content) {
+  overflow: visible !important;
+}
+
 i {
   margin-right: 4px;
 }
@@ -206,6 +210,10 @@ ul {
 }
 .v-theme--light.orbit-nav:not(.nav-fixed) a {
   color: #f4f5ff !important;
+  text-shadow: none;
+}
+.v-theme--light.orbit-nav:not(.nav-fixed) .menus-submenu a {
+  color: #4c4948 !important;
   text-shadow: none;
 }
 .v-theme--light.orbit-nav:not(.nav-fixed) .menu-btn:hover {

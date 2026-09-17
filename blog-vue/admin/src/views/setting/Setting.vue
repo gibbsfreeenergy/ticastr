@@ -7,8 +7,11 @@
           <el-upload
             class="avatar-uploader"
             :action="$api.auth.avatarUploadUrl"
+            :headers="uploadHeaders"
+            :with-credentials="true"
             :show-file-list="false"
             :on-success="updateAvatar"
+            :on-error="uploadError"
           >
             <img v-if="avatar" :src="avatar" class="avatar" />
             <i v-else class="el-icon-plus avatar-uploader-icon" />
@@ -75,11 +78,7 @@
           </el-button>
         </el-form>
       </el-tab-pane>
-      <!-- 基础设施配置 -->
-      <el-tab-pane label="基础设施" name="infrastructure">
-        <StorageConfigPanel />
-      </el-tab-pane>
-      <el-tab-pane label="可靠事件" name="outbox">
+      <el-tab-pane v-if="canManageOutbox" label="可靠事件" name="outbox">
         <OutboxPanel />
       </el-tab-pane>
     </el-tabs>
@@ -88,10 +87,10 @@
 
 <script>
 import OutboxPanel from "./OutboxPanel.vue";
-import StorageConfigPanel from "./StorageConfigPanel.vue";
+import { getCsrfHeaders } from "../../../../shared/http/csrf";
 
 export default {
-  components: { OutboxPanel, StorageConfigPanel },
+  components: { OutboxPanel },
   data: function() {
     return {
       infoForm: {
@@ -115,6 +114,9 @@ export default {
       } else {
         this.$message.error(response.message);
       }
+    },
+    uploadError() {
+      this.$message.error("头像上传失败，请刷新页面后重试");
     },
     updateInfo() {
       if (this.infoForm.nickname.trim() == "") {
@@ -164,6 +166,12 @@ export default {
   computed: {
     avatar() {
       return this.$store.state.avatar;
+    },
+    canManageOutbox() {
+      return (this.$store.state.roleList || []).includes("admin");
+    },
+    uploadHeaders() {
+      return getCsrfHeaders();
     }
   }
 };

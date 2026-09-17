@@ -132,7 +132,7 @@
             :src="
               scope.row.articleCover
                 ? scope.row.articleCover
-                : 'https://static.talkxj.com/articles/c5cc2b2561bd0e3060a500198a4ad37d.png'
+                : 'https://ticastr-photo.oss-cn-hangzhou.aliyuncs.com/generated/repair/blog-lakeside-cover.png'
             "
           />
           <i
