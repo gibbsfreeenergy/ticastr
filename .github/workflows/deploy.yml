@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ticastr-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.TICASTR_DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.TICASTR_DEPLOY_PORT }}
+      DEPLOY_USER: ${{ secrets.TICASTR_DEPLOY_USER }}
+      DEPLOY_PATH: ${{ secrets.TICASTR_DEPLOY_PATH }}
+      DEPLOY_KEY: ${{ secrets.TICASTR_DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.TICASTR_DEPLOY_KNOWN_HOSTS }}
+    steps:
+      - name: Check deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for value in DEPLOY_HOST DEPLOY_PORT DEPLOY_USER DEPLOY_PATH DEPLOY_KEY DEPLOY_KNOWN_HOSTS; do
+            if [[ -z "${!value}" ]]; then
+              echo "Missing deployment secret: $value" >&2
+              exit 1
+            fi
+          done
+
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/ticastr_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/ticastr_deploy" "$HOME/.ssh/known_hosts"
+
+      - name: Sync source to the deployment host
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh_opts=(-p "$DEPLOY_PORT" -i "$HOME/.ssh/ticastr_deploy" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude '.tools/' \
+            --exclude '.worktrees/' \
+            --exclude '.superpowers/' \
+            --exclude 'tmp/' \
+            --exclude 'node_modules/' \
+            --exclude 'dist/' \
+            --exclude 'target/' \
+            --exclude 'blog-springboot/data/' \
+            -e "ssh ${ssh_opts[*]}" \
+            ./ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+
+      - name: Build and restart the stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh_opts=(-p "$DEPLOY_PORT" -i "$HOME/.ssh/ticastr_deploy" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          ssh "${ssh_opts[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" "cd '$DEPLOY_PATH' && \
+            test -s .env && \
+            docker compose --env-file .env up -d --build --remove-orphans && \
+            for attempt in \$(seq 1 60); do \
+              if docker compose --env-file .env exec -T api wget -q -O - http://localhost:8090/actuator/health/readiness | grep -q '\"status\":\"UP\"'; then \
+                break; \
+              fi; \
+              if [ \"\$attempt\" -eq 60 ]; then \
+                docker compose --env-file .env logs --tail=200 api; \
+                exit 1; \
+              fi; \
+              sleep 5; \
+            done && \
+            curl -fsS http://127.0.0.1:8080/ >/dev/null && \
+            curl -fsS http://127.0.0.1:8081/ >/dev/null && \
+            docker compose --env-file .env ps"
