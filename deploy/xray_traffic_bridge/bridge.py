@@ -116,6 +116,14 @@ class TrafficStore:
         except (OSError, ValueError, TypeError):
             return {}
 
+    @staticmethod
+    def _timestamp(value: Any) -> int | None:
+        try:
+            timestamp = int(value)
+        except (TypeError, ValueError):
+            return None
+        return timestamp if timestamp > 0 else None
+
     def overview(self) -> dict[str, Any]:
         with self.connect() as connection:
             settings = self._settings(connection)
@@ -142,9 +150,14 @@ class TrafficStore:
                 "SELECT ts, up, down, online FROM traffic ORDER BY ts DESC LIMIT 1"
             ).fetchone()
 
+        # Recent Rust versions of xray-dash keep the traffic samples current but
+        # no longer refresh the legacy state.json heartbeat. Prefer the database
+        # sample timestamp and only fall back to state.json for older installs.
+        traffic_at = self._timestamp(traffic["ts"] if traffic else None)
         state = self._state()
-        collector_at = state.get("at")
-        collector_lag = self.clock() - int(collector_at) if collector_at else None
+        state_at = self._timestamp(state.get("at"))
+        collector_at = traffic_at or state_at
+        collector_lag = self.clock() - collector_at if collector_at else None
         return {
             "total_conns": int(total_connections or 0),
             "total_ips": int(total_ips or 0),

@@ -96,6 +96,36 @@ class BridgeTest(unittest.TestCase):
         with sqlite3.connect(self.db_path) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM alerts").fetchone()[0], 1)
 
+    def test_overview_prefers_latest_traffic_sample_over_stale_state_file(self):
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("UPDATE traffic SET ts=? WHERE ts=?", (1_799_999_995, 1_800_000_000))
+            connection.commit()
+        self.state_path.write_text(json.dumps({"at": 1_799_996_400}), encoding="utf-8")
+
+        store = bridge.TrafficStore(
+            str(self.db_path), str(self.state_path), clock=lambda: 1_800_000_000,
+            xray_status=lambda: "active",
+        )
+
+        collector = store.overview()["collector"]
+        self.assertEqual(collector["at"], 1_799_999_995)
+        self.assertEqual(collector["lag"], 5)
+
+    def test_overview_falls_back_to_state_file_without_traffic_samples(self):
+        with sqlite3.connect(self.db_path) as connection:
+            connection.execute("DELETE FROM traffic")
+            connection.commit()
+        self.state_path.write_text(json.dumps({"at": 1_799_999_970}), encoding="utf-8")
+
+        store = bridge.TrafficStore(
+            str(self.db_path), str(self.state_path), clock=lambda: 1_800_000_000,
+            xray_status=lambda: "active",
+        )
+
+        collector = store.overview()["collector"]
+        self.assertEqual(collector["at"], 1_799_999_970)
+        self.assertEqual(collector["lag"], 30)
+
     def test_hmac_request_round_trip(self):
         secret = "s" * 40
         store = bridge.TrafficStore(

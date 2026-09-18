@@ -25,6 +25,10 @@ XRAY_TRAFFIC_BRIDGE_PORT=8788
 The secret must be identical to `XRAY_TRAFFIC_SHARED_SECRET` in the ticastr
 API environment. It must never be committed to Git.
 
+The overview collector heartbeat uses the newest `traffic.ts` sample from the
+database. `XRAY_TRAFFIC_STATE` is retained as a compatibility fallback for
+older xray-dash installations that still update `state.json`.
+
 ## Endpoints
 
 All endpoints require `X-Ticastr-Traffic-Timestamp` and
