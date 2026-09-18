@@ -10,7 +10,7 @@
       </div>
 
       <label class="search-input-wrapper">
-        <i class="iconfont iconsousuo" aria-hidden="true" />
+        <NavIcon name="search" />
         <input ref="searchInput" v-model="keywords" autofocus placeholder="输入文章标题或内容…" />
         <kbd>⌘ K</kbd>
       </label>
@@ -45,8 +45,11 @@
 </template>
 
 <script>
+import NavIcon from "../NavIcon.vue";
+
 export default {
   name: "SearchModel",
+  components: { NavIcon },
   unmounted() {
     clearTimeout(this.searchTimer);
     this.searchRequestId++;
@@ -175,8 +178,10 @@ export default {
   box-shadow: 0 0 0 4px rgba(143, 169, 154, 0.12);
 }
 
-.search-input-wrapper i {
-  font-size: 16px;
+.search-input-wrapper :deep(.nav-icon-svg) {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
 }
 
 .search-input-wrapper input {

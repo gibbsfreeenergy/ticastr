@@ -5,7 +5,7 @@ import store from "./store";
 import vuetify from "./plugins/vuetify";
 import "./assets/css/index.css";
 import "./assets/css/iconfont.css";
-import "./assets/css/markdown.css";
+import "./assets/css/prose.css";
 import dayjs from "dayjs";
 import { installHttp } from "./api/http";
 import { installSafeHtml } from "./plugins/safeHtml";

@@ -8,28 +8,22 @@
           <p>{{ blogInfo.websiteConfig.websiteIntro }}</p>
           <span class="hero-rule" aria-hidden="true" />
           <div class="hero-socials" aria-label="社交链接">
-            <a
+            <SocialLink
               v-if="isShowSocial('qq')"
-              class="iconfont iconqq"
-              target="_blank"
-              rel="noopener"
-              aria-label="QQ"
+              type="qq"
+              label="QQ"
               :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
             />
-            <a
+            <SocialLink
               v-if="isShowSocial('github')"
-              class="iconfont icongithub"
-              target="_blank"
-              rel="noopener"
-              aria-label="GitHub"
+              type="github"
+              label="GitHub"
               :href="blogInfo.websiteConfig.github"
             />
-            <a
+            <SocialLink
               v-if="isShowSocial('gitee')"
-              class="iconfont icongitee-fill-round"
-              target="_blank"
-              rel="noopener"
-              aria-label="Gitee"
+              type="gitee"
+              label="Gitee"
               :href="blogInfo.websiteConfig.gitee"
             />
           </div>
@@ -129,9 +123,11 @@
 
 <script>
 import { normalizeMediaUrl } from "../../utils/media";
+import SocialLink from "../../components/SocialLink.vue";
 
 export default {
   name: "HomePage",
+  components: { SocialLink },
   created() {
     this.syncCover();
     this.loadMoreArticles();
@@ -288,19 +284,9 @@ export default {
 
 .hero-socials {
   display: flex;
-  gap: 18px;
+  gap: 10px;
   margin-top: 26px;
-}
-
-.hero-socials a {
   color: #fff;
-  font-size: 18px;
-  transition: color 180ms ease, transform 180ms ease;
-}
-
-.hero-socials a:hover {
-  color: var(--blush);
-  transform: translateY(-3px);
 }
 
 .hero-whisper {

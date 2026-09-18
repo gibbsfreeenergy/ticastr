@@ -35,31 +35,15 @@ import ArticleMeta from "./ArticleMeta";
 import ArticleContent from "./ArticleContent";
 import ArticleNavigation from "./ArticleNavigation";
 import ArticleSidebar from "./ArticleSidebar";
-import { hljs } from "../../utils/markdown";
+import { renderMarkdownCode } from "../../utils/markdown";
 import { applySeo } from "../../utils/seo";
 import { createMarkdownRenderer } from "../../utils/renderMarkdown";
 import { normalizeMediaUrl } from "../../utils/media";
 import { normalizeHttpError } from "../../../../shared/api/error";
 
 const renderMarkdown = createMarkdownRenderer({
-  highlight: (code, language) => {
-    const languageName = language && hljs.getLanguage(language) ? language : "plaintext";
-    if (languageName === "plaintext") {
-      return '<pre class="hljs"><code>' + escapeHtml(code) + "</code></pre>";
-    }
-    return '<pre class="hljs"><code>'
-      + hljs.highlight(code, { language: languageName, ignoreIllegals: true }).value
-      + "</code></pre>";
-  }
+  highlight: renderMarkdownCode
 });
-
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 const emptyArticle = () => ({
   id: null,

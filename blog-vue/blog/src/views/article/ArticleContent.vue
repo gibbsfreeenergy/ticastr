@@ -158,7 +158,7 @@ export default {
 
 .article-content :deep(pre.hljs) {
   margin: 30px 0;
-  padding: 22px 24px !important;
+  padding: 52px 24px 22px !important;
   overflow: auto !important;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md) !important;

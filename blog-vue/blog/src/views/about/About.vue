@@ -22,28 +22,22 @@
           <p class="about-motto">慢一点，也很好。</p>
           <p class="about-intro">这里是我用来放日常与想法的小角落。关于生活、关于技术，也关于那些细碎而珍贵的时刻。</p>
           <div class="about-socials" aria-label="社交链接">
-            <a
+            <SocialLink
               v-if="isShowSocial('github')"
-              class="iconfont icongithub"
-              target="_blank"
-              rel="noopener"
-              aria-label="GitHub"
+              type="github"
+              label="GitHub"
               :href="blogInfo.websiteConfig.github"
             />
-            <a
+            <SocialLink
               v-if="isShowSocial('gitee')"
-              class="iconfont icongitee-fill-round"
-              target="_blank"
-              rel="noopener"
-              aria-label="Gitee"
+              type="gitee"
+              label="Gitee"
               :href="blogInfo.websiteConfig.gitee"
             />
-            <a
+            <SocialLink
               v-if="isShowSocial('qq')"
-              class="iconfont iconqq"
-              target="_blank"
-              rel="noopener"
-              aria-label="QQ"
+              type="qq"
+              label="QQ"
               :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
             />
           </div>
@@ -63,10 +57,12 @@
 import { renderMarkdownCode } from "../../utils/markdown";
 import { renderMarkdown } from "../../utils/renderMarkdown";
 import { normalizeMediaUrl } from "../../utils/media";
+import SocialLink from "../../components/SocialLink.vue";
 import Clipboard from "clipboard";
 
 export default {
   name: "AboutPage",
+  components: { SocialLink },
   created() {
     this.getAboutContent();
   },
@@ -196,19 +192,9 @@ export default {
 .about-socials {
   display: flex;
   justify-content: center;
-  gap: 17px;
+  gap: 10px;
   margin-top: 25px;
-}
-
-.about-socials a {
   color: var(--sage-deep);
-  font-size: 18px;
-  transition: color 180ms ease, transform 180ms ease;
-}
-
-.about-socials a:hover {
-  color: var(--gold);
-  transform: translateY(-3px);
 }
 
 .about-content {
@@ -272,7 +258,7 @@ export default {
 .about-content :deep(pre.hljs) {
   position: relative;
   margin: 28px 0;
-  padding: 20px 22px !important;
+  padding: 48px 22px 20px !important;
   overflow: auto !important;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md) !important;

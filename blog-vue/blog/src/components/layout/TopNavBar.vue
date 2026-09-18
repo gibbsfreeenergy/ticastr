@@ -15,17 +15,17 @@
         <router-link class="nav-link menu-btn" to="/about" :class="{ active: $route.path === '/about' }">关于</router-link>
         <span class="nav-divider" aria-hidden="true" />
         <button type="button" class="nav-search menu-btn" @click="openSearch">
-          <i class="iconfont iconsousuo" aria-hidden="true" />
+          <NavIcon name="search" />
           <span>搜索</span>
         </button>
       </nav>
 
       <div class="mobile-nav-actions">
         <button type="button" class="nav-icon-button" aria-label="搜索" @click="openSearch">
-          <i class="iconfont iconsousuo" aria-hidden="true" />
+          <NavIcon name="search" />
         </button>
         <button type="button" class="nav-icon-button" aria-label="打开菜单" @click="openDrawer">
-          <i class="iconfont iconhanbao" aria-hidden="true" />
+          <NavIcon name="menu" />
         </button>
       </div>
     </div>
@@ -33,7 +33,10 @@
 </template>
 
 <script>
+import NavIcon from "../NavIcon.vue";
+
 export default {
+  components: { NavIcon },
   mounted() {
     this.updateNavigation();
     window.addEventListener("scroll", this.updateNavigation, { passive: true });
@@ -201,30 +204,48 @@ export default {
   padding: 0;
 }
 
+.nav-search :deep(.nav-icon-svg) {
+  width: 16px;
+  height: 16px;
+}
+
 .nav-search i {
   font-size: 16px;
 }
 
 .mobile-nav-actions {
   display: none;
-  gap: 4px;
+  gap: 8px;
 }
 
 .nav-icon-button {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 50%;
   color: inherit;
-  background: transparent;
-  font-size: 19px;
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
 .nav-icon-button:hover {
-  background: rgba(143, 169, 154, 0.15);
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.18);
   color: var(--sage-deep);
+  transform: translateY(-1px);
+}
+
+.nav-fixed .nav-icon-button {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.nav-fixed .nav-icon-button:hover {
+  background: rgba(143, 169, 154, 0.14);
 }
 
 @media (max-width: 760px) {

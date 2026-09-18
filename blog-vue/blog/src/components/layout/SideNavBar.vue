@@ -110,6 +110,18 @@ export default {
   text-align: center;
 }
 
+.blogger-info :deep(.v-avatar) {
+  flex: 0 0 92px;
+  overflow: hidden;
+}
+
+.blogger-info :deep(.v-avatar img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .blogger-info strong {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 22px;
