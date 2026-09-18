@@ -32,3 +32,24 @@ docker compose -f compose.yaml -f compose.redis.yaml config
 ```
 
 API 发布回滚使用上一版本镜像，但不回滚已执行的 Flyway migration；schema 变更必须前向兼容。V26 migration 负责把 live schema、数据和管理员菜单收敛到核心博客能力。Redis 可直接去掉 overlay，Outbox 会回到 DB worker。
+
+## GitHub Actions 自动部署
+
+`.github/workflows/deploy.yml` 在 `master` 推送或手动触发时执行：
+
+1. 使用专用 SSH 用户同步源码到部署目录。
+2. 保留服务器上的 `.env`、上传文件和数据库/搜索 Docker volume。
+3. 在服务器上执行 `docker compose up -d --build --remove-orphans`。
+4. 等待 API readiness、公共站点和管理端通过检查。
+
+仓库需要配置以下 Secrets：
+
+- `TICASTR_DEPLOY_HOST`
+- `TICASTR_DEPLOY_PORT`
+- `TICASTR_DEPLOY_USER`
+- `TICASTR_DEPLOY_PATH`
+- `TICASTR_DEPLOY_SSH_PRIVATE_KEY`
+- `TICASTR_DEPLOY_KNOWN_HOSTS`
+
+服务器的 `.env` 只保留在部署主机，不由 Actions 覆盖；首次管理员 bootstrap 成功后应关闭
+`BOOTSTRAP_ADMIN_ENABLED` 并清除明文 bootstrap 密码。
