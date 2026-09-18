@@ -8,9 +8,9 @@
         <div class="article-info">
           <span>{{ date(article.createTime) }}</span>
           <span class="info-dot" aria-hidden="true" />
-          <span>阅读时长 {{ readTime || "1分钟" }}</span>
+          <span>阅读时长 {{ statsReady ? readTime : "计算中" }}</span>
           <span class="info-dot" aria-hidden="true" />
-          <span>{{ num(wordNum) }} 字</span>
+          <span>{{ statsReady ? num(wordNum) : "正在统计字数" }}{{ statsReady ? " 字" : "" }}</span>
         </div>
       </div>
       <div class="article-hero-side" aria-hidden="true">向生活靠近<br />也向自己靠近</div>
@@ -25,6 +25,7 @@ export default {
     article: { type: Object, required: true },
     wordNum: { type: [Number, String], default: 0 },
     readTime: { type: String, default: "" },
+    statsReady: { type: Boolean, default: false },
     coverStyle: { type: [Object, String], default: "" }
   }
 };

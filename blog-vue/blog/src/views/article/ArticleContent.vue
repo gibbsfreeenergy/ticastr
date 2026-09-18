@@ -23,6 +23,14 @@ export default {
     renderedContent: { type: String, default: "" },
     loading: { type: Boolean, default: false },
     error: { type: Object, default: null }
+  },
+  methods: {
+    getArticleElement() {
+      return this.$refs.article || null;
+    },
+    getReadingText() {
+      return this.getArticleElement()?.textContent || "";
+    }
   }
 };
 </script>

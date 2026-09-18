@@ -3,10 +3,12 @@
     v-model="drawer"
     width="320"
     temporary
-    location="right"
+    :location="drawerLocation"
+    class="site-drawer"
     scrim
   >
     <div class="drawer-shell">
+      <span class="drawer-handle" aria-hidden="true" />
       <div class="drawer-heading">
         <span class="drawer-kicker">NAVIGATION</span>
         <button class="drawer-close" type="button" aria-label="关闭菜单" @click="drawer = false">×</button>
@@ -20,8 +22,10 @@
             :alt="blogInfo.websiteConfig.websiteAuthor"
           />
         </v-avatar>
-        <strong>{{ blogInfo.websiteConfig.websiteAuthor }}</strong>
-        <span>{{ blogInfo.websiteConfig.websiteIntro }}</span>
+        <div class="blogger-copy">
+          <strong>{{ blogInfo.websiteConfig.websiteAuthor }}</strong>
+          <span>{{ blogInfo.websiteConfig.websiteIntro }}</span>
+        </div>
       </div>
 
       <div class="drawer-stat">
@@ -54,6 +58,17 @@
 import { normalizeMediaUrl } from "../../utils/media";
 
 export default {
+  data() {
+    return {
+      viewportWidth: typeof window === "undefined" ? 0 : window.innerWidth
+    };
+  },
+  mounted() {
+    window.addEventListener("resize", this.updateViewport, { passive: true });
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.updateViewport);
+  },
   computed: {
     blogInfo() {
       return this.$store.state.blogInfo;
@@ -68,16 +83,32 @@ export default {
       get() {
         return this.$store.state.drawer;
       }
+    },
+    drawerLocation() {
+      return this.viewportWidth <= 760 ? "bottom" : "right";
+    }
+  },
+  methods: {
+    updateViewport() {
+      this.viewportWidth = window.innerWidth;
     }
   }
 };
 </script>
 
 <style scoped>
+.site-drawer :deep(.v-navigation-drawer__content) {
+  overflow-y: auto;
+}
+
 .drawer-shell {
   min-height: 100%;
   padding: 28px 28px 34px;
   background: var(--paper-strong);
+}
+
+.drawer-handle {
+  display: none;
 }
 
 .drawer-heading {
@@ -103,11 +134,9 @@ export default {
 
 .blogger-info {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 7px;
-  padding: 64px 10px 30px;
-  text-align: center;
+  gap: 14px;
+  padding: 56px 10px 30px;
 }
 
 .blogger-info :deep(.v-avatar) {
@@ -122,13 +151,23 @@ export default {
   object-fit: cover;
 }
 
-.blogger-info strong {
+.blogger-copy {
+  min-width: 0;
+}
+
+.blogger-copy strong,
+.blogger-copy span {
+  display: block;
+}
+
+.blogger-copy strong {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 22px;
   font-weight: 500;
 }
 
-.blogger-info span {
+.blogger-copy span {
+  margin-top: 3px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -203,5 +242,112 @@ export default {
 
 .drawer-note small {
   font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .site-drawer {
+    width: 100% !important;
+    max-height: min(76vh, 620px);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -22px 60px rgba(24, 32, 43, 0.2);
+    overflow: hidden;
+  }
+
+  .site-drawer :deep(.v-navigation-drawer__content) {
+    overflow-y: auto;
+  }
+
+  .drawer-shell {
+    min-height: auto;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--paper-strong) 94%, var(--sage) 6%);
+  }
+
+  .drawer-handle {
+    display: block;
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 15px;
+    border-radius: 999px;
+    background: var(--line-strong);
+  }
+
+  .drawer-heading {
+    margin-bottom: 18px;
+  }
+
+  .drawer-close {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    font-size: 22px;
+  }
+
+  .blogger-info {
+    gap: 12px;
+    padding: 0 0 18px;
+  }
+
+  .blogger-info :deep(.v-avatar) {
+    flex-basis: 58px;
+  }
+
+  .blogger-copy strong {
+    font-size: 20px;
+  }
+
+  .blogger-copy span {
+    overflow: hidden;
+    max-width: 250px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .drawer-stat {
+    padding: 12px 0;
+  }
+
+  .drawer-stat strong {
+    font-size: 19px;
+  }
+
+  .drawer-menu {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .drawer-menu a,
+  .drawer-menu a:hover,
+  .drawer-menu a.active {
+    min-height: 74px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--paper) 74%, transparent);
+    color: var(--muted);
+  }
+
+  .drawer-menu a.active {
+    border-color: rgba(143, 169, 154, 0.7);
+    background: rgba(143, 169, 154, 0.16);
+    color: var(--sage-deep);
+  }
+
+  .drawer-menu a span:last-child {
+    color: var(--muted-light);
+    font-size: 11px;
+  }
+
+  .drawer-note {
+    display: none;
+  }
 }
 </style>

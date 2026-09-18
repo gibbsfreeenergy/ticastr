@@ -8,7 +8,13 @@
       <v-btn color="primary" variant="tonal" @click="getArticle">重试</v-btn>
     </div>
     <template v-else>
-      <ArticleMeta :article="article" :word-num="wordNum" :read-time="readTime" :cover-style="articleCover" />
+      <ArticleMeta
+        :article="article"
+        :word-num="wordNum"
+        :read-time="readTime"
+        :stats-ready="readingStatsReady"
+        :cover-style="articleCover"
+      />
       <div class="article-layout page-width">
         <main class="article-reading-column">
           <article class="article-surface">
@@ -64,6 +70,7 @@ export default {
       renderedContent: "",
       wordNum: 0,
       readTime: "",
+      readingStatsReady: false,
       contentLoading: false,
       metadataLoading: true,
       metadataError: null,
@@ -114,6 +121,7 @@ export default {
     async loadContent(generation = this.requestGeneration) {
       this.contentLoading = true;
       this.contentError = null;
+      this.readingStatsReady = false;
       this.disposeContentEnhancements();
       try {
         const response = await this.$api.article.content(this.$route.params.articleId);
@@ -121,9 +129,10 @@ export default {
         this.renderedContent = renderMarkdown(response.data || "");
         await this.$nextTick();
         if (generation !== this.requestGeneration) return;
-        const source = this.$refs.contentView?.$refs.article?.textContent || "";
-        this.wordNum = source.replace(/\s+/g, "").length;
-        this.readTime = Math.max(1, Math.round(this.wordNum / 400)) + "分钟";
+        const source = this.$refs.contentView?.getReadingText() || "";
+        this.wordNum = this.countReadableWords(source);
+        this.readTime = this.formatReadingTime(this.wordNum);
+        this.readingStatsReady = true;
         this.installContentEnhancements();
       } catch (error) {
         if (generation === this.requestGeneration) this.contentError = normalizeHttpError(error);
@@ -132,7 +141,7 @@ export default {
       }
     },
     installContentEnhancements() {
-      const articleElement = this.$refs.contentView?.$refs.article;
+      const articleElement = this.$refs.contentView?.getArticleElement();
       if (!articleElement) return;
       this.clipboard = new Clipboard(".copy-btn");
       this.clipboard.on("success", () => this.$toast({ type: "success", message: "复制成功" }));
@@ -149,6 +158,16 @@ export default {
         image.addEventListener("click", listener);
         this.imageListeners.push({ image, listener });
       });
+    },
+    countReadableWords(source) {
+      const text = String(source || "").replace(/\s+/g, " ").trim();
+      if (!text) return 0;
+      const cjkCharacters = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/g) || []).length;
+      const latinWords = text.match(/[A-Za-z0-9]+(?:['’\u2011-][A-Za-z0-9]+)*/g) || [];
+      return cjkCharacters + latinWords.length;
+    },
+    formatReadingTime(wordCount) {
+      return Math.max(1, Math.ceil(wordCount / 450)) + "分钟";
     },
     disposeContentEnhancements() {
       this.clipboard?.destroy();

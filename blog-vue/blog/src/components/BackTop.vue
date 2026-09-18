@@ -1,7 +1,19 @@
 <template>
   <div v-show="visible" class="site-tools">
-    <button type="button" class="tool-button" :aria-label="icon === 'iconyueliang' ? '切换深色模式' : '切换浅色模式'" @click="check">
-      <i :class="['iconfont', icon]" aria-hidden="true" />
+    <button
+      type="button"
+      class="tool-button"
+      :aria-label="isDark ? '切换浅色模式' : '切换深色模式'"
+      :aria-pressed="isDark"
+      @click="check"
+    >
+      <svg v-if="isDark" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+      </svg>
+      <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20.7 15.6A8.5 8.5 0 0 1 8.4 3.3 8.5 8.5 0 1 0 20.7 15.6Z" />
+      </svg>
     </button>
     <button type="button" class="tool-button tool-top" aria-label="回到顶部" @click="backTop">
       <span aria-hidden="true">↑</span>
@@ -14,10 +26,16 @@ export default {
   data() {
     return {
       visible: false,
-      icon: "iconyueliang"
+      themeName: "light"
     };
   },
+  computed: {
+    isDark() {
+      return this.themeName === "dark";
+    }
+  },
   mounted() {
+    this.restoreTheme();
     window.addEventListener("scroll", this.scrollToTop, { passive: true });
     this.scrollToTop();
   },
@@ -31,10 +49,44 @@ export default {
     scrollToTop() {
       this.visible = window.pageYOffset > 100;
     },
+    getVuetifyThemeName() {
+      const name = this.$vuetify?.theme?.global?.name;
+      return typeof name === "string" ? name : name?.value || "light";
+    },
+    restoreTheme() {
+      let savedTheme = "";
+      try {
+        savedTheme = window.localStorage.getItem("ticastr-theme") || "";
+      } catch {
+        // Local storage can be unavailable in private browsing contexts.
+      }
+      this.applyTheme(savedTheme === "dark" ? "dark" : this.getVuetifyThemeName(), false);
+    },
+    applyTheme(themeName, persist = true) {
+      const nextTheme = themeName === "dark" ? "dark" : "light";
+      const vuetifyTheme = this.$vuetify?.theme;
+      const globalTheme = this.$vuetify?.theme?.global;
+      const globalName = globalTheme?.name;
+      if (typeof vuetifyTheme?.change === "function") {
+        vuetifyTheme.change(nextTheme);
+      } else if (globalName && typeof globalName === "object" && "value" in globalName) {
+        globalName.value = nextTheme;
+      } else if (globalTheme) {
+        globalTheme.name = nextTheme;
+      }
+      this.themeName = nextTheme;
+      document.documentElement.dataset.theme = nextTheme;
+      document.documentElement.style.colorScheme = nextTheme;
+      if (persist) {
+        try {
+          window.localStorage.setItem("ticastr-theme", nextTheme);
+        } catch {
+          // Keep the current theme even when persistence is unavailable.
+        }
+      }
+    },
     check() {
-      const isLight = this.icon === "iconyueliang";
-      this.icon = isLight ? "icontaiyang" : "iconyueliang";
-      this.$vuetify.theme.global.name.value = isLight ? "dark" : "light";
+      this.applyTheme(this.isDark ? "light" : "dark");
     }
   }
 };
@@ -64,6 +116,16 @@ export default {
   transition: color 180ms ease, background 180ms ease, transform 180ms ease;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+}
+
+.tool-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .tool-button:hover {

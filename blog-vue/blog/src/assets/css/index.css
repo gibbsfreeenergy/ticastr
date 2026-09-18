@@ -277,6 +277,25 @@ ol {
   --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.28);
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #18202b;
+  --paper-strong: #202b38;
+  --paper-muted: #121a24;
+  --ink: #f7f3ec;
+  --ink-soft: #dce2e5;
+  --muted: #aab5bc;
+  --muted-light: #798792;
+  --line: rgba(247, 243, 236, 0.14);
+  --line-strong: rgba(247, 243, 236, 0.22);
+  --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
 .v-theme--dark .v-dialog .v-card,
 .v-theme--dark .v-navigation-drawer {
   background: var(--paper-strong) !important;
