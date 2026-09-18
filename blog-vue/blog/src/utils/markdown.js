@@ -25,4 +25,56 @@ import yaml from "highlight.js/lib/languages/yaml";
   ["vue", xml], ["yaml", yaml], ["yml", yaml]
 ].forEach(([name, language]) => hljs.registerLanguage(name, language));
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[character]));
+}
+
+function createCodeIndex() {
+  let seed = Date.now();
+  if (globalThis.performance && typeof globalThis.performance.now === "function") {
+    seed += globalThis.performance.now();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, character => {
+    const random = (seed + Math.random() * 16) % 16 | 0;
+    seed = Math.floor(seed / 16);
+    return (character === "x" ? random : (random & 0x3) | 0x8).toString(16);
+  });
+}
+
+/**
+ * Shared code-block renderer for public Markdown content.
+ *
+ * Keep the copy affordance and line numbers in one place while using the
+ * current Highlight.js API. Returning an empty string lets markdown-it use
+ * its escaped fallback for unknown languages.
+ */
+export function renderMarkdownCode(source, language) {
+  if (!language || !hljs.getLanguage(language)) return "";
+
+  const codeIndex = createCodeIndex();
+  const highlighted = hljs.highlight(source, {
+    language,
+    ignoreIllegals: true
+  }).value;
+  const linesLength = source.split(/\n/).length - 1;
+  let linesNum = '<span aria-hidden="true" class="line-numbers-rows">';
+  for (let index = 0; index < linesLength; index++) {
+    linesNum += "<span></span>";
+  }
+  linesNum += "</span>";
+
+  let html = `<button class="copy-btn iconfont iconfuzhi" type="button" data-clipboard-action="copy" data-clipboard-target="#copy${codeIndex}"></button>${highlighted}`;
+  if (linesLength) html += `<b class="name">${escapeHtml(language)}</b>`;
+
+  return `<pre class="hljs"><code>${html}</code>${linesNum}</pre><textarea style="position: absolute;top: -9999px;left: -9999px;z-index: -9999;" id="copy${codeIndex}">${escapeHtml(
+    source
+  )}</textarea>`;
+}
+
 export { hljs };

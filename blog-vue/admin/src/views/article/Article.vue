@@ -136,6 +136,7 @@ import "md-editor-v3/lib/style.css";
 import * as imageConversion from "image-conversion";
 import { normalizeHttpError } from "../../../../shared/api/error";
 import { createArticleEditorState } from "./articleEditorState";
+import { resolveArticleId } from "./articleRoute";
 import ArticleEditorForm from "./ArticleEditorForm.vue";
 import ArticlePreview from "./ArticlePreview.vue";
 import ArticleVersionDialog from "./ArticleVersionDialog.vue";
@@ -224,8 +225,8 @@ export default {
       ],
       addOrEdit: false,
       previewVisible: false,
-      metadataLoading: Boolean(this.$route.params.articleId),
-      contentLoading: Boolean(this.$route.params.articleId),
+      metadataLoading: Boolean(resolveArticleId(this.$route)),
+      contentLoading: Boolean(resolveArticleId(this.$route)),
       metadataError: null,
       contentError: null,
       saveError: null,
@@ -247,8 +248,7 @@ export default {
   },
   computed: {
     routeArticleId() {
-      const articleId = this.$route.params.articleId || this.$route.path.split("/")[2] || null;
-      return articleId && articleId !== "new" ? articleId : null;
+      return resolveArticleId(this.$route);
     },
     editorStatusText() {
       const labels = {
