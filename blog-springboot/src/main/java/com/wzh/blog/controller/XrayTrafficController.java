@@ -4,9 +4,16 @@ import com.wzh.blog.annotation.AccessLimit;
 import com.wzh.blog.service.XrayTrafficService;
 import com.wzh.blog.vo.Result;
 import com.wzh.blog.vo.traffic.TrafficMonitorVO;
+import com.wzh.blog.vo.traffic.TrafficControlRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -95,6 +102,89 @@ public class XrayTrafficController {
     public Result<List<TrafficMonitorVO.Alert>> alerts(
             @RequestParam(defaultValue = "100") Integer limit) {
         return Result.ok(trafficService.alerts(range(limit, 100, 1, 200)));
+    }
+
+    @Operation(summary = "查看代理 IP 黑名单")
+    @GetMapping("/blocklist")
+    @AccessLimit(seconds = 10, maxCount = 20)
+    public Result<List<TrafficMonitorVO.BlocklistEntry>> blocklist() {
+        return Result.ok(trafficService.blocklist());
+    }
+
+    @Operation(summary = "封禁代理来源 IP")
+    @PostMapping("/block")
+    @AccessLimit(seconds = 10, maxCount = 10)
+    public Result<TrafficMonitorVO.ControlResult> block(
+            @Valid @RequestBody TrafficControlRequest.BlockRequest request) {
+        return Result.ok(trafficService.block(request));
+    }
+
+    @Operation(summary = "解除代理来源 IP 封禁")
+    @PostMapping("/unblock")
+    @AccessLimit(seconds = 10, maxCount = 10)
+    public Result<TrafficMonitorVO.ControlResult> unblock(
+            @Valid @RequestBody TrafficControlRequest.IpRequest request) {
+        return Result.ok(trafficService.unblock(request));
+    }
+
+    @Operation(summary = "更新代理来源 IP 备注")
+    @PostMapping("/label")
+    @AccessLimit(seconds = 10, maxCount = 20)
+    public Result<TrafficMonitorVO.ControlResult> label(
+            @Valid @RequestBody TrafficControlRequest.LabelRequest request) {
+        return Result.ok(trafficService.label(request));
+    }
+
+    @Operation(summary = "确认代理告警")
+    @PostMapping("/alerts/ack")
+    @AccessLimit(seconds = 10, maxCount = 20)
+    public Result<TrafficMonitorVO.ControlResult> acknowledge(
+            @RequestBody TrafficControlRequest.AlertAckRequest request) {
+        return Result.ok(trafficService.acknowledge(request));
+    }
+
+    @Operation(summary = "查看代理告警规则")
+    @GetMapping("/alert-rules")
+    @AccessLimit(seconds = 10, maxCount = 20)
+    public Result<List<TrafficMonitorVO.AlertRule>> alertRules() {
+        return Result.ok(trafficService.alertRules());
+    }
+
+    @Operation(summary = "保存代理告警规则")
+    @PostMapping("/alert-rules")
+    @AccessLimit(seconds = 10, maxCount = 10)
+    public Result<TrafficMonitorVO.ControlResult> saveAlertRule(
+            @Valid @RequestBody TrafficControlRequest.AlertRuleRequest request) {
+        return Result.ok(trafficService.saveAlertRule(request));
+    }
+
+    @Operation(summary = "删除代理告警规则")
+    @DeleteMapping("/alert-rules/{id}")
+    @AccessLimit(seconds = 10, maxCount = 10)
+    public Result<TrafficMonitorVO.ControlResult> deleteAlertRule(
+            @PathVariable @Size(max = 64, message = "规则 ID 过长") String id) {
+        return Result.ok(trafficService.deleteAlertRule(id));
+    }
+
+    @Operation(summary = "同步代理 IP 黑名单")
+    @PostMapping("/blocklist/sync")
+    @AccessLimit(seconds = 30, maxCount = 5)
+    public Result<TrafficMonitorVO.ControlResult> syncBlocklist() {
+        return Result.ok(trafficService.syncBlocklist());
+    }
+
+    @Operation(summary = "手动触发代理采集")
+    @PostMapping("/collect")
+    @AccessLimit(seconds = 30, maxCount = 3)
+    public Result<TrafficMonitorVO.ControlResult> collect() {
+        return Result.ok(trafficService.collect());
+    }
+
+    @Operation(summary = "刷新代理 GeoIP 信息")
+    @PostMapping("/geo/refresh")
+    @AccessLimit(seconds = 60, maxCount = 2)
+    public Result<TrafficMonitorVO.ControlResult> refreshGeo() {
+        return Result.ok(trafficService.refreshGeo());
     }
 
     private int range(Integer value, int fallback, int minimum, int maximum) {

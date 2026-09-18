@@ -3,6 +3,7 @@ package com.wzh.blog.service.impl;
 import com.wzh.blog.infrastructure.traffic.XrayTrafficClient;
 import com.wzh.blog.service.XrayTrafficService;
 import com.wzh.blog.vo.traffic.TrafficMonitorVO;
+import com.wzh.blog.vo.traffic.TrafficControlRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -54,5 +55,60 @@ public class XrayTrafficServiceImpl implements XrayTrafficService {
     @Override
     public List<TrafficMonitorVO.Alert> alerts(int limit) {
         return client.alerts(limit);
+    }
+
+    @Override
+    public List<TrafficMonitorVO.BlocklistEntry> blocklist() {
+        return client.blocklist();
+    }
+
+    @Override
+    public List<TrafficMonitorVO.AlertRule> alertRules() {
+        return client.alertRules();
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult block(TrafficControlRequest.BlockRequest request) {
+        return client.block(request);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult unblock(TrafficControlRequest.IpRequest request) {
+        return client.unblock(request);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult label(TrafficControlRequest.LabelRequest request) {
+        return client.label(request);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult acknowledge(TrafficControlRequest.AlertAckRequest request) {
+        return client.acknowledge(request);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult saveAlertRule(TrafficControlRequest.AlertRuleRequest request) {
+        return client.saveAlertRule(request);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult deleteAlertRule(String id) {
+        return client.deleteAlertRule(id);
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult syncBlocklist() {
+        return client.syncBlocklist();
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult collect() {
+        return client.collect();
+    }
+
+    @Override
+    public TrafficMonitorVO.ControlResult refreshGeo() {
+        return client.refreshGeo();
     }
 }

@@ -1,10 +1,11 @@
 package com.wzh.blog.vo.traffic;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-/** Public response shapes for the admin traffic monitor. */
+/** Public response shapes for the admin traffic monitor and its safe controls. */
 public final class TrafficMonitorVO {
 
     private TrafficMonitorVO() {
@@ -114,5 +115,34 @@ public final class TrafficMonitorVO {
             String title,
             String detail,
             int acked) {
+    }
+
+    public record BlocklistEntry(
+            String ip,
+            String reason,
+            int active,
+            String created,
+            String place,
+            String org,
+            String cc) {
+    }
+
+    public record AlertRule(
+            String id,
+            int enabled,
+            String metric,
+            int threshold,
+            @JsonAlias("window_sec") int windowSec,
+            @JsonAlias("cooldown_sec") int cooldownSec,
+            String level,
+            String email) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ControlResult(
+            boolean ok,
+            String error,
+            @JsonAlias("runtime_applied") boolean runtimeApplied,
+            String mode) {
     }
 }

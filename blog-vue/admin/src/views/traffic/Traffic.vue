@@ -261,7 +261,18 @@
             <h2>最近告警</h2>
             <p>来自 DMIT 采集器的告警记录</p>
           </div>
-          <span class="alert-count" :class="{ 'is-warning': openAlerts > 0 }">{{ openAlerts }} 未读</span>
+          <div class="panel-header-actions">
+            <button
+              v-if="openAlerts > 0"
+              type="button"
+              class="text-action"
+              :disabled="controlBusy === 'ack-all'"
+              @click="ackAllAlerts"
+            >
+              全部确认
+            </button>
+            <span class="alert-count" :class="{ 'is-warning': openAlerts > 0 }">{{ openAlerts }} 未读</span>
+          </div>
         </div>
         <div v-if="alerts.length" class="alert-list">
           <div v-for="item in alerts.slice(0, 4)" :key="item.id" class="alert-row">
@@ -271,6 +282,15 @@
               <p>{{ item.detail || "暂无详情" }}</p>
             </div>
             <time>{{ item.t || "—" }}</time>
+            <button
+              v-if="!item.acked"
+              type="button"
+              class="row-action"
+              :disabled="controlBusy === `ack-${item.id}`"
+              @click="ackAlert(item)"
+            >
+              确认
+            </button>
           </div>
         </div>
         <div v-else class="panel-empty compact"><span>暂无告警记录</span></div>
@@ -280,7 +300,7 @@
         <div class="panel-header">
           <div>
             <h2>数据源状态</h2>
-            <p>只读连接与隐私保护</p>
+            <p>连接状态与隐私保护</p>
           </div>
           <AppIcon name="activity" :size="20" class="panel-header-icon" />
         </div>
@@ -303,6 +323,203 @@
           </div>
         </dl>
       </article>
+    </section>
+
+    <section class="traffic-control-grid" aria-label="代理管理操作">
+      <article class="traffic-panel control-panel">
+        <div class="panel-header">
+          <div>
+            <h2>来源 IP 控制</h2>
+            <p>给来源 IP 添加备注，或动态同步 Xray 黑名单。</p>
+          </div>
+          <span class="panel-count">{{ formatNumber(sourceTotal) }} 个来源</span>
+        </div>
+        <p v-if="controlError" class="control-feedback is-error" role="alert">{{ controlError }}</p>
+        <div v-if="sources.length" class="source-control-list">
+          <div v-for="item in sources" :key="`control-${item.ip}`" class="source-control-row">
+            <div class="source-control-main">
+              <div class="source-control-title">
+                <strong class="mono">{{ item.ip }}</strong>
+                <span v-if="item.blocked" class="state-chip is-danger">已封禁</span>
+              </div>
+              <span>{{ item.label || item.place || item.org || "未添加备注" }}</span>
+            </div>
+            <div v-if="editingLabelIp === item.ip" class="label-editor">
+              <input
+                v-model="labelDraft"
+                maxlength="80"
+                type="text"
+                aria-label="IP 备注"
+                placeholder="输入备注"
+                @keyup.enter="saveLabel(item)"
+              />
+              <button type="button" class="mini-action is-primary" @click="saveLabel(item)">保存</button>
+              <button type="button" class="mini-action" @click="cancelLabelEdit">取消</button>
+            </div>
+            <div v-else class="source-control-actions">
+              <button type="button" class="row-action" @click="startLabelEdit(item)">备注</button>
+              <button
+                v-if="item.blocked"
+                type="button"
+                class="row-action is-primary"
+                :disabled="controlBusy === `unblock-${item.ip}`"
+                @click="unblockSource(item)"
+              >
+                解封
+              </button>
+              <button
+                v-else
+                type="button"
+                class="row-action is-danger"
+                :disabled="controlBusy === `block-${item.ip}`"
+                @click="blockSource(item)"
+              >
+                封禁
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="panel-empty compact"><span>暂无可管理的来源 IP</span></div>
+      </article>
+
+      <article class="traffic-panel control-panel">
+        <div class="panel-header">
+          <div>
+            <h2>采集器维护</h2>
+            <p>手动触发低风险维护任务，操作结果会即时反馈。</p>
+          </div>
+          <AppIcon name="settings" :size="20" class="panel-header-icon" />
+        </div>
+        <div class="control-action-list">
+          <button
+            type="button"
+            class="control-action"
+            :disabled="Boolean(controlBusy)"
+            @click="runControl('sync', () => $api.admin.trafficSyncBlocklist(), '黑名单已同步到 Xray')"
+          >
+            <span><strong>同步黑名单</strong><small>将数据库中的启用项同步到运行中的 Xray</small></span>
+            <AppIcon name="refresh" :size="17" :class="{ 'is-spinning': controlBusy === 'sync' }" />
+          </button>
+          <button
+            type="button"
+            class="control-action"
+            :disabled="Boolean(controlBusy)"
+            @click="runControl('collect', () => $api.admin.trafficCollect(), '已触发一轮采集')"
+          >
+            <span><strong>立即采集</strong><small>补采最近一轮连接日志</small></span>
+            <AppIcon name="activity" :size="17" :class="{ 'is-spinning': controlBusy === 'collect' }" />
+          </button>
+          <button
+            type="button"
+            class="control-action"
+            :disabled="Boolean(controlBusy)"
+            @click="runControl('geo', () => $api.admin.trafficGeoRefresh(), 'GeoIP 信息刷新任务已完成')"
+          >
+            <span><strong>刷新 GeoIP</strong><small>重新丰富来源地域与组织信息</small></span>
+            <AppIcon name="globe" :size="17" :class="{ 'is-spinning': controlBusy === 'geo' }" />
+          </button>
+        </div>
+        <p v-if="controlMessage" class="control-feedback is-success">{{ controlMessage }}</p>
+        <div class="blocklist-summary">
+          <div class="blocklist-summary-header">
+            <span>黑名单记录</span>
+            <strong>{{ activeBlocklistCount }} 启用</strong>
+          </div>
+          <div v-if="blocklist.length" class="blocklist-list">
+            <div v-for="item in blocklist.slice(0, 5)" :key="item.ip" class="blocklist-row">
+              <span class="mono">{{ item.ip }}</span>
+              <small>{{ item.active ? (item.reason || "未填写原因") : "已停用" }}</small>
+            </div>
+          </div>
+          <span v-else class="muted">暂无黑名单记录</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="traffic-panel rules-panel" aria-label="告警规则管理">
+      <div class="panel-header">
+        <div>
+          <h2>告警规则</h2>
+          <p>配置采集器使用的阈值规则；保存后由 DMIT 采集器负责执行。</p>
+        </div>
+        <span class="panel-count">{{ alertRules.length }} 条规则</span>
+      </div>
+      <form class="rule-form" @submit.prevent="saveRule">
+        <label>
+          <span>规则 ID</span>
+          <input v-model.trim="ruleDraft.id" required maxlength="64" placeholder="例如 burst-main" />
+        </label>
+        <label>
+          <span>指标</span>
+          <select v-model="ruleDraft.metric">
+            <option value="connections">连接数</option>
+            <option value="unique_ips">独立 IP</option>
+            <option value="traffic_up">上传流量</option>
+            <option value="traffic_down">下载流量</option>
+          </select>
+        </label>
+        <label>
+          <span>阈值</span>
+          <input v-model.number="ruleDraft.threshold" required min="0" max="1000000" type="number" />
+        </label>
+        <label>
+          <span>观察窗口</span>
+          <select v-model.number="ruleDraft.windowSec">
+            <option :value="300">5 分钟</option>
+            <option :value="900">15 分钟</option>
+            <option :value="3600">1 小时</option>
+            <option :value="86400">24 小时</option>
+          </select>
+        </label>
+        <label>
+          <span>冷却时间</span>
+          <select v-model.number="ruleDraft.cooldownSec">
+            <option :value="1800">30 分钟</option>
+            <option :value="3600">1 小时</option>
+            <option :value="21600">6 小时</option>
+            <option :value="86400">24 小时</option>
+          </select>
+        </label>
+        <label>
+          <span>级别</span>
+          <select v-model="ruleDraft.level">
+            <option value="info">提示</option>
+            <option value="medium">中等</option>
+            <option value="high">高</option>
+            <option value="critical">严重</option>
+          </select>
+        </label>
+        <label class="rule-email-field">
+          <span>通知目标（可选）</span>
+          <input v-model.trim="ruleDraft.email" maxlength="200" placeholder="邮箱或采集器支持的目标" />
+        </label>
+        <label class="rule-enabled-field">
+          <input v-model="ruleDraft.enabled" type="checkbox" />
+          <span>启用规则</span>
+        </label>
+        <div class="rule-form-actions">
+          <button type="submit" class="mini-action is-primary" :disabled="controlBusy === 'rule-save'">
+            {{ editingRuleId ? "保存修改" : "新增规则" }}
+          </button>
+          <button v-if="editingRuleId" type="button" class="mini-action" @click="resetRuleDraft">取消编辑</button>
+        </div>
+      </form>
+      <div v-if="alertRules.length" class="rule-list">
+        <div v-for="rule in alertRules" :key="rule.id" class="rule-row">
+          <div>
+            <strong>{{ rule.id }}</strong>
+            <span class="state-chip" :class="rule.enabled ? 'is-success' : 'is-muted'">
+              {{ rule.enabled ? "已启用" : "已停用" }}
+            </span>
+            <p>{{ ruleMetricLabel(rule.metric) }} ≥ {{ formatNumber(rule.threshold) }} · {{ formatDuration(rule.windowSec) }}窗口 · {{ formatDuration(rule.cooldownSec) }}冷却</p>
+          </div>
+          <div class="source-control-actions">
+            <button type="button" class="row-action" @click="editRule(rule)">编辑</button>
+            <button type="button" class="row-action is-danger" :disabled="controlBusy === `rule-delete-${rule.id}`" @click="deleteRule(rule)">删除</button>
+          </div>
+        </div>
+      </div>
+      <div v-else class="panel-empty compact"><span>暂无告警规则</span></div>
     </section>
   </div>
 </template>
@@ -339,6 +556,24 @@ export default {
       geo: { countries: [] },
       live: [],
       alerts: [],
+      blocklist: [],
+      alertRules: [],
+      controlBusy: "",
+      controlMessage: "",
+      controlError: "",
+      editingLabelIp: "",
+      labelDraft: "",
+      editingRuleId: "",
+      ruleDraft: {
+        id: "",
+        metric: "connections",
+        threshold: 300,
+        windowSec: 300,
+        cooldownSec: 3600,
+        level: "high",
+        enabled: true,
+        email: ""
+      },
       lastLoadedAt: null,
       liveTimer: null
     };
@@ -482,6 +717,9 @@ export default {
     },
     trendPeak() {
       return Math.max(0, ...this.chartValues);
+    },
+    activeBlocklistCount() {
+      return this.blocklist.filter(item => Number(item.active) === 1).length;
     }
   },
   watch: {
@@ -524,9 +762,10 @@ export default {
         this.sourceTotal = Number(sourcePage.data?.total || 0);
         this.targets = Array.isArray(targets.data) ? targets.data : [];
         this.geo = geo.data || { countries: [] };
-        this.live = Array.isArray(live.data) ? live.data : [];
-        this.alerts = Array.isArray(alerts.data) ? alerts.data : [];
-        this.lastLoadedAt = Date.now();
+          this.live = Array.isArray(live.data) ? live.data : [];
+          this.alerts = Array.isArray(alerts.data) ? alerts.data : [];
+          this.lastLoadedAt = Date.now();
+          this.loadControls();
       } catch {
         this.error = "代理监控数据暂时无法读取，请检查 DMIT 数据源连接";
       } finally {
@@ -542,8 +781,141 @@ export default {
       } catch {
         // The dashboard keeps its last known rows when the five-second poll fails.
       } finally {
-        this.liveLoading = false;
+      this.liveLoading = false;
       }
+    },
+    async loadControls() {
+      try {
+        const [blocklist, rules] = await Promise.all([
+          this.$api.admin.trafficBlocklist(),
+          this.$api.admin.trafficAlertRules()
+        ]);
+        this.blocklist = Array.isArray(blocklist.data) ? blocklist.data : [];
+        this.alertRules = Array.isArray(rules.data) ? rules.data : [];
+        this.controlError = "";
+      } catch {
+        this.controlError = "管理操作暂时不可用，请确认第一阶段桥接服务已部署";
+      }
+    },
+    async runControl(key, action, successMessage) {
+      if (this.controlBusy) return;
+      this.controlBusy = key;
+      this.controlMessage = "";
+      this.controlError = "";
+      try {
+        const response = await action();
+        if (response?.data?.ok === false) throw new Error("control failed");
+        this.controlMessage = successMessage;
+        await this.loadControls();
+        await this.loadDashboard();
+        return true;
+      } catch {
+        this.controlError = "操作未完成，请稍后重试并检查 DMIT 服务状态";
+        return false;
+      } finally {
+        this.controlBusy = "";
+      }
+    },
+    async blockSource(item) {
+      if (!window.confirm(`确认封禁来源 IP ${item.ip} 吗？`)) return;
+      await this.runControl(
+        `block-${item.ip}`,
+        () => this.$api.admin.trafficBlock({ ip: item.ip, reason: item.label || "管理员手动封禁" }),
+        `${item.ip} 已加入黑名单`
+      );
+    },
+    async unblockSource(item) {
+      if (!window.confirm(`确认解除 ${item.ip} 的封禁吗？`)) return;
+      await this.runControl(
+        `unblock-${item.ip}`,
+        () => this.$api.admin.trafficUnblock({ ip: item.ip }),
+        `${item.ip} 已解除封禁`
+      );
+    },
+    startLabelEdit(item) {
+      this.editingLabelIp = item.ip;
+      this.labelDraft = item.label || "";
+    },
+    cancelLabelEdit() {
+      this.editingLabelIp = "";
+      this.labelDraft = "";
+    },
+    async saveLabel(item) {
+      if (this.controlBusy) return;
+      const saved = await this.runControl(
+        `label-${item.ip}`,
+        () => this.$api.admin.trafficLabel({ ip: item.ip, label: this.labelDraft }),
+        `${item.ip} 的备注已保存`
+      );
+      if (saved) this.cancelLabelEdit();
+    },
+    async ackAlert(item) {
+      await this.runControl(
+        `ack-${item.id}`,
+        () => this.$api.admin.trafficAckAlerts({ id: item.id, all: false }),
+        "告警已确认"
+      );
+    },
+    async ackAllAlerts() {
+      if (!window.confirm("确认将所有未读告警标记为已读吗？")) return;
+      await this.runControl("ack-all", () => this.$api.admin.trafficAckAlerts({ all: true }), "所有未读告警已确认");
+    },
+    createRuleDraft() {
+      return {
+        id: "",
+        metric: "connections",
+        threshold: 300,
+        windowSec: 300,
+        cooldownSec: 3600,
+        level: "high",
+        enabled: true,
+        email: ""
+      };
+    },
+    resetRuleDraft() {
+      this.editingRuleId = "";
+      this.ruleDraft = this.createRuleDraft();
+    },
+    editRule(rule) {
+      this.editingRuleId = rule.id;
+      this.ruleDraft = {
+        id: rule.id,
+        metric: rule.metric,
+        threshold: Number(rule.threshold || 0),
+        windowSec: Number(rule.windowSec ?? rule.window_sec ?? 300),
+        cooldownSec: Number(rule.cooldownSec ?? rule.cooldown_sec ?? 3600),
+        level: rule.level || "info",
+        enabled: Number(rule.enabled) === 1,
+        email: rule.email || ""
+      };
+    },
+    async saveRule() {
+      const payload = { ...this.ruleDraft };
+      const saved = await this.runControl("rule-save", () => this.$api.admin.saveTrafficAlertRule(payload), "告警规则已保存");
+      if (saved) this.resetRuleDraft();
+    },
+    async deleteRule(rule) {
+      if (!window.confirm(`确认删除告警规则“${rule.id}”吗？`)) return;
+      const deleted = await this.runControl(
+        `rule-delete-${rule.id}`,
+        () => this.$api.admin.deleteTrafficAlertRule(rule.id),
+        "告警规则已删除"
+      );
+      if (deleted && this.editingRuleId === rule.id) this.resetRuleDraft();
+    },
+    ruleMetricLabel(metric) {
+      return {
+        connections: "连接数",
+        unique_ips: "独立 IP",
+        traffic_up: "上传流量",
+        traffic_down: "下载流量"
+      }[metric] || metric || "未知指标";
+    },
+    formatDuration(seconds) {
+      const value = Number(seconds || 0);
+      if (value >= 86400 && value % 86400 === 0) return `${value / 86400} 天`;
+      if (value >= 3600 && value % 3600 === 0) return `${value / 3600} 小时`;
+      return `${Math.max(1, Math.round(value / 60))} 分钟`;
     },
     startLiveTimer() {
       this.stopLiveTimer();
@@ -770,7 +1142,8 @@ export default {
 .traffic-metrics,
 .traffic-main-grid,
 .traffic-ranking-grid,
-.traffic-bottom-grid {
+.traffic-bottom-grid,
+.traffic-control-grid {
   display: grid;
   gap: 14px;
 }
@@ -849,6 +1222,11 @@ export default {
   margin-bottom: 14px;
 }
 
+.traffic-control-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  margin-bottom: 14px;
+}
+
 .traffic-panel {
   min-width: 0;
   padding: 22px;
@@ -871,6 +1249,35 @@ export default {
 .panel-header-icon {
   flex: 0 0 auto;
   color: var(--admin-blue);
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.text-action,
+.row-action,
+.mini-action {
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.text-action {
+  padding: 4px 0;
+  color: var(--admin-blue);
+  font-size: 11px;
+}
+
+.text-action:disabled,
+.row-action:disabled,
+.mini-action:disabled,
+.control-action:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .metric-switch {
@@ -1237,6 +1644,313 @@ export default {
   white-space: nowrap;
 }
 
+.alert-row .row-action {
+  flex: 0 0 auto;
+}
+
+.row-action {
+  padding: 5px 8px;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.row-action:hover,
+.mini-action:hover {
+  border-color: rgba(0, 113, 227, 0.3);
+  color: var(--admin-blue);
+  background: var(--admin-blue-soft);
+}
+
+.row-action.is-primary,
+.mini-action.is-primary {
+  color: var(--admin-blue);
+  border-color: rgba(0, 113, 227, 0.22);
+  background: var(--admin-blue-soft);
+}
+
+.row-action.is-danger {
+  color: #b42318;
+  border-color: rgba(255, 59, 48, 0.2);
+  background: rgba(255, 59, 48, 0.05);
+}
+
+.traffic-control-grid .traffic-panel,
+.rules-panel {
+  min-height: 0;
+}
+
+.source-control-list,
+.blocklist-list,
+.rule-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.source-control-row,
+.rule-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--admin-border);
+}
+
+.source-control-row:first-child,
+.rule-row:first-child {
+  border-top: 0;
+}
+
+.source-control-main,
+.rule-row > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.source-control-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-control-main strong,
+.rule-row strong {
+  overflow: hidden;
+  color: var(--admin-text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-control-main > span,
+.rule-row p,
+.blocklist-row small {
+  overflow: hidden;
+  margin: 0;
+  color: var(--admin-text-tertiary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-control-actions,
+.label-editor,
+.rule-form-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+.label-editor input,
+.rule-form input,
+.rule-form select {
+  min-width: 0;
+  height: 32px;
+  padding: 0 9px;
+  color: var(--admin-text);
+  font: inherit;
+  font-size: 12px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  outline: none;
+}
+
+.label-editor input:focus,
+.rule-form input:focus,
+.rule-form select:focus {
+  border-color: rgba(0, 113, 227, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+.label-editor input {
+  width: min(180px, 30vw);
+}
+
+.mini-action {
+  min-height: 30px;
+  padding: 0 9px;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.state-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 3px 6px;
+  color: var(--admin-text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+  background: var(--admin-surface-soft);
+  border-radius: 5px;
+}
+
+.state-chip.is-danger {
+  color: #b42318;
+  background: rgba(255, 59, 48, 0.08);
+}
+
+.state-chip.is-success {
+  color: #218739;
+  background: rgba(52, 199, 89, 0.1);
+}
+
+.state-chip.is-muted {
+  color: var(--admin-text-tertiary);
+}
+
+.control-action-list {
+  display: grid;
+  gap: 8px;
+}
+
+.control-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  color: var(--admin-blue);
+  text-align: left;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.control-action:hover {
+  border-color: rgba(0, 113, 227, 0.3);
+  background: var(--admin-blue-soft);
+}
+
+.control-action > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-action strong {
+  color: var(--admin-text);
+  font-size: 12px;
+}
+
+.control-action small {
+  overflow: hidden;
+  color: var(--admin-text-tertiary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-feedback {
+  padding: 9px 10px;
+  margin: 12px 0 0;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
+.control-feedback.is-success {
+  color: #218739;
+  background: rgba(52, 199, 89, 0.08);
+}
+
+.control-feedback.is-error {
+  color: #b42318;
+  background: rgba(255, 59, 48, 0.07);
+}
+
+.blocklist-summary {
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.blocklist-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  color: var(--admin-text-tertiary);
+  font-size: 11px;
+}
+
+.blocklist-summary-header strong {
+  color: var(--admin-text-secondary);
+  font-weight: 650;
+}
+
+.blocklist-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.rules-panel {
+  margin-bottom: 14px;
+}
+
+.rule-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr 1fr 1fr 0.9fr;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+}
+
+.rule-form label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rule-form label > span {
+  color: var(--admin-text-tertiary);
+  font-size: 10px;
+}
+
+.rule-email-field {
+  grid-column: span 2;
+}
+
+.rule-enabled-field {
+  align-self: end;
+  flex-direction: row !important;
+  align-items: center;
+  padding-bottom: 7px;
+}
+
+.rule-enabled-field input {
+  width: 15px;
+  height: 15px;
+}
+
+.rule-form-actions {
+  align-self: end;
+  padding-bottom: 1px;
+}
+
+.rule-row p {
+  margin-top: 3px;
+}
+
 .source-status-list {
   display: grid;
   gap: 0;
@@ -1309,8 +2023,17 @@ export default {
 
   .traffic-main-grid,
   .traffic-ranking-grid,
-  .traffic-bottom-grid {
+  .traffic-bottom-grid,
+  .traffic-control-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rule-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rule-email-field {
+    grid-column: span 2;
   }
 }
 
@@ -1380,6 +2103,35 @@ export default {
   .live-controls {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .source-control-row,
+  .rule-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .source-control-actions,
+  .label-editor,
+  .rule-form-actions {
+    width: 100%;
+  }
+
+  .label-editor input {
+    width: auto;
+    flex: 1;
+  }
+
+  .rule-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rule-email-field {
+    grid-column: auto;
+  }
+
+  .rule-form-actions .mini-action {
+    flex: 1;
   }
 }
 

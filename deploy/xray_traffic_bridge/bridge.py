@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Read-only bridge for the local xray-dash SQLite database.
+"""Signed bridge for the local xray-dash SQLite database and safe controls.
 
-The bridge deliberately exposes only aggregate/read-only data. It does not
-reuse xray-dash's browser session and has no write endpoints.
+The bridge does not reuse xray-dash's browser session. Read requests expose
+aggregates, while write requests are limited to the explicitly allowlisted
+operations below and require an HMAC signature that also covers the body.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import logging
 import os
 import sqlite3
 import subprocess
+import threading
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -31,6 +33,20 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8788
 MAX_CLOCK_SKEW = 90
 MAX_LIMIT = 500
+MAX_BODY_BYTES = 64 * 1024
+MAX_REASON_LENGTH = 200
+MAX_LABEL_LENGTH = 80
+MAX_RULE_ID_LENGTH = 64
+MAX_RULE_EMAIL_LENGTH = 200
+BLOCK_RULE_TAG = "sourceIpBlock"
+DEFAULT_XRAY_BIN = "/usr/local/bin/xray"
+DEFAULT_XRAY_API = "127.0.0.1:10085"
+DEFAULT_XRAY_INBOUND = "proxy-in"
+DEFAULT_BLOCK_OUTBOUND = "block"
+DEFAULT_XRAY_DASH_HOME = "/opt/xray-dash"
+DEFAULT_XRAY_DASH_ENV_FILE = "/etc/xray-dash/environment"
+DEFAULT_XRAY_DASH_COLLECTOR = "/opt/xray-dash/xray_dash.py"
+DEFAULT_GEO_PATH = "/opt/xray-dash/data/geoip.db"
 
 
 def now_ts() -> int:
@@ -77,7 +93,31 @@ def is_non_local(ip: str | None) -> bool:
         value = ipaddress.ip_address(ip)
         return not (value.is_loopback or value.is_private or value.is_link_local)
     except ValueError:
-        return True
+        return False
+
+
+def validate_ip(value: Any, *, ipv4_only: bool = False) -> str:
+    ip = str(value or "").strip()
+    try:
+        parsed = ipaddress.ip_address(ip)
+    except ValueError as error:
+        raise ValueError("IP 地址格式不正确") from error
+    if not is_non_local(ip):
+        raise ValueError("不允许操作本机或内网 IP")
+    if ipv4_only and parsed.version != 4:
+        raise ValueError("黑名单目前只支持公网 IPv4 地址")
+    return ip
+
+
+def clean_text(value: Any, field: str, maximum: int, *, required: bool = False) -> str:
+    text = str(value or "").strip()
+    if required and not text:
+        raise ValueError(f"{field}不能为空")
+    if len(text) > maximum:
+        raise ValueError(f"{field}过长")
+    if any(character in text for character in ("\r", "\n")):
+        raise ValueError(f"{field}不能包含换行符")
+    return text
 
 
 class TrafficStore:
@@ -87,11 +127,32 @@ class TrafficStore:
         state_path: str = DEFAULT_STATE_PATH,
         clock: Callable[[], int] = now_ts,
         xray_status: Callable[[], str] | None = None,
+        xray_bin: str = DEFAULT_XRAY_BIN,
+        xray_api: str = DEFAULT_XRAY_API,
+        xray_inbound: str = DEFAULT_XRAY_INBOUND,
+        block_outbound: str = DEFAULT_BLOCK_OUTBOUND,
+        collector_bin: str = "/usr/bin/python3",
+        collector_home: str = DEFAULT_XRAY_DASH_HOME,
+        collector_script: str = DEFAULT_XRAY_DASH_COLLECTOR,
+        geo_path: str = DEFAULT_GEO_PATH,
+        collector_env_file: str = DEFAULT_XRAY_DASH_ENV_FILE,
+        command_runner: Callable[[list[str], int], tuple[int, str, str]] | None = None,
     ) -> None:
         self.db_path = db_path
         self.state_path = state_path
         self.clock = clock
         self.xray_status = xray_status or read_xray_status
+        self.xray_bin = xray_bin
+        self.xray_api = xray_api
+        self.xray_inbound = xray_inbound
+        self.block_outbound = block_outbound
+        self.collector_bin = collector_bin
+        self.collector_home = collector_home
+        self.collector_script = collector_script
+        self.geo_path = geo_path
+        self.collector_env_file = collector_env_file
+        self.command_runner = command_runner or self._run_command
+        self.control_lock = threading.Lock()
 
     def connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(
@@ -100,6 +161,49 @@ class TrafficStore:
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA busy_timeout=10000")
         return connection
+
+    def connect_rw(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self.db_path, timeout=10)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout=10000")
+        return connection
+
+    def _collector_environment(self) -> dict[str, str]:
+        environment = os.environ.copy()
+        try:
+            with open(self.collector_env_file, "r", encoding="utf-8") as stream:
+                for line in stream:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip()
+                    if key.startswith("XRAY_DASH_"):
+                        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+                            value = value[1:-1]
+                        environment[key] = value
+        except OSError:
+            LOG.warning("xray-dash environment file is unavailable: %s", self.collector_env_file)
+        environment.setdefault("XRAY_DASH_HOME", self.collector_home)
+        environment.setdefault("XRAY_DASH_DB", self.db_path)
+        environment.setdefault("XRAY_DASH_STATE", self.state_path)
+        environment.setdefault("XRAY_DASH_GEO", self.geo_path)
+        return environment
+
+    def _run_command(self, command: list[str], timeout: int) -> tuple[int, str, str]:
+        try:
+            result = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                env=self._collector_environment() if command and command[0] == self.collector_bin else None,
+            )
+            return result.returncode, result.stdout.strip(), result.stderr.strip()
+        except (OSError, subprocess.SubprocessError) as error:
+            return 1, "", str(error)
 
     def _settings(self, connection: sqlite3.Connection) -> dict[str, str]:
         try:
@@ -382,6 +486,267 @@ class TrafficStore:
             for row in rows
         ]
 
+    def blocklist(self) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT b.ip, b.reason, b.active, b.created_at, m.cc, m.prov, m.city, m.org "
+                "FROM blocklist b LEFT JOIN ip_meta m ON m.ip=b.ip ORDER BY b.created_at DESC"
+            ).fetchall()
+        return [
+            {
+                "ip": row["ip"],
+                "reason": row["reason"] or "",
+                "active": int(row["active"] or 0),
+                "created": format_time(row["created_at"]),
+                "place": " ".join(value for value in (row["prov"], row["city"]) if value),
+                "org": row["org"],
+                "cc": row["cc"],
+            }
+            for row in rows
+        ]
+
+    def alert_rules(self) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, enabled, metric, threshold, window_sec, cooldown_sec, level, email "
+                "FROM alert_rules ORDER BY id"
+            ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "enabled": int(row["enabled"] or 0),
+                "metric": row["metric"] or "",
+                "threshold": int(row["threshold"] or 0),
+                "window_sec": int(row["window_sec"] or 0),
+                "cooldown_sec": int(row["cooldown_sec"] or 0),
+                "level": row["level"] or "info",
+                "email": row["email"] or "",
+            }
+            for row in rows
+        ]
+
+    def _sync_blocklist_locked(self, connection: sqlite3.Connection) -> dict[str, Any]:
+        ips = [row[0] for row in connection.execute(
+            "SELECT ip FROM blocklist WHERE active=1 ORDER BY created_at DESC"
+        ).fetchall()]
+        if ips:
+            command = [
+                self.xray_bin,
+                "api",
+                "sib",
+                f"--server={self.xray_api}",
+                f"-inbound={self.xray_inbound}",
+                f"-outbound={self.block_outbound}",
+                "-reset",
+                *ips,
+            ]
+        else:
+            command = [
+                self.xray_bin,
+                "api",
+                "rmrules",
+                f"--server={self.xray_api}",
+                BLOCK_RULE_TAG,
+            ]
+        returncode, stdout, stderr = self.command_runner(command, 15)
+        if returncode != 0:
+            LOG.warning("xray blocklist sync failed: rc=%s stderr=%s", returncode, stderr[-500:])
+        return {
+            "ok": returncode == 0,
+            "runtime_applied": returncode == 0,
+            "active": ips,
+            "error": "Xray 黑名单同步失败" if returncode != 0 else "",
+        }
+
+    def block_ip(self, ip: Any, reason: Any = "") -> dict[str, Any]:
+        normalized_ip = validate_ip(ip, ipv4_only=True)
+        normalized_reason = clean_text(reason, "封禁原因", MAX_REASON_LENGTH)
+        with self.control_lock, self.connect_rw() as connection:
+            connection.execute(
+                "INSERT OR REPLACE INTO blocklist(ip, reason, created_at, active) VALUES(?,?,?,1)",
+                (normalized_ip, normalized_reason, self.clock()),
+            )
+            connection.execute("UPDATE ip_meta SET blocked=1 WHERE ip=?", (normalized_ip,))
+            connection.commit()
+            result = self._sync_blocklist_locked(connection)
+        return {"ip": normalized_ip, "reason": normalized_reason, **result}
+
+    def unblock_ip(self, ip: Any) -> dict[str, Any]:
+        normalized_ip = validate_ip(ip, ipv4_only=True)
+        with self.control_lock, self.connect_rw() as connection:
+            connection.execute("UPDATE blocklist SET active=0 WHERE ip=?", (normalized_ip,))
+            connection.execute("UPDATE ip_meta SET blocked=0 WHERE ip=?", (normalized_ip,))
+            connection.commit()
+            result = self._sync_blocklist_locked(connection)
+        return {"ip": normalized_ip, **result}
+
+    def label_ip(self, ip: Any, label: Any = "") -> dict[str, Any]:
+        normalized_ip = validate_ip(ip)
+        normalized_label = clean_text(label, "IP 备注", MAX_LABEL_LENGTH)
+        with self.control_lock, self.connect_rw() as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO ip_meta(ip, cc, prov, city, org, first_seen, last_seen, n, label, blocked) "
+                "VALUES(?,?,?,?,?,?,?,?,?,0)",
+                (normalized_ip, "", "", "", "", 0, 0, 0, ""),
+            )
+            connection.execute("UPDATE ip_meta SET label=? WHERE ip=?", (normalized_label, normalized_ip))
+            connection.commit()
+        return {"ok": True, "ip": normalized_ip, "label": normalized_label}
+
+    def acknowledge_alert(self, alert_id: Any = None, acknowledge_all: Any = False) -> dict[str, Any]:
+        if not acknowledge_all:
+            try:
+                normalized_id = int(alert_id)
+            except (TypeError, ValueError) as error:
+                raise ValueError("告警 ID 不正确") from error
+            if normalized_id <= 0:
+                raise ValueError("告警 ID 不正确")
+        with self.control_lock, self.connect_rw() as connection:
+            if acknowledge_all:
+                cursor = connection.execute("UPDATE alerts SET acked=1 WHERE acked=0")
+            else:
+                cursor = connection.execute("UPDATE alerts SET acked=1 WHERE id=?", (normalized_id,))
+            connection.commit()
+        return {"ok": True, "updated": int(cursor.rowcount or 0)}
+
+    def save_alert_rule(self, payload: dict[str, Any]) -> dict[str, Any]:
+        rule_id = clean_text(payload.get("id"), "规则 ID", MAX_RULE_ID_LENGTH, required=True)
+        if not all(character.isalnum() or character in "._:-" for character in rule_id):
+            raise ValueError("规则 ID 只能包含字母、数字、点、下划线、冒号和短横线")
+        metric = clean_text(payload.get("metric"), "监控指标", 64, required=True)
+        if not all(character.isalnum() or character in "._:-" for character in metric):
+            raise ValueError("监控指标格式不正确")
+        level = clean_text(payload.get("level") or "info", "告警级别", 16, required=True).lower()
+        if level not in {"info", "medium", "high", "critical", "warn"}:
+            raise ValueError("告警级别不支持")
+        email = clean_text(payload.get("email"), "通知目标", MAX_RULE_EMAIL_LENGTH)
+        try:
+            threshold = int(payload.get("threshold"))
+            window_sec = int(payload.get("window_sec"))
+            cooldown_sec = int(payload.get("cooldown_sec"))
+        except (TypeError, ValueError) as error:
+            raise ValueError("告警阈值和时间必须是整数") from error
+        if not 0 <= threshold <= 1_000_000:
+            raise ValueError("告警阈值超出范围")
+        if not 1 <= window_sec <= 604800 or not 1 <= cooldown_sec <= 604800:
+            raise ValueError("告警时间范围不正确")
+        enabled = 1 if bool(payload.get("enabled", True)) else 0
+        with self.control_lock, self.connect_rw() as connection:
+            connection.execute(
+                "INSERT INTO alert_rules(id, enabled, metric, threshold, window_sec, cooldown_sec, level, email) "
+                "VALUES(?,?,?,?,?,?,?,?) "
+                "ON CONFLICT(id) DO UPDATE SET enabled=excluded.enabled, metric=excluded.metric, "
+                "threshold=excluded.threshold, window_sec=excluded.window_sec, "
+                "cooldown_sec=excluded.cooldown_sec, level=excluded.level, email=excluded.email",
+                (rule_id, enabled, metric, threshold, window_sec, cooldown_sec, level, email),
+            )
+            connection.commit()
+        return {"ok": True, "rule": {
+            "id": rule_id,
+            "enabled": enabled,
+            "metric": metric,
+            "threshold": threshold,
+            "window_sec": window_sec,
+            "cooldown_sec": cooldown_sec,
+            "level": level,
+            "email": email,
+        }}
+
+    def delete_alert_rule(self, rule_id: Any) -> dict[str, Any]:
+        normalized_id = clean_text(rule_id, "规则 ID", MAX_RULE_ID_LENGTH, required=True)
+        if not all(character.isalnum() or character in "._:-" for character in normalized_id):
+            raise ValueError("规则 ID 格式不正确")
+        with self.control_lock, self.connect_rw() as connection:
+            cursor = connection.execute("DELETE FROM alert_rules WHERE id=?", (normalized_id,))
+            connection.commit()
+        return {"ok": True, "id": normalized_id, "deleted": int(cursor.rowcount or 0)}
+
+    def sync_blocklist(self) -> dict[str, Any]:
+        with self.control_lock, self.connect_rw() as connection:
+            return self._sync_blocklist_locked(connection)
+
+    def _run_collector(self, mode: str) -> dict[str, Any]:
+        if mode != "collect":
+            raise ValueError("采集操作不支持")
+        # The installed legacy collector is deliberately used for a one-shot
+        # run: the Rust dashboard process owns a database lock and cannot be
+        # started a second time against the same SQLite file. The legacy
+        # collector shares the same schema/state file and is idempotent via
+        # the unique connection index.
+        command = [self.collector_bin, self.collector_script, "--once"]
+        timeout = 120
+        returncode, stdout, stderr = self.command_runner(command, timeout)
+        if returncode != 0:
+            LOG.warning("xray-dash %s failed: rc=%s stderr=%s", mode, returncode, stderr[-500:])
+        return {
+            "ok": returncode == 0,
+            "mode": mode,
+            "runtime_applied": returncode == 0,
+            "error": "采集器操作失败" if returncode != 0 else "",
+            "output": stdout[-500:] if returncode == 0 else "",
+        }
+
+    def collect(self) -> dict[str, Any]:
+        with self.control_lock:
+            return self._run_collector("collect")
+
+    def refresh_geo(self) -> dict[str, Any]:
+        with self.control_lock:
+            try:
+                geo_connection = sqlite3.connect(self.geo_path, timeout=10)
+                geo_connection.row_factory = sqlite3.Row
+            except sqlite3.Error as error:
+                LOG.warning("geo database is unavailable: %s", error)
+                return {"ok": False, "mode": "geo", "runtime_applied": False, "error": "GeoIP 数据库不可用"}
+            updated = 0
+            try:
+                with self.connect_rw() as connection:
+                    rows = connection.execute(
+                        "SELECT ip FROM ip_meta WHERE cc IS NULL OR cc='' OR prov IS NULL OR prov='' "
+                        "OR city IS NULL OR city='' OR org IS NULL OR org='' LIMIT 20000"
+                    ).fetchall()
+                    for row in rows:
+                        ip = row["ip"]
+                        try:
+                            parsed = ipaddress.ip_address(ip)
+                        except ValueError:
+                            continue
+                        if parsed.is_loopback or parsed.is_private or parsed.is_link_local:
+                            values = ("LO", "本机/内网", "", "")
+                        elif parsed.version != 4:
+                            continue
+                        else:
+                            number = int(parsed)
+                            country = geo_connection.execute(
+                                "SELECT cc, e FROM country WHERE s<=? ORDER BY s DESC LIMIT 1", (number,)
+                            ).fetchone()
+                            city = geo_connection.execute(
+                                "SELECT prov, ct, e FROM city WHERE s<=? ORDER BY s DESC LIMIT 1", (number,)
+                            ).fetchone()
+                            organization = geo_connection.execute(
+                                "SELECT org, e FROM asn WHERE s<=? ORDER BY s DESC LIMIT 1", (number,)
+                            ).fetchone()
+                            values = (
+                                country["cc"] if country and country["e"] is not None and country["e"] >= number else None,
+                                city["prov"] if city and city["e"] is not None and city["e"] >= number else None,
+                                city["ct"] if city and city["e"] is not None and city["e"] >= number else None,
+                                organization["org"] if organization and organization["e"] is not None and organization["e"] >= number else None,
+                            )
+                            if not any(values):
+                                continue
+                        connection.execute(
+                            "UPDATE ip_meta SET cc=?, prov=?, city=?, org=? WHERE ip=?",
+                            (*values, ip),
+                        )
+                        updated += 1
+                    connection.commit()
+            except sqlite3.Error as error:
+                LOG.warning("geo refresh failed: %s", error)
+                return {"ok": False, "mode": "geo", "runtime_applied": False, "error": "GeoIP 刷新失败"}
+            finally:
+                geo_connection.close()
+        return {"ok": True, "mode": "geo", "runtime_applied": True, "updated": updated}
+
     def health(self) -> dict[str, Any]:
         with self.connect() as connection:
             connection.execute("SELECT 1").fetchone()
@@ -418,7 +783,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
     def bridge_server(self) -> "BridgeServer":
         return self.server  # type: ignore[return-value]
 
-    def _authorized(self) -> bool:
+    def _authorized(self, body: bytes = b"") -> bool:
         timestamp = self.headers.get("X-Ticastr-Traffic-Timestamp", "")
         signature = self.headers.get("X-Ticastr-Traffic-Signature", "")
         try:
@@ -427,7 +792,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
             return False
         if abs(self.bridge_server.clock() - parsed_timestamp) > self.bridge_server.max_skew:
             return False
-        canonical = f"{self.command}\n{self.path}\n{timestamp}".encode("utf-8")
+        canonical_text = f"{self.command}\n{self.path}\n{timestamp}"
+        if self.command == "POST":
+            body_digest = self.headers.get("X-Ticastr-Traffic-Body-SHA256", "").lower()
+            expected_body_digest = hashlib.sha256(body).hexdigest()
+            if not hmac.compare_digest(expected_body_digest, body_digest):
+                return False
+            canonical_text += f"\n{body_digest}"
+        canonical = canonical_text.encode("utf-8")
         expected = hmac.new(
             self.bridge_server.secret.encode("utf-8"), canonical, hashlib.sha256
         ).hexdigest()
@@ -438,9 +810,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
             json_response(self, 401, {"error": "unauthorized"})
             return
         try:
-            path = urlsplit(self.path).path
-            if path.startswith("/internal/traffic/"):
-                path = path[len("/internal/traffic"):]
+            path = self._route_path()
             params = parse_qs(urlsplit(self.path).query)
             if path == "/v1/health":
                 payload = self.bridge_server.store.health()
@@ -471,19 +841,80 @@ class BridgeHandler(BaseHTTPRequestHandler):
             elif path == "/v1/alerts":
                 limit = clamp_int(params.get("limit", [None])[0], 100, 1, MAX_LIMIT)
                 payload = self.bridge_server.store.alerts(limit)
+            elif path == "/v1/blocklist":
+                payload = self.bridge_server.store.blocklist()
+            elif path == "/v1/alert-rules":
+                payload = self.bridge_server.store.alert_rules()
             else:
                 json_response(self, 404, {"error": "not found"})
                 return
             json_response(self, 200, payload)
         except (OSError, sqlite3.Error) as error:
-            LOG.warning("read-only traffic query failed: %s", error)
+            LOG.warning("traffic query failed: %s", error)
             json_response(self, 503, {"error": "traffic data unavailable"})
         except Exception:
             LOG.exception("unexpected bridge error")
             json_response(self, 500, {"error": "bridge error"})
 
     def do_POST(self) -> None:  # noqa: N802
-        json_response(self, 405, {"error": "read-only endpoint"})
+        try:
+            content_length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            json_response(self, 400, {"error": "invalid content length"})
+            return
+        if content_length < 0 or content_length > MAX_BODY_BYTES:
+            json_response(self, 413, {"error": "request body too large"})
+            return
+        body_bytes = self.rfile.read(content_length)
+        if not self._authorized(body_bytes):
+            json_response(self, 401, {"error": "unauthorized"})
+            return
+        try:
+            body = json.loads(body_bytes or b"{}")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            json_response(self, 400, {"error": "invalid json body"})
+            return
+        if not isinstance(body, dict):
+            json_response(self, 400, {"error": "json body must be an object"})
+            return
+        path = self._route_path()
+        try:
+            if path == "/v1/block":
+                payload = self.bridge_server.store.block_ip(body.get("ip"), body.get("reason", ""))
+            elif path == "/v1/unblock":
+                payload = self.bridge_server.store.unblock_ip(body.get("ip"))
+            elif path == "/v1/label":
+                payload = self.bridge_server.store.label_ip(body.get("ip"), body.get("label", ""))
+            elif path == "/v1/alerts/ack":
+                payload = self.bridge_server.store.acknowledge_alert(body.get("id"), body.get("all", False))
+            elif path == "/v1/alert-rules":
+                payload = self.bridge_server.store.save_alert_rule(body)
+            elif path == "/v1/alert-rules/delete":
+                payload = self.bridge_server.store.delete_alert_rule(body.get("id"))
+            elif path == "/v1/blocklist/sync":
+                payload = self.bridge_server.store.sync_blocklist()
+            elif path == "/v1/collect":
+                payload = self.bridge_server.store.collect()
+            elif path == "/v1/geo/refresh":
+                payload = self.bridge_server.store.refresh_geo()
+            else:
+                json_response(self, 404, {"error": "not found"})
+                return
+            json_response(self, 200 if payload.get("ok", True) else 502, payload)
+        except ValueError as error:
+            json_response(self, 400, {"error": str(error)})
+        except (OSError, sqlite3.Error) as error:
+            LOG.warning("traffic control failed: %s", error)
+            json_response(self, 503, {"error": "traffic control unavailable"})
+        except Exception:
+            LOG.exception("unexpected bridge control error")
+            json_response(self, 500, {"error": "bridge error"})
+
+    def _route_path(self) -> str:
+        path = urlsplit(self.path).path
+        if path.startswith("/internal/traffic/"):
+            return path[len("/internal/traffic"):]
+        return path
 
 
 class BridgeServer(ThreadingHTTPServer):

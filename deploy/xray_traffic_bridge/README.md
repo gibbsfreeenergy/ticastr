@@ -1,14 +1,14 @@
 # Xray traffic bridge
 
-This service exposes a small, authenticated, read-only HTTP API over the
-local xray-dash SQLite database. It is intended for the ticastr API, not for
-direct browser access.
+This service exposes a small, authenticated HTTP API over the local xray-dash
+SQLite database. It is intended for the ticastr API, not for direct browser
+access.
 
-The bridge deliberately has no write routes. It reads the database through a
-SQLite `mode=ro` connection and validates an HMAC signature on every request.
-The systemd unit grants the process access to the data directory because
-SQLite WAL mode maintains a shared-memory lock file there; the bridge itself
-never opens the database for writes.
+Read routes use a SQLite `mode=ro` connection. The first-stage control routes
+open a short-lived write connection and are limited to IP block/unblock,
+labels, alert acknowledgement/rules, blacklist sync and collector/GeoIP
+refresh. The bridge validates an HMAC signature on every request, and POST
+signatures also cover the SHA-256 digest of the exact request body.
 
 ## Runtime configuration
 
@@ -32,8 +32,11 @@ older xray-dash installations that still update `state.json`.
 ## Endpoints
 
 All endpoints require `X-Ticastr-Traffic-Timestamp` and
-`X-Ticastr-Traffic-Signature` headers. The signature is
+`X-Ticastr-Traffic-Signature` headers. The signature for GET is
 `HMAC-SHA256(method + "\\n" + request-target + "\\n" + timestamp)`.
+For POST it is
+`HMAC-SHA256(method + "\\n" + request-target + "\\n" + timestamp + "\\n" + body-sha256)`.
+POST requests must also include `X-Ticastr-Traffic-Body-SHA256`.
 
 ```text
 GET /v1/health
@@ -45,4 +48,20 @@ GET /v1/targets?days=30&limit=100
 GET /v1/geo?days=30
 GET /v1/live?limit=150
 GET /v1/alerts?limit=100
+GET /v1/blocklist
+GET /v1/alert-rules
+
+POST /v1/block                  {"ip":"8.8.8.8","reason":"..."}
+POST /v1/unblock                {"ip":"8.8.8.8"}
+POST /v1/label                  {"ip":"8.8.8.8","label":"..."}
+POST /v1/alerts/ack             {"id":1} or {"all":true}
+POST /v1/alert-rules            {"id":"burst-main", ...}
+POST /v1/alert-rules/delete     {"id":"burst-main"}
+POST /v1/blocklist/sync
+POST /v1/collect
+POST /v1/geo/refresh
 ```
+
+The bridge runs as `xray-dash`, so it can write only within the existing
+xray-dash data directory and can invoke the local Xray API for dynamic source
+IP rules. It never exposes the Xray API or xray-dash browser session publicly.

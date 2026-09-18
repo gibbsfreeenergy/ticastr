@@ -30,7 +30,7 @@
 | `MONITORING_TOKEN` | 空 | production-like 的 Prometheus 访问 token |
 | `WEBSITE_URL` / `API_PUBLIC_URL` | 本地 URL | 站点 SEO 和 API origin |
 | `CORS_ALLOWED_ORIGINS` | 两个本地前端 | 精确 CORS allowlist |
-| `XRAY_TRAFFIC_ENABLED` | `false` | 启用 admin 中的只读代理监控 |
+| `XRAY_TRAFFIC_ENABLED` | `false` | 启用 admin 中的代理监控与第一阶段受控管理 |
 | `XRAY_TRAFFIC_BASE_URL` | 空 | DMIT traffic bridge 的 HTTPS 基础地址（含 `/internal/traffic`） |
 | `XRAY_TRAFFIC_SHARED_SECRET` | 空 | 与 DMIT bridge 共享的 HMAC 密钥，只放在部署主机 `.env` |
 | `XRAY_TRAFFIC_MAX_SKEW_SECONDS` | `90` | 签名请求允许的时钟偏差 |
@@ -59,6 +59,6 @@ production、production-like、staging 会拒绝 localhost、示例域名、空�
 - 浏览器请求始终使用相对 `/api/...`。
 - `/uploads/...` 由 API 或配置的公开存储路径提供。
 - Vercel 后端 origin 通过 `VERCEL_BACKEND_URL` 注入，只接受安全的 HTTPS URL。
-- 代理监控通过 `deploy/xray_traffic_bridge/` 的只读桥接服务读取 DMIT 上的 xray-dash SQLite；admin 只访问 ticastr API，不直接接触 DMIT 数据库或 xray-dash 登录态。
+- 代理监控通过 `deploy/xray_traffic_bridge/` 的签名桥接服务读取 DMIT 上的 xray-dash SQLite，并执行第一阶段 allowlist 控制；admin 只访问 ticastr API，不直接接触 DMIT 数据库或 xray-dash 登录态。
 
 新增变量必须同步更新本文件、`.env.example`、应用映射和受影响的 Compose/CI/Vercel 注入。

@@ -41,6 +41,10 @@ class BridgeTest(unittest.TestCase):
             CREATE TABLE traffic(ts INTEGER PRIMARY KEY, up INTEGER, down INTEGER, online INTEGER);
             CREATE TABLE alerts(id INTEGER PRIMARY KEY, ts INTEGER, level TEXT, kind TEXT,
                 title TEXT, detail TEXT, acked INTEGER);
+            CREATE TABLE blocklist(ip TEXT PRIMARY KEY, reason TEXT, created_at INTEGER,
+                active INTEGER DEFAULT 1);
+            CREATE TABLE alert_rules(id TEXT PRIMARY KEY, enabled INTEGER, metric TEXT,
+                threshold INTEGER, window_sec INTEGER, cooldown_sec INTEGER, level TEXT, email TEXT);
             CREATE TABLE settings(k TEXT PRIMARY KEY, v TEXT);
             CREATE TABLE scan_state(k TEXT PRIMARY KEY, v TEXT);
             INSERT INTO settings VALUES ('exclude_local', '1');
@@ -95,6 +99,102 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(store.live(10)[0]["src"], "8.8.8.8")
         with sqlite3.connect(self.db_path) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM alerts").fetchone()[0], 1)
+
+    def _store(self, command_runner=None):
+        return bridge.TrafficStore(
+            str(self.db_path), str(self.state_path), clock=lambda: 1_800_000_000,
+            xray_status=lambda: "active", command_runner=command_runner,
+        )
+
+    def test_block_and_unblock_update_database_and_sync_xray(self):
+        commands = []
+
+        def runner(command, timeout):
+            commands.append((command, timeout))
+            return 0, "", ""
+
+        store = self._store(runner)
+        blocked = store.block_ip("8.8.8.8", "测试封禁")
+        self.assertTrue(blocked["ok"])
+        self.assertEqual(blocked["active"], ["8.8.8.8"])
+        self.assertIn("sib", commands[0][0])
+        self.assertIn("-reset", commands[0][0])
+        self.assertEqual(store.blocklist()[0]["reason"], "测试封禁")
+
+        unblocked = store.unblock_ip("8.8.8.8")
+        self.assertTrue(unblocked["ok"])
+        self.assertEqual(unblocked["active"], [])
+        self.assertEqual(commands[1][0][2], "rmrules")
+
+    def test_control_input_rejects_private_ip_and_oversized_label(self):
+        store = self._store(lambda command, timeout: (0, "", ""))
+        with self.assertRaises(ValueError):
+            store.block_ip("10.0.0.1", "not allowed")
+        with self.assertRaises(ValueError):
+            store.label_ip("8.8.8.8", "x" * 81)
+
+    def test_label_alert_ack_and_alert_rule_controls(self):
+        store = self._store(lambda command, timeout: (0, "", ""))
+        self.assertEqual(store.label_ip("8.8.8.8", "家庭出口")["label"], "家庭出口")
+        self.assertTrue(store.acknowledge_alert(1)["ok"])
+        rule = store.save_alert_rule({
+            "id": "burst-1", "enabled": True, "metric": "connections",
+            "threshold": 300, "window_sec": 300, "cooldown_sec": 3600,
+            "level": "high", "email": "",
+        })
+        self.assertEqual(rule["rule"]["id"], "burst-1")
+        self.assertEqual(store.alert_rules()[0]["metric"], "connections")
+        self.assertEqual(store.delete_alert_rule("burst-1")["deleted"], 1)
+
+    def test_post_hmac_covers_body_and_routes_controls(self):
+        secret = "s" * 40
+        store = self._store(lambda command, timeout: (0, "", ""))
+        server = bridge.BridgeServer(("127.0.0.1", 0), secret, store, clock=lambda: 1_800_000_000)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            port = server.server_address[1]
+            target = "/v1/label"
+            timestamp = "1800000000"
+            body = json.dumps({"ip": "8.8.8.8", "label": "测试"}, separators=(",", ":")).encode()
+            digest = hashlib.sha256(body).hexdigest()
+            signature = hmac.new(
+                secret.encode(), f"POST\n{target}\n{timestamp}\n{digest}".encode(), hashlib.sha256
+            ).hexdigest()
+            connection = HTTPConnection("127.0.0.1", port, timeout=5)
+            connection.request(
+                "POST", target, body=body,
+                headers={
+                    "Content-Type": "application/json",
+                    "Content-Length": str(len(body)),
+                    "X-Ticastr-Traffic-Timestamp": timestamp,
+                    "X-Ticastr-Traffic-Body-SHA256": digest,
+                    "X-Ticastr-Traffic-Signature": signature,
+                },
+            )
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(json.loads(response.read())["label"], "测试")
+            connection.close()
+
+            tampered = '{"ip":"8.8.8.8","label":"被篡改"}'.encode()
+            connection = HTTPConnection("127.0.0.1", port, timeout=5)
+            connection.request(
+                "POST", target, body=tampered,
+                headers={
+                    "Content-Type": "application/json",
+                    "Content-Length": str(len(tampered)),
+                    "X-Ticastr-Traffic-Timestamp": timestamp,
+                    "X-Ticastr-Traffic-Body-SHA256": digest,
+                    "X-Ticastr-Traffic-Signature": signature,
+                },
+            )
+            self.assertEqual(connection.getresponse().status, 401)
+            connection.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
     def test_overview_prefers_latest_traffic_sample_over_stale_state_file(self):
         with sqlite3.connect(self.db_path) as connection:

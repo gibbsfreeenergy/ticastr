@@ -56,5 +56,6 @@ API 发布回滚使用上一版本镜像，但不回滚已执行的 Flyway migra
 `BOOTSTRAP_ADMIN_ENABLED` 并清除明文 bootstrap 密码。
 
 DMIT 代理监控桥接服务的部署文件位于 [`deploy/xray_traffic_bridge/`](../deploy/xray_traffic_bridge/)。它绑定
-`127.0.0.1:8788`，通过 Caddy 的 HTTPS `/internal/traffic/*` 路由提供 HMAC 签名的只读接口，不能写入
-xray-dash 数据库，也不会暴露原看板的登录凭据或写操作。
+`127.0.0.1:8788`，通过 Caddy 的 HTTPS `/internal/traffic/*` 路由提供 HMAC 签名的读写接口。写入能力仅限
+第一阶段明确列出的黑名单、备注、告警和采集维护操作，不能复用 xray-dash 的浏览器登录态，也不暴露任意
+SQLite 或 Xray 配置编辑能力。

@@ -1,5 +1,5 @@
 [Unit]
-Description=Ticastr read-only Xray traffic bridge
+Description=Ticastr Xray traffic bridge and safe control service
 After=network.target xray-dash.service
 Wants=xray-dash.service
 
