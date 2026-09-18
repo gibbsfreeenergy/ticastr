@@ -325,7 +325,7 @@ export default {
       trendMetric: "connections",
       trendMetricOptions: [
         { value: "connections", label: "连接数" },
-        { value: "ips", label: "独立 IP" }
+        { value: "uniqueIps", label: "独立 IP" }
       ],
       loading: false,
       liveLoading: false,
@@ -354,7 +354,7 @@ export default {
       return this.rangeMeta.days;
     },
     trendMetricLabel() {
-      return this.trendMetric === "ips" ? "独立 IP" : "连接数";
+      return this.trendMetric === "uniqueIps" ? "独立 IP" : "连接数";
     },
     metricCards() {
       const overview = this.overview || {};

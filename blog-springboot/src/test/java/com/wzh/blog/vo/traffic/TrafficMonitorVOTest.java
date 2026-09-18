@@ -26,4 +26,16 @@ class TrafficMonitorVOTest {
                 .contains("\"totalConnections\":7")
                 .doesNotContain("total_conns");
     }
+
+    @Test
+    void keepsIndependentIpTrendNameInAdminResponse() throws Exception {
+        TrafficMonitorVO.TrendPoint point = objectMapper.readValue(
+                "{\"bucket\":1,\"label\":\"2026-09-18 10:00\",\"conns\":7,\"ips\":2,\"up\":3,\"down\":4}",
+                TrafficMonitorVO.TrendPoint.class);
+
+        assertThat(point.uniqueIps()).isEqualTo(2);
+        assertThat(objectMapper.writeValueAsString(point))
+                .contains("\"uniqueIps\":2")
+                .doesNotContain("\"ips\":2");
+    }
 }
