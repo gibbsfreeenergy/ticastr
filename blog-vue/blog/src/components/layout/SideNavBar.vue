@@ -4,7 +4,7 @@
     width="380"
     temporary
     location="right"
-    class="site-drawer"
+    class="site-drawer liquid-glass"
     scrim
   >
     <div class="drawer-shell">
@@ -14,13 +14,13 @@
       </div>
 
       <div class="blogger-info">
-        <v-avatar size="92">
+        <div class="blogger-avatar">
           <img
             v-if="blogInfo.websiteConfig.websiteAvatar"
             :src="avatar"
             :alt="blogInfo.websiteConfig.websiteAuthor"
           />
-        </v-avatar>
+        </div>
         <div class="blogger-copy">
           <strong>{{ blogInfo.websiteConfig.websiteAuthor }}</strong>
           <span>{{ blogInfo.websiteConfig.websiteIntro }}</span>
@@ -82,10 +82,10 @@ export default {
   overflow: hidden;
   border-left: 1px solid var(--glass-border) !important;
   border-radius: 30px 0 0 30px;
-  background: var(--glass-surface) !important;
-  box-shadow: -28px 0 74px rgba(24, 32, 43, 0.22);
-  -webkit-backdrop-filter: blur(28px) saturate(175%);
-  backdrop-filter: blur(28px) saturate(175%);
+  background: var(--glass-liquid-surface) !important;
+  box-shadow: var(--hyalite-edge, inset 0 1px 0 var(--glass-highlight)), -28px 0 74px rgba(24, 32, 43, 0.22);
+  -webkit-backdrop-filter: var(--hyalite, blur(28px) saturate(175%));
+  backdrop-filter: var(--hyalite, blur(28px) saturate(175%));
 }
 
 .site-drawer :deep(.v-navigation-drawer__content) {
@@ -99,7 +99,7 @@ export default {
   background:
     radial-gradient(circle at 12% 4%, rgba(255, 255, 255, 0.5), transparent 32%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 45%),
-    color-mix(in srgb, var(--glass-surface) 72%, transparent);
+    color-mix(in srgb, var(--glass-liquid-surface) 58%, transparent);
 }
 
 .drawer-shell::after {
@@ -156,19 +156,31 @@ export default {
   padding: 18px;
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  background: var(--glass-surface-strong);
+  background: color-mix(in srgb, var(--glass-liquid-surface) 76%, transparent);
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 30px rgba(24, 32, 43, 0.08);
 }
 
-.blogger-info :deep(.v-avatar) {
+.blogger-avatar {
+  display: block;
   flex: 0 0 92px;
+  width: 92px;
+  min-width: 92px;
+  height: 92px;
+  min-height: 92px;
   overflow: hidden;
+  aspect-ratio: 1;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e6ed, #ede7f0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
-.blogger-info :deep(.v-avatar img) {
+.blogger-avatar img {
   display: block;
   width: 100%;
   height: 100%;
+  max-width: none;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -301,8 +313,12 @@ export default {
     padding: 16px;
   }
 
-  .blogger-info :deep(.v-avatar) {
+  .blogger-avatar {
     flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    min-height: 64px;
   }
 
   .blogger-copy strong {

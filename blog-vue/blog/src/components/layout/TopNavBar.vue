@@ -20,7 +20,7 @@
         </button>
       </nav>
 
-      <div :class="['mobile-nav-actions', { 'drawer-open': $store.state.drawer }]">
+      <div :class="['mobile-nav-actions', 'liquid-glass', { 'drawer-open': $store.state.drawer }]">
         <button
           type="button"
           class="nav-icon-button"
@@ -231,10 +231,10 @@ export default {
   padding: 4px;
   border: 1px solid var(--glass-border);
   border-radius: 999px;
-  background: var(--glass-surface);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 26px rgba(24, 32, 43, 0.14);
-  -webkit-backdrop-filter: blur(22px) saturate(175%);
-  backdrop-filter: blur(22px) saturate(175%);
+  background: var(--glass-liquid-surface);
+  box-shadow: var(--hyalite-edge, inset 0 1px 0 var(--glass-highlight)), 0 8px 26px rgba(24, 32, 43, 0.14);
+  -webkit-backdrop-filter: var(--hyalite, blur(22px) saturate(175%));
+  backdrop-filter: var(--hyalite, blur(22px) saturate(175%));
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -262,7 +262,7 @@ export default {
 
 .mobile-nav-actions.drawer-open {
   border-color: color-mix(in srgb, var(--sage) 70%, var(--glass-border));
-  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 30px rgba(85, 118, 107, 0.2);
+  box-shadow: var(--hyalite-edge, inset 0 1px 0 var(--glass-highlight)), 0 10px 30px rgba(85, 118, 107, 0.2);
 }
 
 .mobile-nav-actions.drawer-open .nav-icon-button:last-child {

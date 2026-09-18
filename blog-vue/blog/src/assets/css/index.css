@@ -17,6 +17,7 @@
   --shadow-hover: 0 22px 60px rgba(56, 64, 73, 0.16);
   --glass-surface: rgba(255, 253, 249, 0.62);
   --glass-surface-strong: rgba(255, 253, 249, 0.82);
+  --glass-liquid-surface: rgba(255, 253, 249, 0.24);
   --glass-border: rgba(255, 255, 255, 0.62);
   --glass-highlight: rgba(255, 255, 255, 0.56);
   --radius-sm: 12px;
@@ -281,6 +282,7 @@ ol {
   --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.28);
   --glass-surface: rgba(32, 43, 56, 0.68);
   --glass-surface-strong: rgba(32, 43, 56, 0.84);
+  --glass-liquid-surface: rgba(32, 43, 56, 0.3);
   --glass-border: rgba(247, 243, 236, 0.2);
   --glass-highlight: rgba(255, 255, 255, 0.12);
 }
@@ -308,6 +310,11 @@ ol {
 .v-theme--dark .v-navigation-drawer {
   background: var(--paper-strong) !important;
   color: var(--ink) !important;
+}
+
+.v-navigation-drawer.liquid-glass,
+.v-theme--dark .v-navigation-drawer.liquid-glass {
+  background: var(--glass-liquid-surface) !important;
 }
 
 #nprogress .bar {

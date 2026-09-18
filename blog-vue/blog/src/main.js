@@ -14,6 +14,7 @@ import Toast from "./components/toast/index";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { applySeo } from "./utils/seo";
+import { installLiquidGlass } from "./utils/liquidGlass";
 
 const app = createApp(App);
 app.config.globalProperties.date = value => dayjs(value).format("YYYY-MM-DD");
@@ -41,3 +42,4 @@ router.afterEach(() => {
   NProgress.done();
 });
 app.mount("#app");
+installLiquidGlass();
