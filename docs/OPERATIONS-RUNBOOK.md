@@ -23,7 +23,7 @@
 ## Redis 模式切换
 
 - 关闭：去掉 overlay，设置 `APP_REDIS_ENABLED=false`，确认普通 servlet session 和本地 fallback 可用。
-- 开启：Redis healthy 后叠加 overlay；需要多实例登录时再设置 `SPRING_SESSION_STORE_TYPE=redis`。
+- 开启：叠加 overlay；overlay 会等待 Redis healthy，并将 `SPRING_SESSION_STORE_TYPE` 设置为 `redis`，因此 API 重启后登录 Session 仍由 Redis 保留。
 - Redis 停止后文章和配置事实读写应继续，缓存/限流/协调可按各自策略降级，Outbox 不得丢失。
 
 ## 对象存储

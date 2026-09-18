@@ -1,9 +1,10 @@
 services:
   redis:
     image: redis:7.4-alpine
+    restart: unless-stopped
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
     healthcheck:
@@ -15,6 +16,7 @@ services:
   api:
     environment:
       APP_REDIS_ENABLED: "true"
+      SPRING_SESSION_STORE_TYPE: redis
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     depends_on:

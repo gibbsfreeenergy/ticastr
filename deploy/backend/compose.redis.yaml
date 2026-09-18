@@ -17,6 +17,7 @@ services:
   api:
     environment:
       APP_REDIS_ENABLED: "true"
+      SPRING_SESSION_STORE_TYPE: redis
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
     depends_on:

@@ -40,7 +40,7 @@ API 发布回滚使用上一版本镜像，但不回滚已执行的 Flyway migra
 
 1. 使用专用 SSH 用户同步源码到部署目录。
 2. 保留服务器上的 `.env`、上传文件和数据库/搜索 Docker volume。
-3. 在服务器上执行 `docker compose up -d --build --remove-orphans`。
+3. 在服务器上叠加 `compose.redis.yaml` 执行 `docker compose --env-file .env -f compose.yaml -f compose.redis.yaml up -d --build --remove-orphans`；`.env` 必须提供 `REDIS_PASSWORD`。
 4. 等待 API readiness、公共站点和管理端通过检查。
 
 仓库需要配置以下 Secrets：

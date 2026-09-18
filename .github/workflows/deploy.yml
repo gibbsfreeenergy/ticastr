@@ -76,17 +76,17 @@ jobs:
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
           ssh "${ssh_opts[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" "cd '$DEPLOY_PATH' && \
             test -s .env && \
-            docker compose --env-file .env up -d --build --remove-orphans && \
+            docker compose --env-file .env -f compose.yaml -f compose.redis.yaml up -d --build --remove-orphans && \
             for attempt in \$(seq 1 60); do \
-              if docker compose --env-file .env exec -T api wget -q -O - http://localhost:8090/actuator/health/readiness | grep -q '\"status\":\"UP\"'; then \
+              if docker compose --env-file .env -f compose.yaml -f compose.redis.yaml exec -T api wget -q -O - http://localhost:8090/actuator/health/readiness | grep -q '\"status\":\"UP\"'; then \
                 break; \
               fi; \
               if [ \"\$attempt\" -eq 60 ]; then \
-                docker compose --env-file .env logs --tail=200 api; \
+                docker compose --env-file .env -f compose.yaml -f compose.redis.yaml logs --tail=200 api; \
                 exit 1; \
               fi; \
               sleep 5; \
             done && \
             curl -fsS http://127.0.0.1:8080/ >/dev/null && \
             curl -fsS http://127.0.0.1:8081/ >/dev/null && \
-            docker compose --env-file .env ps"
+            docker compose --env-file .env -f compose.yaml -f compose.redis.yaml ps"

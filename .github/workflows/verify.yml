@@ -74,6 +74,11 @@ jobs:
         run: |
           echo "APP_REDIS_ENABLED=${{ matrix.redis_enabled }}" >> "$GITHUB_ENV"
           echo "REDIS_HOST=127.0.0.1" >> "$GITHUB_ENV"
+          if [[ "${{ matrix.redis_enabled }}" == "true" ]]; then
+            echo "SPRING_SESSION_STORE_TYPE=redis" >> "$GITHUB_ENV"
+          else
+            echo "SPRING_SESSION_STORE_TYPE=none" >> "$GITHUB_ENV"
+          fi
       - name: Require Docker for integration coverage
         run: docker info
       - run: mvn -B clean test

@@ -27,6 +27,7 @@ done
 
 for file in compose.redis.yaml deploy/backend/compose.redis.yaml; do
   grep -q 'APP_REDIS_ENABLED' "$file"
+  grep -q 'SPRING_SESSION_STORE_TYPE' "$file"
   grep -q 'service_healthy' "$file"
 done
 

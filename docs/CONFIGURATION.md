@@ -9,7 +9,7 @@
 | 应用 | `blog-springboot/src/main/resources/application.yml` | Spring 配置、默认值和变量映射 |
 | 本地 API | `application-local.example.yml` | 本地 MySQL、存储和管理员示例 |
 | 默认整合 | `.env.example` + `compose.yaml` | MySQL、API、两个前端；Redis 关闭 |
-| Redis 整合 | `compose.redis.yaml` | 增加 Redis 并设置 `APP_REDIS_ENABLED=true` |
+| Redis 整合 | `compose.redis.yaml` | 增加持久化 Redis，并设置 `APP_REDIS_ENABLED=true` 与共享 Session |
 | 后端部署 | `deploy/backend/*.yaml` | production-like API 拓扑和持久卷 |
 | 前端公开值 | `blog-vue/*/.env.example` | 仅站点构建 origin 等公开变量；管理员验证码仅供后台登录 |
 | 代理 | Vite/Nginx/Vercel 配置 | `/api`、`/uploads` 路由 |
@@ -21,7 +21,7 @@
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | 本地 MySQL | 数据库和 Flyway |
 | `APP_REDIS_ENABLED` | `false` | Redis 能力总开关 |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost:6379` | Redis 开启模式的连接 |
-| `SPRING_SESSION_STORE_TYPE` | `none` | 显式启用共享 Redis Session |
+| `SPRING_SESSION_STORE_TYPE` | `none` | 显式启用共享 Redis Session；Redis overlay 设置为 `redis` |
 | `APP_REDIS_STREAM_*` | 见 `application.yml` | Outbox Stream 传输参数 |
 | `STORAGE_CONFIG_ENCRYPTION_KEY` | 空 | 云存储凭据的 AES-GCM 主密钥 |
 | `STORAGE_*` / `OSS_*` / `COS_*` / `TOS_*` | 空 | bootstrap 未完成时的一次性存储导入输入 |
