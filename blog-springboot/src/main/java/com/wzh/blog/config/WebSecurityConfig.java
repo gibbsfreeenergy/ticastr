@@ -8,7 +8,6 @@ import com.wzh.blog.handler.CsrfCookieFilter;
 import com.wzh.blog.handler.DynamicAuthorizationManager;
 import com.wzh.blog.handler.LogoutSuccessHandlerImpl;
 import com.wzh.blog.handler.MonitoringTokenFilter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,8 +56,8 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    @ConditionalOnBean(FindByIndexNameSessionRepository.class)
-    public SpringSessionBackedSessionRegistry<? extends Session> springSessionRegistry(
+    @ConditionalOnProperty(name = "spring.session.store-type", havingValue = "redis")
+    public SessionRegistry springSessionRegistry(
             FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
         return new SpringSessionBackedSessionRegistry<>(sessionRepository);
     }
