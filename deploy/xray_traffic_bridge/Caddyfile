@@ -1,0 +1,30 @@
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
+ticastr-dmit.duckdns.org:8443 {
+	tls {
+		issuer acme {
+			disable_tlsalpn_challenge
+		}
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+	handle /internal/traffic/* {
+		reverse_proxy 127.0.0.1:8788
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8787
+	}
+}
+
+http://ticastr-dmit.duckdns.org {
+	redir https://ticastr-dmit.duckdns.org:8443{uri} permanent
+}

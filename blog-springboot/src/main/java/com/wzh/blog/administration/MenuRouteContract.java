@@ -18,7 +18,8 @@ public final class MenuRouteContract {
             "/pages", "page",
             "/website", "website",
             "/setting", "setting",
-            "/storage", "storage");
+            "/storage", "storage",
+            "/traffic", "traffic");
 
     private static final Map<String, String> COMPONENT_KEYS = Map.of(
             "/home/Home.vue", "home",
@@ -28,7 +29,8 @@ public final class MenuRouteContract {
             "/page/Page.vue", "page",
             "/website/Website.vue", "website",
             "/setting/Setting.vue", "setting",
-            "/storage/Storage.vue", "storage");
+            "/storage/Storage.vue", "storage",
+            "/traffic/Traffic.vue", "traffic");
 
     private MenuRouteContract() {
     }
@@ -61,6 +63,9 @@ public final class MenuRouteContract {
                 || "about".equals(routeKey)) {
             return "content";
         }
+        if ("traffic".equals(routeKey)) {
+            return "operations";
+        }
         return "settings";
     }
 
@@ -73,6 +78,7 @@ public final class MenuRouteContract {
             case "website" -> "globe";
             case "storage" -> "folder";
             case "setting" -> "settings";
+            case "traffic" -> "activity";
             default -> "grid";
         };
     }

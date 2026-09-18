@@ -48,8 +48,8 @@ class DatabaseMigrationIntegrationTest {
                 assertThat(tableExists(connection, table)).as("removed table %s", table).isFalse();
             }
 
-            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE parent_id IS NULL")).isEqualTo(7);
-            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu")).isEqualTo(9);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE parent_id IS NULL")).isEqualTo(8);
+            assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu")).isEqualTo(10);
             assertThat(queryInt(connection, "SELECT COUNT(*) FROM tb_menu WHERE code IN "
                     + "('album', 'category', 'comment', 'friendLink', 'message', 'tag', 'talk', 'user', 'role', 'resource', 'menu')"))
                     .isZero();

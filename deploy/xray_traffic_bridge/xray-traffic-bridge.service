@@ -1,0 +1,23 @@
+[Unit]
+Description=Ticastr read-only Xray traffic bridge
+After=network.target xray-dash.service
+Wants=xray-dash.service
+
+[Service]
+Type=simple
+User=xray-dash
+Group=xray-dash
+WorkingDirectory=/opt/xray-traffic-bridge
+ExecStart=/usr/bin/python3 /opt/xray-traffic-bridge/bridge.py
+EnvironmentFile=/etc/xray-dash/traffic-bridge.env
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/opt/xray-dash/data
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

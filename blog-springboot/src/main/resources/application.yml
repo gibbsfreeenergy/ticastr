@@ -122,6 +122,11 @@ app:
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,http://localhost:8081}
+  xray-traffic:
+    enabled: ${XRAY_TRAFFIC_ENABLED:false}
+    base-url: ${XRAY_TRAFFIC_BASE_URL:}
+    shared-secret: ${XRAY_TRAFFIC_SHARED_SECRET:}
+    max-skew-seconds: ${XRAY_TRAFFIC_MAX_SKEW_SECONDS:90}
 
 monitoring:
   token: ${MONITORING_TOKEN:}

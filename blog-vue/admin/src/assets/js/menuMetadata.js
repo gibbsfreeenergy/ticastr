@@ -7,13 +7,15 @@ const MENU_METADATA = Object.freeze({
   page: { section: "settings", iconKey: "page" },
   website: { section: "settings", iconKey: "globe" },
   setting: { section: "settings", iconKey: "settings" },
-  storage: { section: "settings", iconKey: "folder" }
+  storage: { section: "settings", iconKey: "folder" },
+  traffic: { section: "operations", iconKey: "activity" }
 });
 
 const SECTION_LABELS = Object.freeze({
   workspace: "工作台",
   content: "内容管理",
-  settings: "系统设置"
+  settings: "系统设置",
+  operations: "监控与运维"
 });
 
 export function menuMetadata(routeKey) {

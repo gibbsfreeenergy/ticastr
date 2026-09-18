@@ -20,6 +20,7 @@
 5. 新文章/媒体写入 active 档案，并保存 `provider` 与 `storage_config_id`；历史对象继续按记录读取。
 6. 搜索索引目录必须位于持久数据目录，损坏或删除后可从公开文章内容重建。
 7. production-like 必须使用真实 HTTPS origin、强 cursor secret、监控 token 和可用的 active 存储档案。
+8. 启用代理监控时，`XRAY_TRAFFIC_BASE_URL` 必须指向 DMIT Caddy 的 `/internal/traffic` 路由，`XRAY_TRAFFIC_SHARED_SECRET` 必须与 DMIT bridge 环境文件一致；共享密钥只存在于两台服务器。
 
 ## 验证与回滚
 
@@ -53,3 +54,7 @@ API 发布回滚使用上一版本镜像，但不回滚已执行的 Flyway migra
 
 服务器的 `.env` 只保留在部署主机，不由 Actions 覆盖；首次管理员 bootstrap 成功后应关闭
 `BOOTSTRAP_ADMIN_ENABLED` 并清除明文 bootstrap 密码。
+
+DMIT 代理监控桥接服务的部署文件位于 [`deploy/xray_traffic_bridge/`](../deploy/xray_traffic_bridge/)。它绑定
+`127.0.0.1:8788`，通过 Caddy 的 HTTPS `/internal/traffic/*` 路由提供 HMAC 签名的只读接口，不能写入
+xray-dash 数据库，也不会暴露原看板的登录凭据或写操作。

@@ -9,7 +9,8 @@ export const routeRegistry = Object.freeze({
   page: () => import("../../views/page/Page.vue"),
   website: () => import("../../views/website/Website.vue"),
   setting: () => import("../../views/setting/Setting.vue"),
-  storage: () => import("../../views/storage/Storage.vue")
+  storage: () => import("../../views/storage/Storage.vue"),
+  traffic: () => import("../../views/traffic/Traffic.vue")
 });
 
 const legacyComponentKeys = Object.freeze({
@@ -20,7 +21,8 @@ const legacyComponentKeys = Object.freeze({
   "/page/Page.vue": "page",
   "/website/Website.vue": "website",
   "/setting/Setting.vue": "setting",
-  "/storage/Storage.vue": "storage"
+  "/storage/Storage.vue": "storage",
+  "/traffic/Traffic.vue": "traffic"
 });
 
 export function resolveRouteKey(routeKey, legacyComponent) {

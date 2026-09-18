@@ -3,6 +3,7 @@ package com.wzh.blog.handler;
 import com.wzh.blog.exception.BizException;
 import com.wzh.blog.exception.ConflictException;
 import com.wzh.blog.exception.NotFoundException;
+import com.wzh.blog.exception.XrayTrafficUnavailableException;
 import com.wzh.blog.vo.Result;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,12 @@ public class ControllerAdviceHandler {
     public ResponseEntity<Result<?>> errorHandler(ConflictException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Result.fail(CONFLICT.getCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(XrayTrafficUnavailableException.class)
+    public ResponseEntity<Result<?>> errorHandler(XrayTrafficUnavailableException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Result.fail(50301, "代理监控数据暂时不可用"));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
