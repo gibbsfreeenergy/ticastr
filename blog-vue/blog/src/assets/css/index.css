@@ -15,6 +15,10 @@
   --line-strong: rgba(24, 32, 43, 0.2);
   --shadow-soft: 0 18px 50px rgba(56, 64, 73, 0.1);
   --shadow-hover: 0 22px 60px rgba(56, 64, 73, 0.16);
+  --glass-surface: rgba(255, 253, 249, 0.62);
+  --glass-surface-strong: rgba(255, 253, 249, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.62);
+  --glass-highlight: rgba(255, 255, 255, 0.56);
   --radius-sm: 12px;
   --radius-md: 18px;
   --radius-lg: 26px;
@@ -275,6 +279,10 @@ ol {
   --line-strong: rgba(247, 243, 236, 0.22);
   --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.2);
   --shadow-hover: 0 22px 60px rgba(0, 0, 0, 0.28);
+  --glass-surface: rgba(32, 43, 56, 0.68);
+  --glass-surface-strong: rgba(32, 43, 56, 0.84);
+  --glass-border: rgba(247, 243, 236, 0.2);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
 }
 
 :root[data-theme="dark"] {

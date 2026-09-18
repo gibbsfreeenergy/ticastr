@@ -45,6 +45,7 @@ import { renderMarkdownCode } from "../../utils/markdown";
 import { applySeo } from "../../utils/seo";
 import { createMarkdownRenderer } from "../../utils/renderMarkdown";
 import { normalizeMediaUrl } from "../../utils/media";
+import { countReadableWords, formatReadingTime } from "../../utils/readingStats";
 import { normalizeHttpError } from "../../../../shared/api/error";
 
 const renderMarkdown = createMarkdownRenderer({
@@ -130,9 +131,9 @@ export default {
         this.contentLoading = false;
         await this.$nextTick();
         if (generation !== this.requestGeneration) return;
-        const source = this.$refs.contentView?.getReadingText() || "";
-        this.wordNum = this.countReadableWords(source);
-        this.readTime = this.formatReadingTime(this.wordNum);
+        const source = this.$refs.contentView?.getReadingText() || response.data || "";
+        this.wordNum = countReadableWords(source);
+        this.readTime = formatReadingTime(this.wordNum);
         this.readingStatsReady = true;
         this.installContentEnhancements();
       } catch (error) {
@@ -159,16 +160,6 @@ export default {
         image.addEventListener("click", listener);
         this.imageListeners.push({ image, listener });
       });
-    },
-    countReadableWords(source) {
-      const text = String(source || "").replace(/\s+/g, " ").trim();
-      if (!text) return 0;
-      const cjkCharacters = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/g) || []).length;
-      const latinWords = text.match(/[A-Za-z0-9]+(?:['’\u2011-][A-Za-z0-9]+)*/g) || [];
-      return cjkCharacters + latinWords.length;
-    },
-    formatReadingTime(wordCount) {
-      return Math.max(1, Math.ceil(wordCount / 450)) + "分钟";
     },
     disposeContentEnhancements() {
       this.clipboard?.destroy();

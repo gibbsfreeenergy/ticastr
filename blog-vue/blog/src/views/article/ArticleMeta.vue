@@ -10,7 +10,7 @@
           <span class="info-dot" aria-hidden="true" />
           <span>阅读时长 {{ statsReady ? readTime : "计算中" }}</span>
           <span class="info-dot" aria-hidden="true" />
-          <span>{{ statsReady ? num(wordNum) : "正在统计字数" }}{{ statsReady ? " 字" : "" }}</span>
+          <span>{{ statsReady ? formatWordCount(wordNum) : "正在统计字数" }}{{ statsReady ? " 字" : "" }}</span>
         </div>
       </div>
       <div class="article-hero-side" aria-hidden="true">向生活靠近<br />也向自己靠近</div>
@@ -27,6 +27,11 @@ export default {
     readTime: { type: String, default: "" },
     statsReady: { type: Boolean, default: false },
     coverStyle: { type: [Object, String], default: "" }
+  },
+  methods: {
+    formatWordCount(value) {
+      return Number(value || 0).toLocaleString("zh-CN");
+    }
   }
 };
 </script>

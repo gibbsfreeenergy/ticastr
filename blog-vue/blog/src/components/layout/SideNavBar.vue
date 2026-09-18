@@ -1,14 +1,13 @@
 <template>
   <v-navigation-drawer
     v-model="drawer"
-    width="320"
+    width="380"
     temporary
-    :location="drawerLocation"
+    location="right"
     class="site-drawer"
     scrim
   >
     <div class="drawer-shell">
-      <span class="drawer-handle" aria-hidden="true" />
       <div class="drawer-heading">
         <span class="drawer-kicker">NAVIGATION</span>
         <button class="drawer-close" type="button" aria-label="关闭菜单" @click="drawer = false">×</button>
@@ -58,17 +57,6 @@
 import { normalizeMediaUrl } from "../../utils/media";
 
 export default {
-  data() {
-    return {
-      viewportWidth: typeof window === "undefined" ? 0 : window.innerWidth
-    };
-  },
-  mounted() {
-    window.addEventListener("resize", this.updateViewport, { passive: true });
-  },
-  beforeUnmount() {
-    window.removeEventListener("resize", this.updateViewport);
-  },
   computed: {
     blogInfo() {
       return this.$store.state.blogInfo;
@@ -83,35 +71,49 @@ export default {
       get() {
         return this.$store.state.drawer;
       }
-    },
-    drawerLocation() {
-      return this.viewportWidth <= 760 ? "bottom" : "right";
-    }
-  },
-  methods: {
-    updateViewport() {
-      this.viewportWidth = window.innerWidth;
     }
   }
 };
 </script>
 
 <style scoped>
+.site-drawer {
+  width: min(380px, calc(100vw - 18px)) !important;
+  overflow: hidden;
+  border-left: 1px solid var(--glass-border) !important;
+  border-radius: 30px 0 0 30px;
+  background: var(--glass-surface) !important;
+  box-shadow: -28px 0 74px rgba(24, 32, 43, 0.22);
+  -webkit-backdrop-filter: blur(28px) saturate(175%);
+  backdrop-filter: blur(28px) saturate(175%);
+}
+
 .site-drawer :deep(.v-navigation-drawer__content) {
   overflow-y: auto;
 }
 
 .drawer-shell {
+  position: relative;
   min-height: 100%;
-  padding: 28px 28px 34px;
-  background: var(--paper-strong);
+  padding: 30px 26px 36px;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(255, 255, 255, 0.5), transparent 32%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.14), transparent 45%),
+    color-mix(in srgb, var(--glass-surface) 72%, transparent);
 }
 
-.drawer-handle {
-  display: none;
+.drawer-shell::after {
+  position: absolute;
+  inset: 1px 0 0;
+  border-radius: 30px 0 0 30px;
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  content: "";
+  pointer-events: none;
 }
 
 .drawer-heading {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -124,19 +126,38 @@ export default {
 }
 
 .drawer-close {
-  border: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
   color: var(--muted);
-  background: transparent;
+  background: var(--glass-surface-strong);
   font-size: 28px;
   font-weight: 300;
   line-height: 1;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.drawer-close:hover {
+  color: var(--ink);
+  background: var(--glass-highlight);
+  transform: rotate(8deg);
 }
 
 .blogger-info {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 56px 10px 30px;
+  margin-top: 40px;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  background: var(--glass-surface-strong);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 30px rgba(24, 32, 43, 0.08);
 }
 
 .blogger-info :deep(.v-avatar) {
@@ -173,10 +194,13 @@ export default {
 }
 
 .drawer-stat {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 16px 0;
+  margin: 18px 0 0;
+  padding: 14px 4px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   color: var(--muted);
@@ -191,20 +215,24 @@ export default {
 }
 
 .drawer-menu {
+  position: relative;
+  z-index: 1;
   display: grid;
-  gap: 4px;
-  margin-top: 26px;
+  gap: 10px;
+  margin-top: 22px;
 }
 
 .drawer-menu a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 10px;
-  border-bottom: 1px solid transparent;
+  padding: 16px 14px;
+  border: 1px solid transparent;
+  border-radius: 18px;
   color: var(--muted);
+  background: color-mix(in srgb, var(--glass-surface-strong) 58%, transparent);
   font-size: 19px;
-  transition: color 180ms ease, border-color 180ms ease, padding 180ms ease;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
 .drawer-menu a span:last-child {
@@ -215,12 +243,16 @@ export default {
 
 .drawer-menu a:hover,
 .drawer-menu a.active {
-  padding-left: 18px;
-  border-color: var(--sage);
+  border-color: color-mix(in srgb, var(--sage) 72%, var(--glass-border));
   color: var(--sage-deep);
+  background: color-mix(in srgb, var(--sage) 16%, var(--glass-surface-strong));
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+  transform: translateX(-2px);
 }
 
 .drawer-note {
+  position: relative;
+  z-index: 1;
   margin-top: 74px;
   color: var(--muted);
 }
@@ -246,54 +278,31 @@ export default {
 
 @media (max-width: 760px) {
   .site-drawer {
-    width: 100% !important;
-    max-height: min(76vh, 620px);
-    border-radius: 28px 28px 0 0;
-    box-shadow: 0 -22px 60px rgba(24, 32, 43, 0.2);
-    overflow: hidden;
-  }
-
-  .site-drawer :deep(.v-navigation-drawer__content) {
-    overflow-y: auto;
+    width: min(360px, calc(100vw - 18px)) !important;
+    border-radius: 30px 0 0 30px;
   }
 
   .drawer-shell {
-    min-height: auto;
-    padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
-    background: color-mix(in srgb, var(--paper-strong) 94%, var(--sage) 6%);
-  }
-
-  .drawer-handle {
-    display: block;
-    width: 42px;
-    height: 4px;
-    margin: 0 auto 15px;
-    border-radius: 999px;
-    background: var(--line-strong);
+    padding: 24px 20px calc(26px + env(safe-area-inset-bottom));
   }
 
   .drawer-heading {
-    margin-bottom: 18px;
+    margin-bottom: 0;
   }
 
   .drawer-close {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--line);
-    border-radius: 50%;
-    font-size: 22px;
+    width: 34px;
+    height: 34px;
   }
 
   .blogger-info {
-    gap: 12px;
-    padding: 0 0 18px;
+    gap: 13px;
+    margin-top: 32px;
+    padding: 16px;
   }
 
   .blogger-info :deep(.v-avatar) {
-    flex-basis: 58px;
+    flex-basis: 64px;
   }
 
   .blogger-copy strong {
@@ -308,7 +317,8 @@ export default {
   }
 
   .drawer-stat {
-    padding: 12px 0;
+    margin-top: 16px;
+    padding: 12px 4px;
   }
 
   .drawer-stat strong {
@@ -316,28 +326,27 @@ export default {
   }
 
   .drawer-menu {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 18px;
   }
 
   .drawer-menu a,
   .drawer-menu a:hover,
   .drawer-menu a.active {
-    min-height: 74px;
-    align-items: flex-start;
-    flex-direction: column;
+    min-height: 62px;
+    align-items: center;
+    flex-direction: row;
     justify-content: space-between;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--paper) 74%, transparent);
+    padding: 14px;
+    border-color: transparent;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--glass-surface-strong) 58%, transparent);
     color: var(--muted);
   }
 
   .drawer-menu a.active {
-    border-color: rgba(143, 169, 154, 0.7);
-    background: rgba(143, 169, 154, 0.16);
+    border-color: color-mix(in srgb, var(--sage) 72%, var(--glass-border));
+    background: color-mix(in srgb, var(--sage) 16%, var(--glass-surface-strong));
     color: var(--sage-deep);
   }
 
@@ -347,7 +356,15 @@ export default {
   }
 
   .drawer-note {
-    display: none;
+    margin-top: 42px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .site-drawer {
+    background: var(--paper-strong) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 </style>

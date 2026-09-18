@@ -20,11 +20,23 @@
         </button>
       </nav>
 
-      <div class="mobile-nav-actions">
-        <button type="button" class="nav-icon-button" aria-label="搜索" @click="openSearch">
+      <div :class="['mobile-nav-actions', { 'drawer-open': $store.state.drawer }]">
+        <button
+          type="button"
+          class="nav-icon-button"
+          aria-label="搜索"
+          :aria-expanded="$store.state.searchFlag"
+          @click="openSearch"
+        >
           <NavIcon name="search" />
         </button>
-        <button type="button" class="nav-icon-button" aria-label="打开菜单" @click="openDrawer">
+        <button
+          type="button"
+          class="nav-icon-button"
+          aria-label="打开菜单"
+          :aria-expanded="$store.state.drawer"
+          @click="openDrawer"
+        >
           <NavIcon name="menu" />
         </button>
       </div>
@@ -91,7 +103,7 @@ export default {
 
 .nav-fixed {
   color: var(--ink);
-  background: rgba(248, 247, 243, 0.9);
+  background: var(--glass-surface-strong);
   box-shadow: 0 1px 0 var(--line);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
@@ -215,7 +227,15 @@ export default {
 
 .mobile-nav-actions {
   display: none;
-  gap: 8px;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-surface);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 26px rgba(24, 32, 43, 0.14);
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+  backdrop-filter: blur(22px) saturate(175%);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .nav-icon-button {
@@ -223,29 +243,31 @@ export default {
   place-items: center;
   width: 40px;
   height: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 0;
   border-radius: 50%;
   color: inherit;
-  background: rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  background: transparent;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
 .nav-icon-button:hover {
-  border-color: currentColor;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--glass-highlight);
   color: var(--sage-deep);
   transform: translateY(-1px);
 }
 
-.nav-fixed .nav-icon-button {
-  border-color: var(--line-strong);
-  background: rgba(255, 255, 255, 0.76);
+.nav-icon-button:active {
+  transform: scale(0.94);
 }
 
-.nav-fixed .nav-icon-button:hover {
-  background: rgba(143, 169, 154, 0.14);
+.mobile-nav-actions.drawer-open {
+  border-color: color-mix(in srgb, var(--sage) 70%, var(--glass-border));
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 30px rgba(85, 118, 107, 0.2);
+}
+
+.mobile-nav-actions.drawer-open .nav-icon-button:last-child {
+  color: var(--sage-deep);
+  background: color-mix(in srgb, var(--sage) 18%, transparent);
 }
 
 @media (max-width: 760px) {
@@ -275,6 +297,14 @@ export default {
 
   .mobile-nav-actions {
     display: flex;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .mobile-nav-actions {
+    background: var(--paper-strong);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 </style>

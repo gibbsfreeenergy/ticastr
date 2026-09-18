@@ -29,7 +29,12 @@ export default {
       return this.$refs.article || null;
     },
     getReadingText() {
-      return this.getArticleElement()?.textContent || "";
+      const article = this.getArticleElement();
+      if (!article) return "";
+
+      const content = article.cloneNode(true);
+      content.querySelectorAll("textarea, .copy-btn, .line-numbers-rows, .name").forEach(node => node.remove());
+      return content.textContent || "";
     }
   }
 };
