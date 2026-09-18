@@ -553,6 +553,7 @@ class TrafficStore:
             LOG.warning("xray blocklist sync failed: rc=%s stderr=%s", returncode, stderr[-500:])
         return {
             "ok": returncode == 0,
+            "mode": "blocklist-sync",
             "runtime_applied": returncode == 0,
             "active": ips,
             "error": "Xray 黑名单同步失败" if returncode != 0 else "",
@@ -591,7 +592,13 @@ class TrafficStore:
             )
             connection.execute("UPDATE ip_meta SET label=? WHERE ip=?", (normalized_label, normalized_ip))
             connection.commit()
-        return {"ok": True, "ip": normalized_ip, "label": normalized_label}
+        return {
+            "ok": True,
+            "mode": "label",
+            "runtime_applied": False,
+            "ip": normalized_ip,
+            "label": normalized_label,
+        }
 
     def acknowledge_alert(self, alert_id: Any = None, acknowledge_all: Any = False) -> dict[str, Any]:
         if not acknowledge_all:
@@ -607,7 +614,12 @@ class TrafficStore:
             else:
                 cursor = connection.execute("UPDATE alerts SET acked=1 WHERE id=?", (normalized_id,))
             connection.commit()
-        return {"ok": True, "updated": int(cursor.rowcount or 0)}
+        return {
+            "ok": True,
+            "mode": "ack",
+            "runtime_applied": False,
+            "updated": int(cursor.rowcount or 0),
+        }
 
     def save_alert_rule(self, payload: dict[str, Any]) -> dict[str, Any]:
         rule_id = clean_text(payload.get("id"), "规则 ID", MAX_RULE_ID_LENGTH, required=True)
@@ -641,16 +653,21 @@ class TrafficStore:
                 (rule_id, enabled, metric, threshold, window_sec, cooldown_sec, level, email),
             )
             connection.commit()
-        return {"ok": True, "rule": {
-            "id": rule_id,
-            "enabled": enabled,
-            "metric": metric,
-            "threshold": threshold,
-            "window_sec": window_sec,
-            "cooldown_sec": cooldown_sec,
-            "level": level,
-            "email": email,
-        }}
+        return {
+            "ok": True,
+            "mode": "alert-rule",
+            "runtime_applied": False,
+            "rule": {
+                "id": rule_id,
+                "enabled": enabled,
+                "metric": metric,
+                "threshold": threshold,
+                "window_sec": window_sec,
+                "cooldown_sec": cooldown_sec,
+                "level": level,
+                "email": email,
+            },
+        }
 
     def delete_alert_rule(self, rule_id: Any) -> dict[str, Any]:
         normalized_id = clean_text(rule_id, "规则 ID", MAX_RULE_ID_LENGTH, required=True)
@@ -659,7 +676,13 @@ class TrafficStore:
         with self.control_lock, self.connect_rw() as connection:
             cursor = connection.execute("DELETE FROM alert_rules WHERE id=?", (normalized_id,))
             connection.commit()
-        return {"ok": True, "id": normalized_id, "deleted": int(cursor.rowcount or 0)}
+        return {
+            "ok": True,
+            "mode": "alert-rule-delete",
+            "runtime_applied": False,
+            "id": normalized_id,
+            "deleted": int(cursor.rowcount or 0),
+        }
 
     def sync_blocklist(self) -> dict[str, Any]:
         with self.control_lock, self.connect_rw() as connection:

@@ -116,6 +116,7 @@ class BridgeTest(unittest.TestCase):
         store = self._store(runner)
         blocked = store.block_ip("8.8.8.8", "测试封禁")
         self.assertTrue(blocked["ok"])
+        self.assertEqual(blocked["mode"], "blocklist-sync")
         self.assertEqual(blocked["active"], ["8.8.8.8"])
         self.assertIn("sib", commands[0][0])
         self.assertIn("-reset", commands[0][0])
@@ -123,6 +124,7 @@ class BridgeTest(unittest.TestCase):
 
         unblocked = store.unblock_ip("8.8.8.8")
         self.assertTrue(unblocked["ok"])
+        self.assertEqual(unblocked["mode"], "blocklist-sync")
         self.assertEqual(unblocked["active"], [])
         self.assertEqual(commands[1][0][2], "rmrules")
 
@@ -135,16 +137,24 @@ class BridgeTest(unittest.TestCase):
 
     def test_label_alert_ack_and_alert_rule_controls(self):
         store = self._store(lambda command, timeout: (0, "", ""))
-        self.assertEqual(store.label_ip("8.8.8.8", "家庭出口")["label"], "家庭出口")
-        self.assertTrue(store.acknowledge_alert(1)["ok"])
+        label = store.label_ip("8.8.8.8", "家庭出口")
+        self.assertEqual(label["label"], "家庭出口")
+        self.assertEqual(label["mode"], "label")
+        acknowledgement = store.acknowledge_alert(1)
+        self.assertTrue(acknowledgement["ok"])
+        self.assertEqual(acknowledgement["mode"], "ack")
+        self.assertFalse(acknowledgement["runtime_applied"])
         rule = store.save_alert_rule({
             "id": "burst-1", "enabled": True, "metric": "connections",
             "threshold": 300, "window_sec": 300, "cooldown_sec": 3600,
             "level": "high", "email": "",
         })
         self.assertEqual(rule["rule"]["id"], "burst-1")
+        self.assertEqual(rule["mode"], "alert-rule")
         self.assertEqual(store.alert_rules()[0]["metric"], "connections")
-        self.assertEqual(store.delete_alert_rule("burst-1")["deleted"], 1)
+        deleted = store.delete_alert_rule("burst-1")
+        self.assertEqual(deleted["deleted"], 1)
+        self.assertEqual(deleted["mode"], "alert-rule-delete")
 
     def test_post_hmac_covers_body_and_routes_controls(self):
         secret = "s" * 40
