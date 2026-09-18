@@ -1,128 +1,90 @@
 <template>
-  <div class="rightside" :style="isShow">
-    <div :class="'rightside-config-hide ' + isOut">
-      <i :class="'iconfont rightside-icon ' + icon" @click="check" />
-    </div>
-    <div class="setting-container" @click="show">
-      <i class="iconfont iconshezhi setting" />
-    </div>
-    <i @click="backTop" class="iconfont rightside-icon iconziyuanldpi" />
+  <div v-show="visible" class="site-tools">
+    <button type="button" class="tool-button" :aria-label="icon === 'iconyueliang' ? '切换深色模式' : '切换浅色模式'" @click="check">
+      <i :class="['iconfont', icon]" aria-hidden="true" />
+    </button>
+    <button type="button" class="tool-button tool-top" aria-label="回到顶部" @click="backTop">
+      <span aria-hidden="true">↑</span>
+    </button>
   </div>
 </template>
 
 <script>
 export default {
+  data() {
+    return {
+      visible: false,
+      icon: "iconyueliang"
+    };
+  },
   mounted() {
-    window.addEventListener("scroll", this.scrollToTop);
+    window.addEventListener("scroll", this.scrollToTop, { passive: true });
+    this.scrollToTop();
   },
   unmounted() {
     window.removeEventListener("scroll", this.scrollToTop);
   },
-  data: function() {
-    return {
-      isShow: "",
-      isOut: "rightside-out",
-      icon: "iconyueliang"
-    };
-  },
   methods: {
-    // 回到顶部方法
     backTop() {
-      window.scrollTo({
-        behavior: "smooth",
-        top: 0
-      });
+      window.scrollTo({ behavior: "smooth", top: 0 });
     },
-    // 为了计算距离顶部的高度，当高度大于100显示回顶部图标，小于100则隐藏
     scrollToTop() {
-      const that = this;
-      let scrollTop =
-        window.pageYOffset ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop;
-      that.scrollTop = scrollTop;
-      if (that.scrollTop > 20) {
-        that.isShow = "opacity: 1;transform: translateX(-38px);";
-      } else {
-        that.isShow = "";
-      }
-    },
-    show() {
-      const flag = this.isOut == "rightside-out";
-      this.isOut = flag ? "rightside-in" : "rightside-out";
+      this.visible = window.pageYOffset > 100;
     },
     check() {
-      const flag = this.icon == "iconyueliang";
-      this.icon = flag ? "icontaiyang" : "iconyueliang";
-      this.$vuetify.theme.global.name.value = this.$vuetify.theme.global.current.value.dark
-        ? "light"
-        : "dark";
+      const isLight = this.icon === "iconyueliang";
+      this.icon = isLight ? "icontaiyang" : "iconyueliang";
+      this.$vuetify.theme.global.name.value = isLight ? "dark" : "light";
     }
   }
 };
 </script>
 
 <style scoped>
-.rightside {
-  z-index: 4;
+.site-tools {
   position: fixed;
-  right: -38px;
-  bottom: 85px;
-  transition: all 0.5s;
+  right: 22px;
+  bottom: 28px;
+  z-index: 10;
+  display: grid;
+  gap: 8px;
 }
-.rightside-config-hide {
-  transform: translate(35px, 0);
+
+.tool-button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--sage-deep);
+  background: rgba(248, 247, 243, 0.9);
+  box-shadow: 0 8px 24px rgba(56, 64, 73, 0.1);
+  font-size: 15px;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
-.rightside-out {
-  animation: rightsideOut 0.3s;
-}
-.rightside-in {
-  transform: translate(0, 0) !important;
-  animation: rightsideIn 0.3s;
-}
-.rightside-icon,
-.setting-container {
-  display: block;
-  margin-bottom: 2px;
-  width: 30px;
-  height: 30px;
-  background-color: #49b1f5;
+
+.tool-button:hover {
   color: #fff;
-  text-align: center;
-  font-size: 16px;
-  line-height: 30px;
-  cursor: pointer;
+  background: var(--sage-deep);
+  transform: translateY(-2px);
 }
-.rightside-icon:hover,
-.setting-container:hover {
-  background-color: #ff7242;
+
+.tool-top {
+  font-size: 19px;
 }
-.setting-container i {
-  display: block;
-  animation: turn-around 2s linear infinite;
-}
-@keyframes turn-around {
-  0% {
-    transform: rotate(0);
+
+@media (max-width: 760px) {
+  .site-tools {
+    right: 14px;
+    bottom: 18px;
   }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-@keyframes rightsideOut {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(30px, 0);
-  }
-}
-@keyframes rightsideIn {
-  0% {
-    transform: translate(30px, 0);
-  }
-  100% {
-    transform: translate(0, 0);
+
+  .tool-button {
+    width: 38px;
+    height: 38px;
   }
 }
 </style>

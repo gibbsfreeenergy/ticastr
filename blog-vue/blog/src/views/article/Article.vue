@@ -1,16 +1,17 @@
 <template>
-  <div>
+  <div class="article-page">
     <div v-if="metadataLoading" class="article-state" role="status" aria-live="polite">正在加载文章信息…</div>
     <div v-else-if="metadataError" class="article-state article-state-error" role="alert">
+      <span class="state-mark">✦</span>
       <h1>文章加载失败</h1>
       <p>{{ metadataError.message }}</p>
-      <v-btn color="primary" @click="getArticle">重试</v-btn>
+      <v-btn color="primary" variant="tonal" @click="getArticle">重试</v-btn>
     </div>
     <template v-else>
       <ArticleMeta :article="article" :word-num="wordNum" :read-time="readTime" :cover-style="articleCover" />
-      <v-row class="article-container">
-        <v-col md="9" cols="12">
-          <v-card class="article-wrapper">
+      <div class="article-layout page-width">
+        <main class="article-reading-column">
+          <article class="article-surface">
             <ArticleContent
               ref="contentView"
               :rendered-content="renderedContent"
@@ -19,12 +20,10 @@
               @retry="loadContent"
             />
             <ArticleNavigation :article="article" :blog-info="blogInfo" :article-href="articleHref" />
-          </v-card>
-        </v-col>
-        <v-col md="3" cols="12" class="d-md-block d-none">
-          <ArticleSidebar :article="article" />
-        </v-col>
-      </v-row>
+          </article>
+        </main>
+        <ArticleSidebar :article="article" />
+      </div>
     </template>
   </div>
 </template>
@@ -186,23 +185,80 @@ export default {
       return typeof window === "undefined" ? "" : window.location.href;
     },
     articleCover() {
-      return `background: url("${this.article.articleCover || ""}") center center / cover no-repeat`;
+      return {
+        backgroundImage: `url("${this.article.articleCover || "/images/hero-dawn.png"}")`
+      };
     }
   }
 };
 </script>
 
 <style scoped>
+.article-page {
+  background: var(--paper);
+}
+
 .article-state {
-  max-width: 760px;
-  margin: 3rem auto;
-  padding: 2rem;
+  width: min(680px, calc(100% - 36px));
+  margin: 150px auto;
+  padding: 70px 24px;
+  color: var(--muted);
   text-align: center;
 }
 
+.article-state .state-mark {
+  color: var(--gold);
+  font-size: 28px;
+}
+
+.article-state h1 {
+  margin: 16px 0 8px;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.article-state p {
+  margin: 0 0 24px !important;
+}
+
 .article-state-error {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 780px) 260px;
+  gap: 76px;
+  align-items: start;
+  padding-top: 86px;
+  padding-bottom: 118px;
+}
+
+.article-reading-column {
+  min-width: 0;
+}
+
+.article-surface {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .article-layout {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 760px) {
+  .article-layout {
+    display: block;
+    padding-top: 56px;
+    padding-bottom: 78px;
+  }
 }
 </style>

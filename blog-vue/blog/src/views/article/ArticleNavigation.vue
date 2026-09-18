@@ -1,35 +1,36 @@
 <template>
-  <section>
+  <section class="article-navigation">
     <div class="article-copyright">
-      <div><span>文章作者：</span><router-link to="/">{{ blogInfo.websiteConfig.websiteAuthor }}</router-link></div>
-      <div><span>文章链接：</span><a :href="articleHref" target="_blank" rel="noopener">{{ articleHref }}</a></div>
-      <div><span>版权声明：</span>本博客所有文章除特别声明外，均采用
-        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>许可协议。转载请注明文章出处。
-      </div>
+      <div><span>作者</span><router-link to="/">{{ blogInfo.websiteConfig.websiteAuthor }}</router-link></div>
+      <div><span>链接</span><a :href="articleHref" target="_blank" rel="noopener">{{ articleHref }}</a></div>
+      <div><span>版权</span>除特别声明外，文章采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a> 许可协议。</div>
     </div>
+
     <div class="pagination-post">
-      <div v-if="article.lastArticle.id" :class="isFull(article.lastArticle.id)">
+      <div v-if="article.lastArticle.id" class="post">
         <router-link :to="'/articles/' + article.lastArticle.id">
-          <img class="post-cover" :src="article.lastArticle.articleCover" :alt="article.lastArticle.articleTitle" width="360" height="150" loading="lazy" decoding="async" />
-          <div class="post-info"><div class="label">上一篇</div><div class="post-title">{{ article.lastArticle.articleTitle }}</div></div>
+          <img class="post-cover" :src="article.lastArticle.articleCover" :alt="article.lastArticle.articleTitle" loading="lazy" decoding="async" />
+          <div class="post-info"><span>上一篇</span><strong>{{ article.lastArticle.articleTitle }}</strong></div>
         </router-link>
       </div>
-      <div v-if="article.nextArticle.id" :class="isFull(article.nextArticle.id)">
+      <div v-if="article.nextArticle.id" class="post post-next">
         <router-link :to="'/articles/' + article.nextArticle.id">
-          <img class="post-cover" :src="article.nextArticle.articleCover" :alt="article.nextArticle.articleTitle" width="360" height="150" loading="lazy" decoding="async" />
-          <div class="post-info" style="text-align:right"><div class="label">下一篇</div><div class="post-title">{{ article.nextArticle.articleTitle }}</div></div>
+          <img class="post-cover" :src="article.nextArticle.articleCover" :alt="article.nextArticle.articleTitle" loading="lazy" decoding="async" />
+          <div class="post-info"><span>下一篇</span><strong>{{ article.nextArticle.articleTitle }}</strong></div>
         </router-link>
       </div>
     </div>
+
     <div v-if="article.recommendArticleList.length" class="recommend-container">
-      <div class="recommend-title"><v-icon size="20" color="#4c4948">$mdi-book-open-variant</v-icon> 相关推荐</div>
+      <div class="recommend-heading"><span>相关推荐</span><i aria-hidden="true">✦</i></div>
       <div class="recommend-list">
-        <div class="recommend-item" v-for="item of article.recommendArticleList" :key="item.id">
-          <router-link :to="'/articles/' + item.id">
-            <img class="recommend-cover" :src="item.articleCover" :alt="item.articleTitle" width="320" height="200" loading="lazy" decoding="async" />
-            <div class="recommend-info"><div class="recommend-date"><i class="iconfont iconrili" /> {{ date(item.createTime) }}</div><div>{{ item.articleTitle }}</div></div>
-          </router-link>
-        </div>
+        <router-link v-for="item of article.recommendArticleList" :key="item.id" class="recommend-item" :to="'/articles/' + item.id">
+          <img class="recommend-cover" :src="item.articleCover" :alt="item.articleTitle" loading="lazy" decoding="async" />
+          <span>
+            <small>{{ date(item.createTime) }}</small>
+            <strong>{{ item.articleTitle }}</strong>
+          </span>
+        </router-link>
       </div>
     </div>
   </section>
@@ -42,178 +43,198 @@ export default {
     article: { type: Object, required: true },
     blogInfo: { type: Object, required: true },
     articleHref: { type: String, required: true }
-  },
-  methods: {
-    isFull(id) { return id ? "post full" : "post"; }
   }
 };
 </script>
 
 <style scoped>
+.article-navigation {
+  margin-top: 72px;
+}
+
 .article-copyright {
   position: relative;
-  margin: 40px 0 10px;
-  padding: 0.625rem 1rem;
-  border: 1px solid #eee;
-  font-size: 0.875rem;
-  line-height: 2;
+  padding: 19px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.article-copyright div {
+  display: flex;
+  gap: 12px;
   overflow-wrap: anywhere;
 }
 
 .article-copyright span {
-  color: #49b1f5;
-  font-weight: bold;
+  flex: 0 0 28px;
+  color: var(--sage-deep);
 }
 
 .article-copyright a {
-  color: #99a9bf !important;
-  text-decoration: underline !important;
-}
-
-.article-copyright::before {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 1rem;
-  background: #49b1f5;
-  content: "";
-}
-
-.article-copyright::after {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.95rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 0.5em;
-  background: #fff;
-  content: "";
+  color: var(--sage-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .pagination-post {
-  display: flex;
-  width: 100%;
-  margin-top: 40px;
-  overflow: hidden;
-  background: #000;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 38px;
 }
 
 .post {
-  position: relative;
-  width: 50%;
-  height: 150px;
-  overflow: hidden;
+  min-width: 0;
 }
 
-.post.full {
-  width: 100%;
+.post:only-child {
+  grid-column: 1 / -1;
 }
 
 .post a {
   position: relative;
   display: block;
-  height: 150px;
+  height: 140px;
   overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+}
+
+.post-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.45;
+  transition: opacity 300ms ease, transform 600ms ease;
+}
+
+.post a:hover .post-cover {
+  opacity: 0.65;
+  transform: scale(1.055);
 }
 
 .post-info {
   position: absolute;
-  top: 50%;
-  width: 100%;
-  padding: 20px 40px;
-  transform: translateY(-50%);
-  font-size: 14px;
-  line-height: 2;
-}
-
-.post-cover,
-.recommend-cover {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.4;
-  transition: transform 0.6s;
-}
-
-.post-cover {
-  position: absolute;
-}
-
-.post:hover .post-cover,
-.recommend-item:hover .recommend-cover {
-  opacity: 0.8;
-  transform: scale(1.1);
-}
-
-.label {
-  color: #eee;
-  font-size: 90%;
-}
-
-.post-title {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 24px;
   color: #fff;
+}
+
+.post-info span {
+  margin-bottom: 7px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  letter-spacing: 0.13em;
+}
+
+.post-info strong {
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 17px;
   font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-next .post-info {
+  align-items: flex-end;
+  text-align: right;
 }
 
 .recommend-container {
-  margin-top: 40px;
+  margin-top: 58px;
 }
 
-.recommend-title {
-  margin-bottom: 5px;
-  font-size: 20px;
-  font-weight: bold;
-  line-height: 2;
+.recommend-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+}
+
+.recommend-heading i {
+  color: var(--gold);
+  font-style: normal;
+}
+
+.recommend-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .recommend-item {
-  position: relative;
-  display: inline-block;
-  width: calc(33.333% - 6px);
-  height: 200px;
-  margin: 3px;
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.recommend-item:hover {
+  border-color: var(--sage);
+  transform: translateY(-3px);
+}
+
+.recommend-cover {
+  width: 82px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.recommend-item span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.recommend-item small {
+  color: var(--muted-light);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+}
+
+.recommend-item strong {
   overflow: hidden;
-  background: #000;
-  vertical-align: bottom;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.recommend-item a {
-  display: block;
-  height: 100%;
-}
+@media (max-width: 760px) {
+  .article-navigation {
+    margin-top: 54px;
+  }
 
-.recommend-info {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  padding: 0 20px;
-  transform: translateY(-50%);
-  color: #fff;
-  text-align: center;
-  line-height: 2;
-  font-size: 14px;
-}
-
-.recommend-date {
-  font-size: 90%;
-}
-
-@media (max-width: 759px) {
   .pagination-post {
     display: block;
   }
 
-  .post,
-  .post.full {
-    width: 100%;
+  .post + .post {
+    margin-top: 12px;
   }
 
-  .recommend-item {
-    width: calc(100% - 4px);
-    height: 150px;
-    margin: 2px;
+  .recommend-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

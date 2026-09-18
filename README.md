@@ -95,6 +95,34 @@ Docker 不可用时，Testcontainers 集成测试会明确标记 skipped；这�
 
 更多契约：[API-CONTRACT.md](docs/API-CONTRACT.md)、[CONFIGURATION.md](docs/CONFIGURATION.md)、[DEPENDENCY-MATRIX.md](docs/DEPENDENCY-MATRIX.md)、[REDIS-CONTRACT.md](docs/REDIS-CONTRACT.md)、[MESSAGE-RELIABILITY.md](docs/MESSAGE-RELIABILITY.md)、[MEDIA-LIFECYCLE.md](docs/MEDIA-LIFECYCLE.md)、[DEPLOYMENT-CONTRACT.md](docs/DEPLOYMENT-CONTRACT.md)、[OPERATIONS-RUNBOOK.md](docs/OPERATIONS-RUNBOOK.md)。
 
+## 线上部署
+
+正式线上环境通过 GitHub Actions 自动部署，不使用 Vercel。工作流位于
+`.github/workflows/deploy.yml`，在向 `master` 分支推送后自动触发，也可以在 GitHub Actions
+页面手动运行 `workflow_dispatch`。
+
+每次部署会执行以下流程：
+
+1. 使用专用 SSH 用户将仓库源码同步到服务器部署目录。
+2. 保留服务器上的 `.env`、上传文件以及数据库和搜索索引 Docker volume，不从仓库覆盖运行时数据。
+3. 在服务器上执行 `docker compose --env-file .env -f compose.yaml -f compose.redis.yaml up -d --build --remove-orphans`。
+4. 等待 API readiness、公共博客和管理后台的健康检查全部通过；失败时工作流会输出 API 日志并终止部署。
+
+仓库需要配置以下 Actions Secrets：
+
+- `TICASTR_DEPLOY_HOST`
+- `TICASTR_DEPLOY_PORT`
+- `TICASTR_DEPLOY_USER`
+- `TICASTR_DEPLOY_PATH`
+- `TICASTR_DEPLOY_SSH_PRIVATE_KEY`
+- `TICASTR_DEPLOY_KNOWN_HOSTS`
+
+服务器端 `.env` 只保存在部署主机上，必须预先配置完整的生产环境变量（包括 `REDIS_PASSWORD`）。
+首次管理员 bootstrap 完成后，应关闭 `BOOTSTRAP_ADMIN_ENABLED` 并清除明文 bootstrap 密码。
+
+提交并推送后，可在仓库的 **Actions → Deploy** 查看部署进度和健康检查结果；完整约定见
+[`docs/DEPLOYMENT-CONTRACT.md`](docs/DEPLOYMENT-CONTRACT.md)。
+
 ## 约定
 
 - 后端遵循 `controller -> service -> dao`，DAO 接口和 MyBatis XML 必须同步。

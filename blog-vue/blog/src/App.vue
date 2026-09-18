@@ -1,8 +1,8 @@
 <template>
-  <v-app id="app">
+  <v-app id="app" class="site-app">
     <TopNavBar></TopNavBar>
     <SideNavBar></SideNavBar>
-    <v-main>
+    <v-main class="site-main">
       <router-view :key="$route.fullPath" />
     </v-main>
     <BlogFooter></BlogFooter>

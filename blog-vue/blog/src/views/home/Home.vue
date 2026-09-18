@@ -1,76 +1,104 @@
 <template>
-  <div>
-    <div class="home-banner" :style="cover">
-      <div class="banner-container">
-        <h1 class="blog-title">{{ blogInfo.websiteConfig.websiteName }}</h1>
-        <div class="blog-intro">{{ blogInfo.websiteConfig.websiteIntro }}</div>
-        <div class="blog-contact">
-          <a
-            v-if="isShowSocial('qq')"
-            class="mr-5 iconfont iconqq"
-            target="_blank"
-            rel="noopener"
-            :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
-          />
-          <a
-            v-if="isShowSocial('github')"
-            target="_blank"
-            rel="noopener"
-            :href="blogInfo.websiteConfig.github"
-            class="mr-5 iconfont icongithub"
-          />
-          <a
-            v-if="isShowSocial('gitee')"
-            target="_blank"
-            rel="noopener"
-            :href="blogInfo.websiteConfig.gitee"
-            class="iconfont icongitee-fill-round"
-          />
+  <div class="home-page">
+    <section class="home-hero" :style="coverStyle">
+      <div class="home-hero-fade" aria-hidden="true" />
+      <div class="home-hero-inner page-width">
+        <div class="hero-copy fade-up">
+          <h1>{{ blogInfo.websiteConfig.websiteName }}</h1>
+          <p>{{ blogInfo.websiteConfig.websiteIntro }}</p>
+          <span class="hero-rule" aria-hidden="true" />
+          <div class="hero-socials" aria-label="社交链接">
+            <a
+              v-if="isShowSocial('qq')"
+              class="iconfont iconqq"
+              target="_blank"
+              rel="noopener"
+              aria-label="QQ"
+              :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
+            />
+            <a
+              v-if="isShowSocial('github')"
+              class="iconfont icongithub"
+              target="_blank"
+              rel="noopener"
+              aria-label="GitHub"
+              :href="blogInfo.websiteConfig.github"
+            />
+            <a
+              v-if="isShowSocial('gitee')"
+              class="iconfont icongitee-fill-round"
+              target="_blank"
+              rel="noopener"
+              aria-label="Gitee"
+              :href="blogInfo.websiteConfig.gitee"
+            />
+          </div>
+        </div>
+        <div class="hero-whisper fade-up" style="--delay: 160ms">
+          <span>在平凡的日子里</span>
+          <span>发现更大的世界</span>
+          <i aria-hidden="true" />
         </div>
       </div>
-      <div class="scroll-down" @click="scrollDown">
-        <v-icon color="#fff" class="scroll-down-effects">$mdi-chevron-down</v-icon>
-      </div>
-    </div>
+      <button class="scroll-cue" type="button" aria-label="向下阅读" @click="scrollDown">
+        <span>向下阅读</span>
+        <i aria-hidden="true">↓</i>
+      </button>
+    </section>
 
-    <v-row class="home-container">
-      <v-col md="9" cols="12">
-        <v-card
-          v-for="(item, index) of articleList"
-          :key="item.id"
-          class="article-card"
-          :class="index % 2 === 0 ? 'left-card' : 'right-card'"
-        >
-          <div class="article-cover">
-            <router-link :to="'/articles/' + item.id">
-              <v-img class="on-hover" width="100%" height="100%" :src="item.articleCover" />
+    <section class="home-content page-width">
+      <div class="content-heading fade-up">
+        <div>
+          <span class="heading-number">01</span>
+          <h2>最近的文章</h2>
+        </div>
+        <p>从这里开始，一次安静的阅读。</p>
+      </div>
+
+      <div class="home-grid">
+        <main class="article-feed">
+          <article
+            v-for="(item, index) of articleList"
+            :key="item.id"
+            class="article-card fade-up"
+            :style="{ '--delay': `${Math.min(index, 5) * 90}ms` }"
+          >
+            <router-link class="article-image" :to="'/articles/' + item.id">
+              <img :src="item.articleCover" :alt="item.articleTitle" loading="lazy" decoding="async" />
+              <span class="image-arrow" aria-hidden="true">↗</span>
             </router-link>
-          </div>
-          <div class="article-wrapper">
-            <div class="article-title-line">
-              <router-link :to="'/articles/' + item.id">{{ item.articleTitle }}</router-link>
+            <div class="article-card-body">
+              <div class="article-card-meta">
+                <span>0{{ index + 1 }}</span>
+                <span v-if="item.isTop == 1" class="top-mark">置顶</span>
+                <span>{{ date(item.createTime) }}</span>
+              </div>
+              <h3>
+                <router-link :to="'/articles/' + item.id">{{ item.articleTitle }}</router-link>
+              </h3>
+              <router-link class="read-link" :to="'/articles/' + item.id">
+                <span>阅读全文</span><i aria-hidden="true">→</i>
+              </router-link>
             </div>
-            <div class="article-info">
-              <span v-if="item.isTop == 1" class="top-mark"><i class="iconfont iconzhiding" /> 置顶</span>
-              <span v-if="item.isTop == 1" class="separator">|</span>
-              <v-icon size="14">$mdi-calendar-month-outline</v-icon>
-              {{ date(item.createTime) }}
-            </div>
-            <div class="article-content article-content-hint">点击标题阅读全文</div>
-          </div>
-        </v-card>
-        <div class="load-more-wrapper" v-if="!articlesComplete">
-          <v-btn color="primary" variant="tonal" :loading="loadingArticles" @click="loadMoreArticles">
-            加载更多
-          </v-btn>
-        </div>
-      </v-col>
+          </article>
 
-      <v-col md="3" cols="12" class="d-md-block d-none">
-        <div class="blog-wrapper">
-          <v-card class="blog-card mt-5">
-            <div class="author-wrapper">
-              <v-avatar size="110">
+          <div v-if="!articleList.length && !loadingArticles" class="article-empty">
+            <span class="empty-mark">✦</span>
+            <p>还没有文章，等一阵风把故事带来。</p>
+          </div>
+
+          <div class="load-more-wrapper" v-if="!articlesComplete">
+            <button class="load-more-button" type="button" :disabled="loadingArticles" @click="loadMoreArticles">
+              <span>{{ loadingArticles ? "正在加载" : "加载更多" }}</span>
+              <i aria-hidden="true">→</i>
+            </button>
+          </div>
+        </main>
+
+        <aside class="home-aside">
+          <section class="author-panel">
+            <div class="author-avatar-wrap">
+              <v-avatar size="94">
                 <img
                   v-if="blogInfo.websiteConfig.websiteAvatar"
                   class="author-avatar"
@@ -78,51 +106,30 @@
                   :alt="blogInfo.websiteConfig.websiteAuthor"
                 />
               </v-avatar>
-              <div class="author-name">{{ blogInfo.websiteConfig.websiteAuthor }}</div>
-              <div class="author-intro">{{ blogInfo.websiteConfig.websiteIntro }}</div>
             </div>
-            <div class="blog-info-wrapper">
-              <router-link to="/archives" class="blog-info-data">
-                <div>文章</div>
-                <strong>{{ blogInfo.articleCount }}</strong>
-              </router-link>
+            <h3>{{ blogInfo.websiteConfig.websiteAuthor }}</h3>
+            <span class="author-rule" aria-hidden="true" />
+            <p>{{ blogInfo.websiteConfig.websiteIntro }}</p>
+            <router-link class="author-link" to="/about">了解更多 <span>↗</span></router-link>
+            <div class="author-stat">
+              <span>文章</span>
+              <strong>{{ blogInfo.articleCount }}</strong>
             </div>
-            <div class="card-info-social">
-              <a
-                v-if="isShowSocial('qq')"
-                class="mr-5 iconfont iconqq"
-                target="_blank"
-                rel="noopener"
-                :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
-              />
-              <a
-                v-if="isShowSocial('github')"
-                target="_blank"
-                rel="noopener"
-                :href="blogInfo.websiteConfig.github"
-                class="mr-5 iconfont icongithub"
-              />
-              <a
-                v-if="isShowSocial('gitee')"
-                target="_blank"
-                rel="noopener"
-                :href="blogInfo.websiteConfig.gitee"
-                class="iconfont icongitee-fill-round"
-              />
-            </div>
-          </v-card>
-          <v-card v-if="blogInfo.websiteConfig.websiteNotice" class="blog-card mt-5">
-            <div class="web-info-title"><v-icon size="18">$mdi-bell</v-icon> 公告</div>
-            <div class="notice">{{ blogInfo.websiteConfig.websiteNotice }}</div>
-          </v-card>
-        </div>
-      </v-col>
-    </v-row>
+          </section>
+
+          <section v-if="blogInfo.websiteConfig.websiteNotice" class="notice-panel">
+            <div class="notice-heading"><span>一则公告</span><i aria-hidden="true">✦</i></div>
+            <p>{{ blogInfo.websiteConfig.websiteNotice }}</p>
+          </section>
+        </aside>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
 export default {
+  name: "HomePage",
   created() {
     this.loadMoreArticles();
   },
@@ -165,7 +172,7 @@ export default {
       }
     },
     scrollDown() {
-      window.scrollTo({ behavior: "smooth", top: document.documentElement.clientHeight });
+      window.scrollTo({ behavior: "smooth", top: document.querySelector(".home-content")?.offsetTop || window.innerHeight });
     }
   },
   computed: {
@@ -175,253 +182,615 @@ export default {
     isShowSocial() {
       return social => (this.blogInfo.websiteConfig.socialUrlList || []).includes(social);
     },
-    cover() {
+    coverStyle() {
       const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "home");
-      return page?.pageCover ? `background: url("${page.pageCover}") center center / cover no-repeat` : "";
+      return {
+        backgroundImage: `url("${page?.pageCover || "/images/hero-dawn.png"}")`
+      };
     }
   }
 };
 </script>
 
 <style scoped>
-.home-banner {
+.home-page {
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.home-hero {
+  position: relative;
+  min-height: min(780px, 84vh);
+  background-color: #c3c9d0;
+  background-position: center;
+  background-size: cover;
+  color: #fff;
+}
+
+.home-hero-fade {
   position: absolute;
-  top: -60px;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  background-attachment: fixed;
-  text-align: center;
-  color: #fff !important;
-  animation: header-effect 1s;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(23, 34, 44, 0.04) 38%, rgba(24, 32, 43, 0.22) 82%, var(--paper) 100%);
+  pointer-events: none;
 }
 
-.banner-container {
-  margin-top: 43vh;
-  line-height: 1.5;
-  color: #eee;
+.home-hero-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: min(780px, 84vh);
+  padding-top: 80px;
+  padding-bottom: 110px;
 }
 
-.blog-title {
-  font-size: 2.5rem;
+.hero-copy {
+  max-width: 570px;
+  animation-delay: var(--delay, 0ms);
+  text-shadow: 0 4px 24px rgba(24, 32, 43, 0.18);
 }
 
-.blog-intro {
-  font-size: 1.5rem;
+.hero-copy h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(58px, 9vw, 122px);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
 }
 
-.blog-contact {
-  display: none;
+.hero-copy p {
+  max-width: 480px;
+  margin: 28px 0 0 !important;
+  font-size: clamp(20px, 2.2vw, 30px);
+  letter-spacing: 0.08em;
 }
 
-.blog-contact a,
-.card-info-social a {
-  color: #fff !important;
+.hero-rule {
+  display: block;
+  width: 42px;
+  height: 2px;
+  margin-top: 26px;
+  background: rgba(255, 255, 255, 0.85);
 }
 
-.card-info-social {
+.hero-socials {
+  display: flex;
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.hero-socials a {
+  color: #fff;
+  font-size: 18px;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.hero-socials a:hover {
+  color: var(--blush);
+  transform: translateY(-3px);
+}
+
+.hero-whisper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 14px 0 14px 22px;
+  border-left: 1px solid rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  line-height: 1.65;
+  text-shadow: 0 3px 16px rgba(24, 32, 43, 0.22);
+  animation-delay: var(--delay);
+}
+
+.hero-whisper i {
+  display: block;
+  width: 24px;
+  height: 1px;
+  margin-top: 9px;
+  background: currentColor;
+}
+
+.scroll-cue {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  color: rgba(255, 255, 255, 0.86);
+  background: transparent;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  transform: translateX(-50%);
+}
+
+.scroll-cue i {
+  font-size: 20px;
+  font-style: normal;
+  animation: float-gently 1.8s ease-in-out infinite;
+}
+
+.home-content {
+  position: relative;
+  padding-top: 84px;
+  padding-bottom: 110px;
+}
+
+.content-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 42px;
+}
+
+.content-heading > div {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.heading-number {
+  color: var(--sage-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 14px;
+}
+
+.content-heading h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.content-heading h2::after {
+  display: block;
+  width: 48px;
+  height: 2px;
   margin-top: 12px;
-  line-height: 40px;
-  text-align: center;
+  background: var(--sage);
+  content: "";
 }
 
-.card-info-social a {
-  font-size: 1.5rem;
+.content-heading p {
+  margin: 0 !important;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 64px;
+  align-items: start;
+}
+
+.article-feed {
+  min-width: 0;
+}
+
+.article-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 43%) minmax(0, 1fr);
+  min-height: 250px;
+  border-top: 1px solid var(--line);
+  animation-delay: var(--delay);
+}
+
+.article-card:nth-child(even) {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 43%);
+}
+
+.article-card:nth-child(even) .article-image {
+  order: 2;
+}
+
+.article-card:nth-child(even) .article-card-body {
+  order: 1;
+}
+
+.article-image {
+  position: relative;
+  min-height: 250px;
+  margin: 24px 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--paper-muted);
+}
+
+.article-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 600ms ease;
+}
+
+.article-image:hover img {
+  filter: saturate(1.08);
+  transform: scale(1.055);
+}
+
+.image-arrow {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--ink);
+  background: rgba(255, 253, 249, 0.88);
+  font-size: 18px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.article-image:hover .image-arrow {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.article-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 0 32px 38px;
+}
+
+.article-card:nth-child(even) .article-card-body {
+  padding-right: 38px;
+  padding-left: 0;
+}
+
+.article-card-meta {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  color: var(--muted-light);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+}
+
+.article-card-meta span + span::before {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin: 0 9px 2px 0;
+  border-radius: 50%;
+  background: var(--blush);
+  content: "";
+}
+
+.article-card-meta .top-mark {
+  color: var(--sage-deep);
+  font-family: inherit;
+}
+
+.article-card h3 {
+  max-width: 450px;
+  margin: 17px 0 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: clamp(22px, 2.4vw, 31px);
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.03em;
+}
+
+.article-card h3 a {
+  transition: color 180ms ease;
+}
+
+.article-card h3 a:hover {
+  color: var(--sage-deep);
+}
+
+.read-link,
+.author-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 28px;
+  color: var(--sage-deep);
+  font-size: 13px;
+}
+
+.read-link i,
+.author-link span {
+  font-size: 18px;
+  font-style: normal;
+  transition: transform 180ms ease;
+}
+
+.read-link:hover i,
+.author-link:hover span {
+  transform: translateX(5px);
 }
 
 .load-more-wrapper {
   display: flex;
   justify-content: center;
-  padding: 20px 0;
+  padding: 44px 0 0;
 }
 
-.article-card {
-  display: flex;
+.load-more-button {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  height: 280px;
-  margin-top: 20px;
-  overflow: hidden;
+  gap: 18px;
+  min-width: 160px;
+  justify-content: center;
+  padding: 13px 22px;
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  color: var(--sage-deep);
+  background: transparent;
+  font-size: 13px;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
 }
 
-.article-cover {
-  width: 45%;
-  height: 100%;
-  overflow: hidden;
+.load-more-button:hover:not(:disabled) {
+  color: #fff;
+  background: var(--sage-deep);
+  transform: translateY(-2px);
 }
 
-.left-card .article-cover {
-  order: 0;
-  border-radius: 8px 0 0 8px;
+.load-more-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
-.right-card .article-cover {
-  order: 1;
-  border-radius: 0 8px 8px 0;
-}
-
-.on-hover {
-  transition: transform 0.6s;
-}
-
-.article-card:hover .on-hover {
-  transform: scale(1.1);
-}
-
-.article-wrapper {
-  width: 55%;
-  padding: 0 2.5rem;
-  font-size: 14px;
-}
-
-.right-card .article-wrapper {
-  order: 0;
-}
-
-.article-title-line a {
-  font-size: 1.5rem;
-  overflow-wrap: anywhere;
-}
-
-.article-title-line a:hover {
-  color: #8e8cd8;
-}
-
-.article-info {
-  margin: 0.375rem 0;
-  color: #858585;
-  font-size: 95%;
-  line-height: 2;
-}
-
-.top-mark {
-  color: #ff7242;
-}
-
-.article-content {
-  display: -webkit-box;
-  overflow: hidden;
-  color: #858585;
-  line-height: 2;
-  text-overflow: ellipsis;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.home-container {
-  max-width: 1200px;
-  margin: calc(100vh - 48px) auto 28px;
-  padding: 0 5px;
-}
-
-.blog-wrapper {
-  position: sticky;
-  top: 10px;
-}
-
-.blog-card {
-  padding: 1.25rem 1.5rem;
-  line-height: 2;
-}
-
-.author-wrapper {
+.article-empty {
+  padding: 72px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
   text-align: center;
+}
+
+.empty-mark {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-size: 26px;
+}
+
+.article-empty p {
+  margin: 0 !important;
+}
+
+.home-aside {
+  position: sticky;
+  top: 104px;
+}
+
+.author-panel {
+  position: relative;
+  padding: 8px 0 26px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.author-avatar-wrap {
+  display: inline-flex;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
 }
 
 .author-avatar {
-  transition: transform 0.5s;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
-.author-avatar:hover {
-  transform: rotate(360deg);
+.author-panel h3 {
+  margin: 18px 0 7px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 500;
 }
 
-.author-name {
-  margin-top: 0.625rem;
-  font-size: 1.375rem;
+.author-rule {
+  display: block;
+  width: 30px;
+  height: 2px;
+  margin: 0 auto;
+  background: var(--sage);
 }
 
-.author-intro,
-.notice {
-  font-size: 0.875rem;
+.author-panel p {
+  margin: 18px 0 0 !important;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
 }
 
-.blog-info-wrapper {
+.author-link {
+  margin-top: 17px;
+}
+
+.author-stat {
   display: flex;
+  align-items: baseline;
   justify-content: center;
-  padding: 0.875rem 0;
-  text-align: center;
+  gap: 12px;
+  margin-top: 28px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
-.blog-info-data {
-  text-decoration: none;
+.author-stat strong {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 500;
 }
 
-.blog-info-data strong {
-  font-size: 1.25rem;
+.notice-panel {
+  margin-top: 30px;
+  padding: 22px 20px;
+  border-radius: var(--radius-md);
+  background: rgba(184, 181, 216, 0.14);
 }
 
-@media (max-width: 759px) {
-  .blog-title {
-    font-size: 26px;
-  }
+.notice-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--sage-deep);
+  font-size: 13px;
+}
 
-  .blog-intro {
-    font-size: 1.1rem;
-  }
+.notice-heading i {
+  color: var(--gold);
+  font-style: normal;
+}
 
-  .blog-contact {
-    display: block;
-    font-size: 1.25rem;
-    line-height: 2;
-  }
+.notice-panel p {
+  margin: 14px 0 0 !important;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.85;
+}
 
-  .home-container {
-    width: 100%;
-    margin: calc(100vh - 66px) auto 0;
+@media (max-width: 900px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 38px;
   }
 
   .article-card {
+    grid-template-columns: minmax(170px, 40%) minmax(0, 1fr);
+  }
+
+  .article-card:nth-child(even) {
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 40%);
+  }
+
+  .article-card-body {
+    padding-left: 24px;
+  }
+
+  .article-card:nth-child(even) .article-card-body {
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  .home-hero,
+  .home-hero-inner {
+    min-height: 680px;
+  }
+
+  .home-hero-inner {
+    align-items: flex-end;
+    padding-bottom: 124px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(56px, 17vw, 86px);
+  }
+
+  .hero-copy p {
+    margin-top: 22px !important;
+    font-size: 19px;
+  }
+
+  .hero-whisper {
+    display: none;
+  }
+
+  .scroll-cue {
+    bottom: 34px;
+  }
+
+  .home-content {
+    padding-top: 62px;
+    padding-bottom: 78px;
+  }
+
+  .content-heading {
     display: block;
-    height: auto;
-    margin-top: 1rem;
+    margin-bottom: 25px;
   }
 
-  .article-cover,
-  .left-card .article-cover,
-  .right-card .article-cover {
-    width: 100%;
-    height: 230px;
-    border-radius: 8px 8px 0 0;
+  .content-heading p {
+    margin-top: 14px !important;
   }
 
-  .article-wrapper,
-  .right-card .article-wrapper {
-    width: 100%;
-    padding: 1.25rem 1.25rem 1.875rem;
+  .home-grid {
+    display: block;
   }
 
-  .article-title-line a {
-    font-size: 1.25rem;
+  .article-card,
+  .article-card:nth-child(even) {
+    display: block;
+    min-height: 0;
+  }
+
+  .article-card:nth-child(even) .article-image,
+  .article-card:nth-child(even) .article-card-body {
+    order: initial;
+  }
+
+  .article-image,
+  .article-card:nth-child(even) .article-image {
+    min-height: 220px;
+    height: 220px;
+    margin: 20px 0 0;
+  }
+
+  .article-card-body,
+  .article-card:nth-child(even) .article-card-body {
+    display: block;
+    padding: 22px 0 30px;
+  }
+
+  .article-card h3 {
+    margin-top: 13px;
+    font-size: 24px;
+  }
+
+  .read-link {
+    margin-top: 18px;
+  }
+
+  .home-aside {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .author-panel {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .notice-panel {
+    align-self: start;
+    margin-top: 0;
   }
 }
 
-.scroll-down {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  cursor: pointer;
-}
+@media (max-width: 480px) {
+  .home-aside {
+    display: block;
+  }
 
-.scroll-down-effects {
-  display: inline-block;
-  color: #eee !important;
-  text-shadow: 0.1rem 0.1rem 0.2rem rgba(0, 0, 0, 0.15);
-  animation: scroll-down-effect 1.5s infinite;
-}
-
-@keyframes scroll-down-effect {
-  0%, 100% { top: 0; opacity: 0.4; }
-  50% { top: -16px; opacity: 1; }
+  .notice-panel {
+    margin-top: 30px;
+  }
 }
 </style>

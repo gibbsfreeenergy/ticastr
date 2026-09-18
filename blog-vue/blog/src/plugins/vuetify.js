@@ -61,6 +61,24 @@ export default createVuetify({
     sets: { mdi }
   },
   theme: {
-    defaultTheme: "light"
+    defaultTheme: "light",
+    themes: {
+      light: {
+        colors: {
+          primary: "#55766b",
+          secondary: "#b8b5d8",
+          surface: "#fffdf9",
+          background: "#f8f7f3"
+        }
+      },
+      dark: {
+        colors: {
+          primary: "#9dbbaa",
+          secondary: "#c8c5e5",
+          surface: "#202b38",
+          background: "#18202b"
+        }
+      }
+    }
   }
 });
