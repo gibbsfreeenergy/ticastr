@@ -72,8 +72,9 @@ if [[ ! -f blog-vue/blog/vercel.mjs || ! -f blog-vue/admin/vercel.mjs ]]; then
   fail=1
 fi
 
-if ! cmp -s blog-vue/blog/nginx.conf blog-vue/admin/nginx.conf; then
-  echo 'Frontend Nginx proxy contracts have drifted.' >&2
+if ! rg -q 'add_header Cache-Control "no-cache" always;' blog-vue/blog/nginx.conf \
+  || ! rg -q 'add_header Cache-Control "no-store" always;' blog-vue/admin/nginx.conf; then
+  echo 'Frontend Nginx cache contracts have drifted.' >&2
   fail=1
 fi
 
