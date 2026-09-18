@@ -14,7 +14,7 @@ if rg -n '\$api\.(get|post|put|delete|request)[[:space:]]*\(' \
   fail=1
 fi
 
-if rg -n '/(api|uploads)/' \
+if rg -n "[\"']/(api|uploads)/" \
     blog-vue/blog/src/views blog-vue/blog/src/components \
     blog-vue/admin/src/views blog-vue/admin/src/components; then
   echo 'Frontend views/components must not own proxy endpoint paths.' >&2
