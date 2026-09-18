@@ -35,7 +35,7 @@ export default {
   position: relative;
   min-height: 480px;
   overflow: hidden;
-  background-color: #80919e;
+  background: radial-gradient(circle at 78% 18%, rgba(238, 214, 202, 0.92), transparent 30%), linear-gradient(135deg, #718794 0%, #9699b3 48%, #c79c8d 100%);
   background-position: center;
   background-size: cover;
   color: #fff;

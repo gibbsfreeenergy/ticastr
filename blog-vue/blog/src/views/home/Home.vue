@@ -184,9 +184,8 @@ export default {
     },
     coverStyle() {
       const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "home");
-      return {
-        backgroundImage: `url("${page?.pageCover || "/images/hero-dawn.png"}")`
-      };
+      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
+      return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }
 };
@@ -201,7 +200,7 @@ export default {
 .home-hero {
   position: relative;
   min-height: min(780px, 84vh);
-  background-color: #c3c9d0;
+  background: radial-gradient(circle at 78% 18%, rgba(238, 214, 202, 0.92), transparent 30%), linear-gradient(135deg, #82939d 0%, #aaa9bb 48%, #d3aa99 100%);
   background-position: center;
   background-size: cover;
   color: #fff;

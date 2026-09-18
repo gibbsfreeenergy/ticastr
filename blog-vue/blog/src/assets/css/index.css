@@ -146,7 +146,7 @@ ol {
   position: relative;
   min-height: 330px;
   overflow: hidden;
-  background-color: #c3c9d0;
+  background: radial-gradient(circle at 78% 18%, rgba(238, 214, 202, 0.92), transparent 30%), linear-gradient(135deg, #82939d 0%, #aaa9bb 48%, #d3aa99 100%);
   background-position: center;
   background-size: cover;
   color: #fff;

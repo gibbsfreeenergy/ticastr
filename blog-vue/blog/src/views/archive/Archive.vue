@@ -98,9 +98,8 @@ export default {
     },
     coverStyle() {
       const page = (this.$store.state.blogInfo.pageList || []).find(item => item.pageLabel === "archive");
-      return {
-        backgroundImage: `url("${page?.pageCover || "/images/hero-dawn.png"}")`
-      };
+      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
+      return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }
 };

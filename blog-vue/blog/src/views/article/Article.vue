@@ -185,9 +185,8 @@ export default {
       return typeof window === "undefined" ? "" : window.location.href;
     },
     articleCover() {
-      return {
-        backgroundImage: `url("${this.article.articleCover || "/images/hero-dawn.png"}")`
-      };
+      const articleCover = typeof this.article.articleCover === "string" ? this.article.articleCover.trim() : "";
+      return articleCover ? { backgroundImage: `url("${articleCover}")` } : {};
     }
   }
 };

@@ -117,9 +117,8 @@ export default {
     },
     coverStyle() {
       const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "about");
-      return {
-        backgroundImage: `url("${page?.pageCover || "/images/hero-dawn.png"}")`
-      };
+      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
+      return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }
 };
