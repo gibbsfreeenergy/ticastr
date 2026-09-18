@@ -127,6 +127,7 @@ export default {
         const response = await this.$api.article.content(this.$route.params.articleId);
         if (generation !== this.requestGeneration) return;
         this.renderedContent = renderMarkdown(response.data || "");
+        this.contentLoading = false;
         await this.$nextTick();
         if (generation !== this.requestGeneration) return;
         const source = this.$refs.contentView?.getReadingText() || "";
