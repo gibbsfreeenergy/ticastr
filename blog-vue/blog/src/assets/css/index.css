@@ -346,6 +346,14 @@ pre.hljs code {
 .right-container .is-collapsible{
   padding-left: 8px !important;
 }
+
+@media (max-width: 759px) {
+  .markdown-body figure {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}
+
 #nprogress .bar {
   background:#49b1f5 !important; 
 }

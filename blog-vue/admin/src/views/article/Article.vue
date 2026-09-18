@@ -21,7 +21,7 @@
         />
         <el-button
           v-if="article.id == null || article.status === 3"
-          type="danger"
+          type="warning"
           size="medium"
           class="save-btn"
           :loading="saveLoading"
@@ -31,7 +31,7 @@
           保存草稿
         </el-button>
         <el-button
-          type="danger"
+          type="primary"
           size="medium"
           :loading="publishLoading"
           :disabled="publishLoading || contentLoading"
@@ -48,15 +48,21 @@
         <p>{{ contentError.message }}</p>
         <el-button type="primary" @click="retryContent">重试正文</el-button>
       </div>
-      <md-editor
-        v-else
-        ref="md"
-        v-model="articleContent"
-        aria-label="文章 Markdown 编辑器"
-        style="height:calc(100vh - 260px)"
-        @onChange="contentChanged"
-        @onUploadImg="uploadImg"
-      />
+      <template v-else>
+        <MobileEditorMode v-model="editorMode" />
+        <md-editor
+          ref="md"
+          class="article-editor"
+          :preview="editorPreview"
+          :preview-only="editorPreviewOnly"
+          :toolbars="editorToolbars"
+          placeholder="开始编写文章内容..."
+          v-model="articleContent"
+          aria-label="文章 Markdown 编辑器"
+          @onChange="contentChanged"
+          @onUploadImg="uploadImg"
+        />
+      </template>
 
       <div class="editor-toolbar" aria-live="polite">
         <span>{{ editorStatusText }}</span>
@@ -72,6 +78,7 @@
         </el-button>
         <el-button
           size="small"
+          class="full-preview-btn"
           :disabled="!articleContent.trim()"
           @click="previewVisible = true"
         >
@@ -132,6 +139,23 @@ import { createArticleEditorState } from "./articleEditorState";
 import ArticleEditorForm from "./ArticleEditorForm.vue";
 import ArticlePreview from "./ArticlePreview.vue";
 import ArticleVersionDialog from "./ArticleVersionDialog.vue";
+import MobileEditorMode from "../../components/MobileEditorMode.vue";
+
+const mobileEditorToolbars = [
+  "bold",
+  "underline",
+  "italic",
+  "-",
+  "title",
+  "quote",
+  "unorderedList",
+  "orderedList",
+  "-",
+  "link",
+  "image",
+  "revoke",
+  "next"
+];
 
 const newArticle = moment => ({
   id: null,
@@ -149,7 +173,8 @@ export default {
     MdEditor,
     ArticleEditorForm,
     ArticlePreview,
-    ArticleVersionDialog
+    ArticleVersionDialog,
+    MobileEditorMode
   },
   beforeRouteLeave(to, from, next) {
     if (!this.editor?.state.dirty || this.leaveConfirmed) {
@@ -173,7 +198,17 @@ export default {
     if (this.routeArticleId) this.loadArticle();
     else this.restoreLocalDraft();
   },
+  mounted() {
+    this.viewportQuery = window.matchMedia("(max-width: 900px), (hover: none) and (pointer: coarse)");
+    this.syncViewport();
+    if (this.viewportQuery.addEventListener) this.viewportQuery.addEventListener("change", this.syncViewport);
+    else this.viewportQuery.addListener(this.syncViewport);
+  },
   beforeUnmount() {
+    if (this.viewportQuery) {
+      if (this.viewportQuery.removeEventListener) this.viewportQuery.removeEventListener("change", this.syncViewport);
+      else this.viewportQuery.removeListener(this.syncViewport);
+    }
     this.persistLocalDraft();
     this.editor?.dispose();
   },
@@ -204,7 +239,10 @@ export default {
       loadingVersions: false,
       saveLoading: false,
       publishLoading: false,
-      leaveConfirmed: false
+      leaveConfirmed: false,
+      editorMode: "edit",
+      isMobileViewport: false,
+      viewportQuery: null
     };
   },
   computed: {
@@ -222,9 +260,22 @@ export default {
         error: "保存失败"
       };
       return labels[this.editorStatus] || "待编辑";
+    },
+    editorPreview() {
+      return !this.isMobileViewport || this.editorMode === "preview";
+    },
+    editorPreviewOnly() {
+      return this.isMobileViewport && this.editorMode === "preview";
+    },
+    editorToolbars() {
+      return this.isMobileViewport ? mobileEditorToolbars : undefined;
     }
   },
   methods: {
+    syncViewport() {
+      this.isMobileViewport = this.viewportQuery.matches;
+      if (!this.isMobileViewport) this.editorMode = "edit";
+    },
     syncEditorState(state) {
       this.editorStatus = state.status;
       this.articleContent = state.markdown;
@@ -489,9 +540,20 @@ export default {
   margin: 2.25rem 0 1.25rem;
 }
 
+.article-title-container :deep(.el-input) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.article-editor {
+  width: 100%;
+  height: calc(100vh - 260px);
+}
+
 .save-btn {
-  background: #fff;
-  color: #f56c6c;
+  color: #a96500 !important;
+  background: #fff8ea !important;
+  border-color: #ffe2ac !important;
 }
 
 .editor-toolbar {
@@ -530,5 +592,44 @@ export default {
   gap: 0.75rem;
   color: #c45656;
   font-size: 0.8125rem;
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .article-title-container {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .article-title-container :deep(.el-input) {
+    flex-basis: 100%;
+  }
+
+  .article-title-container > .el-button {
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 0;
+  }
+
+  .article-editor {
+    height: calc(100vh - 360px);
+    height: min(560px, calc(100dvh - 360px));
+    min-height: 360px;
+  }
+
+  .article-editor :deep(.md-editor-toolbar-wrapper) {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .article-editor :deep(.md-editor-toolbar) {
+    min-width: max-content;
+  }
+
+  .editor-toolbar {
+    justify-content: flex-start;
+  }
+
+  .full-preview-btn {
+    display: none;
+  }
 }
 </style>

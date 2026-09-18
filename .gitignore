@@ -4,6 +4,8 @@ node_modules
 dist/
 **/target/
 uploads/
+/blog-springboot/data/
+/tmp/
 deploy/backend/app.jar
 blog-springboot/src/main/resources/application-local.yml
 /.tools

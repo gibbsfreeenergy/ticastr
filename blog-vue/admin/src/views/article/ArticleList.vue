@@ -1,15 +1,25 @@
 <template>
   <el-card class="main-card">
     <div class="title">文章列表</div>
-    <div class="article-status-menu">
-      <span>状态</span>
-      <span v-for="item in statusOptions" :key="item.key" :class="isActive(item.key)" @click="changeStatus(item.key)">
-        {{ item.label }}
-      </span>
+    <div class="article-status-menu" role="tablist" aria-label="文章状态">
+      <span class="status-label">状态</span>
+      <div class="status-options">
+        <button
+          v-for="item in statusOptions"
+          :key="item.key"
+          type="button"
+          role="tab"
+          :class="isActive(item.key)"
+          :aria-selected="activeStatus === item.key"
+          @click="changeStatus(item.key)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
     </div>
-    <div class="operation-container">
-      <el-button type="danger" size="small" :disabled="articleIdList.length === 0" @click="updateIsDelete = true">
-        批量删除
+    <div class="operation-container article-operations">
+      <el-button class="bulk-delete" type="danger" size="small" :disabled="articleIdList.length === 0" @click="updateIsDelete = true">
+        {{ articleIdList.length ? `删除选中 (${articleIdList.length})` : "批量删除" }}
       </el-button>
       <div class="filters">
         <el-select v-model="type" clearable placeholder="文章类型" size="small">
@@ -27,7 +37,7 @@
       </div>
     </div>
 
-    <el-table border :data="articleList" @selection-change="selectionChange" v-loading="loading">
+    <el-table class="article-table" border :data="articleList" @selection-change="selectionChange" v-loading="loading">
       <el-table-column type="selection" width="55" />
       <el-table-column prop="articleCover" label="封面" width="150" align="center">
         <template #default="{ row }">
@@ -59,6 +69,43 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="mobile-article-list" v-loading="loading" aria-label="文章列表">
+      <el-empty v-if="!loading && articleList.length === 0" description="暂无文章" />
+      <article v-for="row in articleList" :key="row.id" class="mobile-article-card">
+        <div class="mobile-article-card__header">
+          <label class="mobile-article-select">
+            <input
+              type="checkbox"
+              :checked="articleIdList.includes(row.id)"
+              :aria-label="`选择文章：${row.articleTitle}`"
+              @change="toggleMobileSelection(row.id, $event)"
+            />
+            <span>选择</span>
+          </label>
+          <el-tag :type="articleType(row.type).tagType">{{ articleType(row.type).name }}</el-tag>
+        </div>
+        <div class="mobile-article-card__body">
+          <el-image class="mobile-article-cover" :src="row.articleCover || fallbackCover" fit="cover" />
+          <div class="mobile-article-copy">
+            <h3>{{ row.articleTitle }}</h3>
+            <p>{{ date(row.createTime) }}</p>
+          </div>
+        </div>
+        <div class="mobile-article-card__footer">
+          <span v-if="row.isDelete === 1" class="mobile-article-deleted">已在回收站</span>
+          <span v-else>{{ row.isTop === 1 ? "已置顶" : "未置顶" }}</span>
+          <div class="mobile-article-actions">
+            <el-button v-if="row.isDelete === 0" type="primary" size="small" @click="editArticle(row.id)">编辑</el-button>
+            <el-button v-if="row.isDelete === 0" type="danger" size="small" @click="updateArticleDelete(row.id)">删除</el-button>
+            <template v-else>
+              <el-button type="success" size="small" @click="updateArticleDelete(row.id)">恢复</el-button>
+              <el-button type="danger" size="small" @click="deleteArticles(row.id)">彻底删除</el-button>
+            </template>
+          </div>
+        </div>
+      </article>
+    </div>
 
     <el-pagination
       class="pagination-container"
@@ -144,6 +191,12 @@ export default {
     selectionChange(rows) {
       this.articleIdList = rows.map(item => item.id);
     },
+    toggleMobileSelection(id, event) {
+      const selectedIds = new Set(this.articleIdList);
+      if (event.target.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      this.articleIdList = Array.from(selectedIds);
+    },
     editArticle(id) {
       this.$router.push({ path: "/articles/" + id });
     },
@@ -206,13 +259,33 @@ export default {
 }
 
 .article-status-menu {
-  margin-top: 40px;
+  margin: 22px 0 20px;
   color: #999;
   font-size: 14px;
 }
 
-.article-status-menu span {
-  margin-right: 24px;
+.status-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.status-options button {
+  min-height: 36px;
+  padding: 6px 11px;
+  color: #86868b;
+  font: inherit;
+  font-size: 12px;
+  background: #f7f7fa;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.status-options button:hover,
+.status-options button:focus-visible {
+  color: #6e6e73;
+  border-color: #d2d2d7;
 }
 
 .status,
@@ -221,8 +294,10 @@ export default {
 }
 
 .active-status {
-  color: #333;
+  color: #0071e3 !important;
   font-weight: bold;
+  background: #eaf3ff !important;
+  border-color: rgba(0, 113, 227, 0.12) !important;
 }
 
 .article-cover {
@@ -236,7 +311,100 @@ export default {
   margin-top: 1rem;
 }
 
-@media (max-width: 720px) {
+.mobile-article-list {
+  display: none;
+}
+
+.mobile-article-card {
+  padding: 13px;
+  background: #fbfbfd;
+  border: 1px solid #e5e5ea;
+  border-radius: 14px;
+}
+
+.mobile-article-card__header,
+.mobile-article-card__body,
+.mobile-article-card__footer,
+.mobile-article-select,
+.mobile-article-actions {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-article-card__header,
+.mobile-article-card__footer {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-article-card__body {
+  min-width: 0;
+  gap: 13px;
+  padding: 13px 0;
+}
+
+.mobile-article-select {
+  gap: 8px;
+  min-height: 36px;
+  color: #6e6e73;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mobile-article-select input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #0071e3;
+}
+
+.mobile-article-cover {
+  flex: 0 0 92px;
+  width: 92px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 9px;
+}
+
+.mobile-article-copy {
+  min-width: 0;
+}
+
+.mobile-article-copy h3 {
+  display: -webkit-box;
+  margin: 0 0 5px;
+  overflow: hidden;
+  color: #1d1d1f;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mobile-article-copy p,
+.mobile-article-card__footer > span {
+  margin: 0;
+  color: #86868b;
+  font-size: 11px;
+}
+
+.mobile-article-deleted {
+  color: #c9342b !important;
+}
+
+.mobile-article-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.mobile-article-actions .el-button {
+  margin: 0;
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
   .operation-container,
   .filters {
     align-items: stretch;
@@ -250,6 +418,61 @@ export default {
 
   .filters .el-input {
     width: 100%;
+  }
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .article-status-menu {
+    display: block;
+    margin: 16px 0 20px !important;
+  }
+
+  .article-status-menu .status-label {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .article-status-menu .status-options {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .status-options button {
+    width: 100%;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .article-operations .bulk-delete {
+    order: 2;
+    width: 100%;
+  }
+
+  .article-operations .filters {
+    order: 1;
+  }
+
+  .article-operations .filters .el-select {
+    width: 100%;
+  }
+
+  .article-table {
+    display: none;
+  }
+
+  .mobile-article-list {
+    display: grid;
+    min-height: 120px;
+    gap: 10px;
+  }
+
+  .mobile-article-list > .el-empty {
+    padding: 24px 0;
+  }
+
+  .pagination-container {
+    margin-top: 16px;
   }
 }
 </style>

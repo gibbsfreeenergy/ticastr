@@ -57,6 +57,7 @@ export default {
   border: 1px solid #eee;
   font-size: 0.875rem;
   line-height: 2;
+  overflow-wrap: anywhere;
 }
 
 .article-copyright span {

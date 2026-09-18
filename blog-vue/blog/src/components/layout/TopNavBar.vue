@@ -1,14 +1,14 @@
 <template>
   <v-app-bar :class="navClass" hide-on-scroll flat height="60">
     <div class="d-md-none nav-mobile-container">
-      <div style="font-size:18px;font-weight:bold">
+      <div class="nav-mobile-title">
         <router-link to="/">
           {{ blogInfo.websiteConfig.websiteAuthor }}
         </router-link>
       </div>
-      <div style="margin-left:auto">
+      <div class="nav-mobile-actions">
         <a @click="openSearch"><i class="iconfont iconsousuo"/></a>
-        <a @click="openDrawer" style="margin-left:10px;font-size:20px">
+        <a class="nav-mobile-menu" @click="openDrawer">
           <i class="iconfont iconhanbao" />
         </a>
       </div>
@@ -136,6 +136,24 @@ ul {
   width: 100%;
   display: flex;
   align-items: center;
+}
+.nav-mobile-title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-mobile-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.nav-mobile-menu {
+  font-size: 20px;
 }
 @media (min-width: 960px) {
   .nav-mobile-container {

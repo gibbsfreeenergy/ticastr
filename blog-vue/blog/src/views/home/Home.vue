@@ -280,6 +280,7 @@ export default {
 
 .article-title-line a {
   font-size: 1.5rem;
+  overflow-wrap: anywhere;
 }
 
 .article-title-line a:hover {

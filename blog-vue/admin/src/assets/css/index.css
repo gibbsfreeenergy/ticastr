@@ -325,6 +325,12 @@ a {
   box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
 }
 
+.el-input__count,
+.el-textarea .el-input__count {
+  color: var(--admin-text-tertiary);
+  background: transparent;
+}
+
 .el-input-group__append,
 .el-input-group__prepend {
   color: var(--admin-text-secondary);
@@ -585,16 +591,25 @@ a {
   font-size: 12px;
 }
 
-.article-status-menu > span:first-child {
+.article-status-menu .status-label {
   margin-right: 5px;
   color: var(--admin-text-secondary);
   font-weight: 650;
 }
 
-.article-status-menu > span:not(:first-child) {
+.article-status-menu .status-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.article-status-menu .status-options > button {
+  min-height: 36px;
   padding: 6px 11px;
   margin: 0 !important;
   color: var(--admin-text-tertiary);
+  font: inherit;
+  font-size: 12px;
   background: #f7f7fa;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -602,12 +617,13 @@ a {
   transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
-.article-status-menu > span:not(:first-child):hover {
+.article-status-menu .status-options > button:hover,
+.article-status-menu .status-options > button:focus-visible {
   color: var(--admin-text-secondary);
   border-color: var(--admin-border);
 }
 
-.article-status-menu .active-status {
+.article-status-menu .status-options > button.active-status {
   color: var(--admin-blue);
   font-weight: 650;
   background: var(--admin-blue-soft);

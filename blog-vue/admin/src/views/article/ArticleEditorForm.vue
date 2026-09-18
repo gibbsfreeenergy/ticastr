@@ -6,7 +6,7 @@
     @update:model-value="$emit('update:modelValue', $event)"
   >
     <template #header><div class="dialog-title-container">发布文章</div></template>
-    <el-form label-width="80px" size="medium" :model="localArticle">
+    <el-form class="publish-form" label-width="80px" size="medium" :model="localArticle">
       <el-form-item label="文章类型">
         <el-select v-model="localArticle.type" placeholder="请选择类型">
           <el-option
@@ -34,9 +34,8 @@
           <div v-if="!localArticle.articleCover" class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
           <img
             v-else
+            class="cover-preview"
             :src="localArticle.articleCover"
-            width="360"
-            height="180"
             alt="文章封面"
           />
         </el-upload>
@@ -121,5 +120,28 @@ export default {
 
 .upload-cover {
   width: 360px;
+  max-width: 100%;
+}
+
+.publish-form :deep(.el-select) {
+  width: 100%;
+  max-width: 360px;
+}
+
+.upload-cover :deep(.el-upload-dragger) {
+  width: 100%;
+}
+
+.cover-preview {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .upload-cover {
+    width: 100%;
+  }
 }
 </style>

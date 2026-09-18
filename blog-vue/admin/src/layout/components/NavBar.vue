@@ -68,32 +68,35 @@
 
     <div class="tabs-bar">
       <div class="tabs-scroll" role="tablist" aria-label="已打开页面">
-        <button
+        <div
           v-for="tab in $store.state.tabList"
           :key="tab.path"
-          class="tab-item"
+          class="tab-entry"
           :class="{ 'is-active': isActive(tab) }"
-          type="button"
-          role="tab"
-          :aria-selected="isActive(tab)"
-          @click="goTo(tab)"
+          role="presentation"
         >
-          <span class="tab-dot" aria-hidden="true" />
-          <span class="tab-name">{{ tab.name }}</span>
-          <span
+          <button
+            class="tab-item"
+            type="button"
+            role="tab"
+            :aria-selected="isActive(tab)"
+            @click="goTo(tab)"
+          >
+            <span class="tab-dot" aria-hidden="true" />
+            <span class="tab-name">{{ tab.name }}</span>
+          </button>
+          <button
             v-if="tab.path !== '/'"
             class="tab-close"
-            role="button"
-            tabindex="0"
-            aria-label="关闭页面"
+            type="button"
+            :aria-label="`关闭${tab.name}`"
             @click.stop="removeTab(tab)"
-            @keydown.enter.stop="removeTab(tab)"
           >
             <AppIcon name="close" :size="13" />
-          </span>
-        </button>
+          </button>
+        </div>
       </div>
-      <button class="clear-tabs-button" type="button" @click="closeAllTab">
+      <button class="clear-tabs-button" type="button" aria-label="关闭其他页面" title="关闭其他页面" @click="closeAllTab">
         <span>全部关闭</span>
         <AppIcon name="close" :size="14" />
       </button>
@@ -554,35 +557,44 @@ kbd {
   display: none;
 }
 
-.tab-item {
+.tab-entry {
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
   min-height: 30px;
-  gap: 7px;
-  padding: 0 9px;
   color: var(--admin-text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.tab-entry:hover {
+  color: var(--admin-text-secondary);
+  background: rgba(118, 118, 128, 0.08);
+}
+
+.tab-entry.is-active {
+  color: var(--admin-blue);
+  font-weight: 650;
+  background: var(--admin-blue-soft);
+  border-color: rgba(0, 113, 227, 0.12);
+}
+
+.tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 5px 0 9px;
+  color: inherit;
   font: inherit;
   font-size: 12px;
   font-weight: 520;
   white-space: nowrap;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 9px;
+  border: 0;
   cursor: pointer;
-  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, transform 180ms ease;
-}
-
-.tab-item:hover {
-  color: var(--admin-text-secondary);
-  background: rgba(118, 118, 128, 0.08);
-}
-
-.tab-item.is-active {
-  color: var(--admin-blue);
-  font-weight: 650;
-  background: var(--admin-blue-soft);
-  border-color: rgba(0, 113, 227, 0.12);
 }
 
 .tab-dot {
@@ -593,7 +605,7 @@ kbd {
   opacity: 0.45;
 }
 
-.tab-item.is-active .tab-dot {
+.tab-entry.is-active .tab-dot {
   opacity: 1;
 }
 
@@ -601,10 +613,13 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-right: -4px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-right: 3px;
   color: var(--admin-text-tertiary);
+  background: transparent;
+  border: 0;
   border-radius: 50%;
   cursor: pointer;
 }
@@ -836,8 +851,7 @@ kbd {
 
   .command-trigger span,
   .command-trigger kbd,
-  .user-copy,
-  .user-trigger > :last-child {
+  .user-copy {
     display: none;
   }
 
@@ -849,9 +863,13 @@ kbd {
     margin-left: 0;
   }
 
+  .user-trigger {
+    gap: 4px;
+  }
+
   .tabs-bar {
-    min-height: 44px;
-    gap: 8px;
+    min-height: 38px;
+    gap: 6px;
     padding: 0 20px;
   }
 
@@ -860,7 +878,22 @@ kbd {
   }
 
   .clear-tabs-button {
+    padding: 4px 0 4px 8px;
+  }
+
+  .tab-entry {
+    min-height: 32px;
+  }
+
+  .tab-item {
+    min-height: 32px;
     padding-left: 8px;
+  }
+
+  .tab-close {
+    width: 30px;
+    height: 30px;
+    margin-right: 1px;
   }
 
   .command-scrim {

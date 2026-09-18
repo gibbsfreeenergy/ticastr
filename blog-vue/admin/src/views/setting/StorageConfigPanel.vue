@@ -389,7 +389,7 @@ export default {
 .storage-config-actions { border-top: 1px solid #f2f5fa; padding-top: 0.75rem; }
 :deep(.storage-config-dialog) { max-width: calc(100vw - 32px); }
 
-@media (max-width: 600px) {
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
   .storage-config-header { flex-direction: column; }
   .storage-config-header-actions { width: 100%; }
   .storage-config-grid { grid-template-columns: 1fr; }
