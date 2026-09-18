@@ -19,26 +19,28 @@
           placeholder="输入文章标题"
           aria-label="文章标题"
         />
-        <el-button
-          v-if="article.id == null || article.status === 3"
-          type="warning"
-          size="medium"
-          class="save-btn"
-          :loading="saveLoading"
-          :disabled="!articleContent.trim()"
-          @click="saveArticleDraft"
-        >
-          保存草稿
-        </el-button>
-        <el-button
-          type="primary"
-          size="medium"
-          :loading="publishLoading"
-          :disabled="publishLoading || contentLoading"
-          @click="openModel"
-        >
-          发布文章
-        </el-button>
+        <div class="article-primary-actions" aria-label="文章操作">
+          <el-button
+            v-if="article.id == null || article.status === 3"
+            type="warning"
+            size="medium"
+            class="save-btn"
+            :loading="saveLoading"
+            :disabled="!articleContent.trim()"
+            @click="saveArticleDraft"
+          >
+            保存草稿
+          </el-button>
+          <el-button
+            type="primary"
+            size="medium"
+            :loading="publishLoading"
+            :disabled="publishLoading || contentLoading"
+            @click="openModel"
+          >
+            发布文章
+          </el-button>
+        </div>
       </div>
 
       <div v-if="contentLoading" class="editor-state" role="status" aria-live="polite">
@@ -49,12 +51,10 @@
         <el-button type="primary" @click="retryContent">重试正文</el-button>
       </div>
       <template v-else>
-        <MobileEditorMode v-model="editorMode" />
         <md-editor
           ref="md"
           class="article-editor"
-          :preview="editorPreview"
-          :preview-only="editorPreviewOnly"
+          :preview="false"
           :toolbars="editorToolbars"
           placeholder="开始编写文章内容..."
           v-model="articleContent"
@@ -140,7 +140,6 @@ import { resolveArticleId } from "./articleRoute";
 import ArticleEditorForm from "./ArticleEditorForm.vue";
 import ArticlePreview from "./ArticlePreview.vue";
 import ArticleVersionDialog from "./ArticleVersionDialog.vue";
-import MobileEditorMode from "../../components/MobileEditorMode.vue";
 
 const mobileEditorToolbars = [
   "bold",
@@ -174,8 +173,7 @@ export default {
     MdEditor,
     ArticleEditorForm,
     ArticlePreview,
-    ArticleVersionDialog,
-    MobileEditorMode
+    ArticleVersionDialog
   },
   beforeRouteLeave(to, from, next) {
     if (!this.editor?.state.dirty || this.leaveConfirmed) {
@@ -241,7 +239,6 @@ export default {
       saveLoading: false,
       publishLoading: false,
       leaveConfirmed: false,
-      editorMode: "edit",
       isMobileViewport: false,
       viewportQuery: null
     };
@@ -261,12 +258,6 @@ export default {
       };
       return labels[this.editorStatus] || "待编辑";
     },
-    editorPreview() {
-      return !this.isMobileViewport || this.editorMode === "preview";
-    },
-    editorPreviewOnly() {
-      return this.isMobileViewport && this.editorMode === "preview";
-    },
     editorToolbars() {
       return this.isMobileViewport ? mobileEditorToolbars : undefined;
     }
@@ -274,7 +265,6 @@ export default {
   methods: {
     syncViewport() {
       this.isMobileViewport = this.viewportQuery.matches;
-      if (!this.isMobileViewport) this.editorMode = "edit";
     },
     syncEditorState(state) {
       this.editorStatus = state.status;
@@ -545,6 +535,18 @@ export default {
   flex: 1 1 auto;
 }
 
+.article-primary-actions {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+}
+
+.article-primary-actions :deep(.el-button) {
+  min-width: 130px;
+  margin: 0;
+}
+
 .article-editor {
   width: 100%;
   height: calc(100vh - 260px);
@@ -597,16 +599,22 @@ export default {
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
   .article-title-container {
     align-items: stretch;
-    flex-wrap: wrap;
+    flex-direction: column;
   }
 
   .article-title-container :deep(.el-input) {
-    flex-basis: 100%;
+    width: 100%;
+    flex: 0 0 auto;
   }
 
-  .article-title-container > .el-button {
+  .article-primary-actions {
+    width: 100%;
+  }
+
+  .article-primary-actions :deep(.el-button) {
     flex: 1 1 calc(50% - 0.375rem);
     min-width: 0;
+    width: 100%;
   }
 
   .article-editor {
