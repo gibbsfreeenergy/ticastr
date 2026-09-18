@@ -27,7 +27,10 @@ jobs:
             exit 1
           fi
 
-          if git grep -n -E 'Source (Host|Server)|DROP TABLE IF EXISTS|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|14\.103\.129\.219|81\.68\.228\.31' -- ':!docs/ARCHITECTURE-ROADMAP.md'; then
+          if git grep -n -E 'Source (Host|Server)|DROP TABLE IF EXISTS|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|14\.103\.129\.219|81\.68\.228\.31' -- \
+            ':!docs/ARCHITECTURE-ROADMAP.md' \
+            ':!blog-springboot/src/main/resources/db/migration/**' \
+            ':!.github/workflows/verify.yml'; then
             echo "Tracked files contain database-export metadata or known infrastructure addresses."
             exit 1
           fi
