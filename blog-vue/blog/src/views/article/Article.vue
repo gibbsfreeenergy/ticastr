@@ -38,6 +38,7 @@ import ArticleSidebar from "./ArticleSidebar";
 import { hljs } from "../../utils/markdown";
 import { applySeo } from "../../utils/seo";
 import { createMarkdownRenderer } from "../../utils/renderMarkdown";
+import { normalizeMediaUrl } from "../../utils/media";
 import { normalizeHttpError } from "../../../../shared/api/error";
 
 const renderMarkdown = createMarkdownRenderer({
@@ -185,7 +186,7 @@ export default {
       return typeof window === "undefined" ? "" : window.location.href;
     },
     articleCover() {
-      const articleCover = typeof this.article.articleCover === "string" ? this.article.articleCover.trim() : "";
+      const articleCover = normalizeMediaUrl(this.article.articleCover);
       return articleCover ? { backgroundImage: `url("${articleCover}")` } : {};
     }
   }

@@ -52,6 +52,8 @@
 </template>
 
 <script>
+import { normalizeMediaUrl } from "../../utils/media";
+
 export default {
   name: "ArchivePage",
   created() {
@@ -98,7 +100,7 @@ export default {
     },
     coverStyle() {
       const page = (this.$store.state.blogInfo.pageList || []).find(item => item.pageLabel === "archive");
-      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
+      const pageCover = normalizeMediaUrl(page?.pageCover);
       return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }

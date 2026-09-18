@@ -16,7 +16,7 @@
         <v-avatar size="92">
           <img
             v-if="blogInfo.websiteConfig.websiteAvatar"
-            :src="blogInfo.websiteConfig.websiteAvatar"
+            :src="avatar"
             :alt="blogInfo.websiteConfig.websiteAuthor"
           />
         </v-avatar>
@@ -51,10 +51,15 @@
 </template>
 
 <script>
+import { normalizeMediaUrl } from "../../utils/media";
+
 export default {
   computed: {
     blogInfo() {
       return this.$store.state.blogInfo;
+    },
+    avatar() {
+      return normalizeMediaUrl(this.blogInfo.websiteConfig.websiteAvatar);
     },
     drawer: {
       set(value) {

@@ -62,6 +62,7 @@
 <script>
 import { renderMarkdownCode } from "../../utils/markdown";
 import { renderMarkdown } from "../../utils/renderMarkdown";
+import { normalizeMediaUrl } from "../../utils/media";
 import Clipboard from "clipboard";
 
 export default {
@@ -110,14 +111,14 @@ export default {
       return this.$store.state.blogInfo;
     },
     avatar() {
-      return this.blogInfo.websiteConfig.websiteAvatar;
+      return normalizeMediaUrl(this.blogInfo.websiteConfig.websiteAvatar);
     },
     isShowSocial() {
       return social => (this.blogInfo.websiteConfig.socialUrlList || []).includes(social);
     },
     coverStyle() {
       const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "about");
-      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
+      const pageCover = normalizeMediaUrl(page?.pageCover);
       return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }

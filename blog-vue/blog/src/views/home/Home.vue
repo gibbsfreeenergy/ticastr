@@ -64,7 +64,7 @@
             :style="{ '--delay': `${Math.min(index, 5) * 90}ms` }"
           >
             <router-link class="article-image" :to="'/articles/' + item.id">
-              <img :src="item.articleCover" :alt="item.articleTitle" loading="lazy" decoding="async" />
+              <img :src="mediaUrl(item.articleCover)" :alt="item.articleTitle" loading="lazy" decoding="async" />
               <span class="image-arrow" aria-hidden="true">↗</span>
             </router-link>
             <div class="article-card-body">
@@ -102,7 +102,7 @@
                 <img
                   v-if="blogInfo.websiteConfig.websiteAvatar"
                   class="author-avatar"
-                  :src="blogInfo.websiteConfig.websiteAvatar"
+                  :src="mediaUrl(blogInfo.websiteConfig.websiteAvatar)"
                   :alt="blogInfo.websiteConfig.websiteAuthor"
                 />
               </v-avatar>
@@ -128,20 +128,52 @@
 </template>
 
 <script>
+import { normalizeMediaUrl } from "../../utils/media";
+
 export default {
   name: "HomePage",
   created() {
+    this.syncCover();
     this.loadMoreArticles();
+  },
+  watch: {
+    blogInfo: {
+      deep: true,
+      handler() {
+        this.syncCover();
+      }
+    }
   },
   data() {
     return {
       articleList: [],
       nextCursor: null,
       loadingArticles: false,
-      articlesComplete: false
+      articlesComplete: false,
+      coverUrl: "",
+      coverRequest: 0
     };
   },
   methods: {
+    syncCover() {
+      const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "home");
+      const nextCover = normalizeMediaUrl(page?.pageCover);
+      if (!nextCover || nextCover === this.coverUrl) return;
+
+      const requestId = ++this.coverRequest;
+      if (typeof Image === "undefined") {
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => {
+        if (requestId === this.coverRequest) this.coverUrl = nextCover;
+      };
+      image.onerror = () => {
+        // Keep the last successfully loaded cover instead of replacing it with a broken URL.
+      };
+      image.src = nextCover;
+    },
     async requestWithRetry(request) {
       for (const delay of [0, 800, 1600]) {
         if (delay) await new Promise(resolve => setTimeout(resolve, delay));
@@ -173,6 +205,9 @@ export default {
     },
     scrollDown() {
       window.scrollTo({ behavior: "smooth", top: document.querySelector(".home-content")?.offsetTop || window.innerHeight });
+    },
+    mediaUrl(value) {
+      return normalizeMediaUrl(value);
     }
   },
   computed: {
@@ -183,9 +218,7 @@ export default {
       return social => (this.blogInfo.websiteConfig.socialUrlList || []).includes(social);
     },
     coverStyle() {
-      const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "home");
-      const pageCover = typeof page?.pageCover === "string" ? page.pageCover.trim() : "";
-      return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
+      return this.coverUrl ? { backgroundImage: `url("${this.coverUrl}")` } : {};
     }
   }
 };

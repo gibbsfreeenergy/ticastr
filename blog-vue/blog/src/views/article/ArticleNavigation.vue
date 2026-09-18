@@ -9,13 +9,13 @@
     <div class="pagination-post">
       <div v-if="article.lastArticle.id" class="post">
         <router-link :to="'/articles/' + article.lastArticle.id">
-          <img class="post-cover" :src="article.lastArticle.articleCover" :alt="article.lastArticle.articleTitle" loading="lazy" decoding="async" />
+          <img class="post-cover" :src="mediaUrl(article.lastArticle.articleCover)" :alt="article.lastArticle.articleTitle" loading="lazy" decoding="async" />
           <div class="post-info"><span>上一篇</span><strong>{{ article.lastArticle.articleTitle }}</strong></div>
         </router-link>
       </div>
       <div v-if="article.nextArticle.id" class="post post-next">
         <router-link :to="'/articles/' + article.nextArticle.id">
-          <img class="post-cover" :src="article.nextArticle.articleCover" :alt="article.nextArticle.articleTitle" loading="lazy" decoding="async" />
+          <img class="post-cover" :src="mediaUrl(article.nextArticle.articleCover)" :alt="article.nextArticle.articleTitle" loading="lazy" decoding="async" />
           <div class="post-info"><span>下一篇</span><strong>{{ article.nextArticle.articleTitle }}</strong></div>
         </router-link>
       </div>
@@ -25,7 +25,7 @@
       <div class="recommend-heading"><span>相关推荐</span><i aria-hidden="true">✦</i></div>
       <div class="recommend-list">
         <router-link v-for="item of article.recommendArticleList" :key="item.id" class="recommend-item" :to="'/articles/' + item.id">
-          <img class="recommend-cover" :src="item.articleCover" :alt="item.articleTitle" loading="lazy" decoding="async" />
+          <img class="recommend-cover" :src="mediaUrl(item.articleCover)" :alt="item.articleTitle" loading="lazy" decoding="async" />
           <span>
             <small>{{ date(item.createTime) }}</small>
             <strong>{{ item.articleTitle }}</strong>
@@ -37,12 +37,19 @@
 </template>
 
 <script>
+import { normalizeMediaUrl } from "../../utils/media";
+
 export default {
   name: "ArticleNavigation",
   props: {
     article: { type: Object, required: true },
     blogInfo: { type: Object, required: true },
     articleHref: { type: String, required: true }
+  },
+  methods: {
+    mediaUrl(value) {
+      return normalizeMediaUrl(value);
+    }
   }
 };
 </script>

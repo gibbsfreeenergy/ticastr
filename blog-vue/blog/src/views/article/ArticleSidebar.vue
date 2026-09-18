@@ -9,7 +9,7 @@
       <div class="sidebar-heading"><span class="sidebar-symbol">✧</span><span>最新文章</span></div>
       <div class="article-list">
         <router-link v-for="item of article.newestArticleList" :key="item.id" :to="'/articles/' + item.id" class="article-item">
-          <img :src="item.articleCover" :alt="item.articleTitle" width="56" height="56" loading="lazy" decoding="async" />
+          <img :src="mediaUrl(item.articleCover)" :alt="item.articleTitle" width="56" height="56" loading="lazy" decoding="async" />
           <span>
             <strong>{{ item.articleTitle }}</strong>
             <small>{{ date(item.createTime) }}</small>
@@ -27,9 +27,16 @@
 </template>
 
 <script>
+import { normalizeMediaUrl } from "../../utils/media";
+
 export default {
   name: "ArticleSidebar",
-  props: { article: { type: Object, required: true } }
+  props: { article: { type: Object, required: true } },
+  methods: {
+    mediaUrl(value) {
+      return normalizeMediaUrl(value);
+    }
+  }
 };
 </script>
 
