@@ -2101,8 +2101,19 @@ export default {
   }
 
   .live-controls {
+    position: relative;
     width: 100%;
     justify-content: space-between;
+  }
+
+  .live-hint {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    margin: 0;
+    white-space: nowrap;
+    transform: translateY(-50%);
+    pointer-events: none;
   }
 
   .source-control-row,
