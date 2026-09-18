@@ -27,7 +27,12 @@
       />
       <article v-for="item of pageList" :key="item.id" class="page-item">
         <div class="page-cover-frame">
-          <el-image fit="cover" class="page-cover" :src="item.pageCover" />
+          <el-image
+            :key="`${item.id}-${item.pageCover}`"
+            fit="cover"
+            class="page-cover"
+            :src="imageUrl(item.pageCover)"
+          />
           <div class="page-cover-scrim" aria-hidden="true"></div>
           <span class="page-label-badge">{{ item.pageLabel }}</span>
         </div>
@@ -80,10 +85,10 @@
             class="upload-cover"
             drag
             :show-file-list="false"
+            accept="image/*"
             :action="$api.admin.uploadConfigImageUrl"
             :headers="uploadHeaders"
             :with-credentials="true"
-            multiple
             :before-upload="beforeUpload"
             :on-success="uploadCover"
             :on-error="uploadError"
@@ -93,9 +98,10 @@
               将文件拖到此处，或<em>点击上传</em>
             </div>
             <img
+              :key="pageForum.pageCover"
               v-else
               class="page-cover-preview"
-              :src="pageForum.pageCover"
+              :src="imageUrl(pageForum.pageCover)"
             />
           </el-upload>
         </el-form-item>
@@ -111,9 +117,9 @@
 </template>
 
 <script>
-import * as imageConversion from "image-conversion";
 import { getCsrfHeaders } from "../../../../shared/http/csrf";
 import { EditPen, MoreFilled, Plus } from "@element-plus/icons-vue";
+import { compressImageForUpload } from "../../utils/imageUpload";
 export default {
   components: { EditPen, MoreFilled, Plus },
   created() {
@@ -153,13 +159,16 @@ export default {
       }
       this.addOrEdit = true;
     },
-    listPages() {
-      this.$api.admin.pages().then(data => {
-        this.pageList = data.data;
-        this.loading = false;
-      });
+    async listPages(showLoading = true) {
+      if (showLoading) this.loading = true;
+      try {
+        const data = await this.$api.admin.pages();
+        this.pageList = Array.isArray(data.data) ? data.data : [];
+      } finally {
+        if (showLoading) this.loading = false;
+      }
     },
-    addOrEditPage() {
+    async addOrEditPage() {
       if (this.pageForum.pageName.trim() == "") {
         this.$message.error("页面名称不能为空");
         return false;
@@ -174,44 +183,54 @@ export default {
         return false;
       }
       this.pageForum.pageLabel = pageLabel;
-      if (!this.pageForum.pageCover) {
+      const payload = {
+        ...this.pageForum,
+        pageName: this.pageForum.pageName.trim(),
+        pageCover: this.imageUrl(this.pageForum.pageCover)
+      };
+      if (!payload.pageCover) {
         this.$message.error("页面封面不能为空");
         return false;
       }
-      this.$api.admin.savePage(this.pageForum).then(data => {
+      try {
+        const data = await this.$api.admin.savePage(payload);
         if (data.flag) {
+          const index = this.pageList.findIndex(item => item.id === payload.id);
+          if (index >= 0) {
+            this.pageList.splice(index, 1, { ...this.pageList[index], ...payload });
+          }
+          this.addOrEdit = false;
           this.$notify.success({
             title: "成功",
             message: data.message
           });
-          this.listPages();
+          await this.listPages(false);
         } else {
           this.$notify.error({
             title: "失败",
             message: data.message
           });
         }
-      });
-      this.addOrEdit = false;
+      } catch {
+        // The shared HTTP client already reports the request error.
+      }
     },
     uploadCover(response) {
-      this.pageForum.pageCover = response.data;
+      const reference = this.imageUrl(response?.data || response?.url);
+      if (!reference) {
+        this.uploadError();
+        return;
+      }
+      this.pageForum.pageCover = reference;
     },
     uploadError() {
       this.$message.error("图片上传失败，请刷新页面后重试");
     },
     beforeUpload(file) {
-      return new Promise(resolve => {
-        if (file.size / 1024 < this.config.UPLOAD_SIZE) {
-          resolve(file);
-        }
-        // 压缩到200KB,这里的200就是要压缩的大小,可自定义
-        imageConversion
-          .compressAccurately(file, this.config.UPLOAD_SIZE)
-          .then(res => {
-            resolve(res);
-          });
-      });
+      return compressImageForUpload(file, this.config.UPLOAD_SIZE);
+    },
+    imageUrl(value) {
+      return typeof value === "string" ? value.trim() : "";
     },
     handleCommand(command) {
       const type = command.substring(0, 6);
