@@ -21,6 +21,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.io.ByteArrayInputStream;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
@@ -116,7 +117,7 @@ class StorageConfigAdminServiceTest {
         doThrow(new RuntimeException("unavailable")).when(provider).validateConnection();
 
         assertThrows(ConflictException.class, () -> service.update(13L,
-                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                new StorageConfigRequest("updated", "local", null, null, null, absoluteLocalRoot("storage-new"),
                         "https://cdn.example.com", null, null), 9));
 
         verify(configDao, never()).updateProfile(any());
@@ -140,7 +141,7 @@ class StorageConfigAdminServiceTest {
         when(configDao.updateProfile(any())).thenReturn(1);
 
         StorageConfigSummaryVO result = service.update(14L,
-                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                new StorageConfigRequest("updated", "local", null, null, null, absoluteLocalRoot("storage-new"),
                         "https://cdn.example.com", null, null), 9);
 
         ArgumentCaptor<StorageProviderConfig> captured = ArgumentCaptor.forClass(StorageProviderConfig.class);
@@ -179,7 +180,7 @@ class StorageConfigAdminServiceTest {
         when(configDao.selectByIdForUpdate(15L)).thenReturn(existing);
         when(configDao.updateProfile(any())).thenReturn(1);
 
-        service.update(15L, new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+        service.update(15L, new StorageConfigRequest("updated", "local", null, null, null, absoluteLocalRoot("storage-new"),
                 "https://cdn.example.com", null, null), 9);
 
         ArgumentCaptor<StorageProviderConfig> captured = ArgumentCaptor.forClass(StorageProviderConfig.class);
@@ -210,7 +211,7 @@ class StorageConfigAdminServiceTest {
         when(configDao.selectByIdForUpdate(16L)).thenReturn(target);
 
         assertThrows(ConflictException.class, () -> service.update(16L,
-                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                new StorageConfigRequest("updated", "local", null, null, null, absoluteLocalRoot("storage-new"),
                         "https://cdn.example.com", null, null), 9));
 
         verify(configDao).selectByIdForUpdate(16L);
@@ -224,7 +225,7 @@ class StorageConfigAdminServiceTest {
         StorageProviderConfig expected = localConfig(17L, true);
         expected.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 20));
         StorageProviderConfig target = localConfig(17L, true);
-        target.setLocalRoot("C:/changed-after-validation");
+        target.setLocalRoot(absoluteLocalRoot("changed-after-validation"));
         target.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 21));
         StorageProvider provider = healthyProvider();
         when(configDao.selectById(17L)).thenReturn(expected);
@@ -232,7 +233,7 @@ class StorageConfigAdminServiceTest {
         when(configDao.selectByIdForUpdate(17L)).thenReturn(target);
 
         assertThrows(ConflictException.class, () -> service.update(17L,
-                new StorageConfigRequest("updated", "local", null, null, null, "C:/storage-new",
+                new StorageConfigRequest("updated", "local", null, null, null, absoluteLocalRoot("storage-new"),
                         "https://cdn.example.com", null, null), 9));
 
         InOrder order = org.mockito.Mockito.inOrder(providerFactory, provider, configDao);
@@ -299,7 +300,7 @@ class StorageConfigAdminServiceTest {
         candidate.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 20));
         StorageProviderConfig target = localConfig(32L, false);
         target.setUpdatedAt(LocalDateTime.of(2026, 8, 31, 8, 21));
-        target.setLocalRoot("C:/changed-after-validation");
+        target.setLocalRoot(absoluteLocalRoot("changed-after-validation"));
         StorageProvider candidateProvider = healthyProvider();
         when(configDao.selectById(32L)).thenReturn(candidate);
         when(configDao.selectByIdForUpdate(32L)).thenReturn(target);
@@ -400,8 +401,12 @@ class StorageConfigAdminServiceTest {
 
     private StorageProviderConfig localConfig(Long id, boolean active) {
         return StorageProviderConfig.builder().id(id).configName("local").provider("local")
-                .localRoot("C:/storage").publicUrl("https://cdn.example.com").active(active)
+                .localRoot(absoluteLocalRoot("storage")).publicUrl("https://cdn.example.com").active(active)
                 .lastValidationStatus("NEVER").usageStatus("NEVER").build();
+    }
+
+    private String absoluteLocalRoot(String name) {
+        return Path.of("target", "storage-tests", name).toAbsolutePath().normalize().toString();
     }
 
     private StorageProviderConfig cloudConfig(Long id, boolean active) {

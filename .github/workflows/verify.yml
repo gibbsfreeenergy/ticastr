@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install repository verification tools
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Check patch whitespace
         shell: bash
         run: git diff --check
