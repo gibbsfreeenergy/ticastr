@@ -17,7 +17,10 @@ test -f blog-vue/admin/vercel.mjs
 
 for file in blog-vue/blog/wrangler.jsonc blog-vue/admin/wrangler.jsonc; do
   rg -q '"pages_build_output_dir"[[:space:]]*:[[:space:]]*"dist"' "$file"
-  rg -q '"API_ORIGIN"' "$file"
+done
+
+for file in blog-vue/blog/cloudflare-proxy.js blog-vue/admin/cloudflare-proxy.js; do
+  rg -q 'env\?\.API_ORIGIN' "$file"
 done
 
 for file in \
