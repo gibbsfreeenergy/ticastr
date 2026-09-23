@@ -167,7 +167,7 @@ export default {
   },
   computed: {
     breadcrumbList() {
-      let matched = this.$route.matched.filter(item => item.name && !this.isLayoutRoute(item));
+      let matched = this.$route.matched.filter(item => item.name && !this.isLayoutRoute(item) && !this.isInternalView(item));
       const first = matched[0];
       if (first && first.name !== "首页") {
         matched = [{ path: "/", name: "首页" }].concat(matched);
@@ -251,8 +251,13 @@ export default {
     isLayoutRoute(route) {
       return Boolean(route?.meta?.layoutOnly) || String(route?.name || "").endsWith(":layout");
     },
+    isInternalView(route) {
+      return Boolean(route?.meta?.layoutView);
+    },
     saveCurrentTab() {
-      if (this.$route.name && !this.isLayoutRoute(this.$route)) this.$store.commit("saveTab", this.$route);
+      if (!this.$route.name || this.isLayoutRoute(this.$route)) return;
+      const menuItem = this.menuItems.find(item => item.path === this.$route.path);
+      this.$store.commit("saveTab", menuItem || this.$route);
     },
     goTo(tab) {
       this.$router.push({ path: tab.path });

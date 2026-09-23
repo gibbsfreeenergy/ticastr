@@ -29,9 +29,6 @@ async function loadMenus() {
   const normalizedMenuList = userMenuList.map(item => {
     const routeKey = item.routeKey || item.code || resolveRouteKey(null, item.component);
     const normalizedItem = decorateMenuEntry(item, routeKey);
-    normalizedItem.component = normalizedItem.component === "Layout" || !normalizedItem.component
-      ? Layout
-      : normalizedItem.component;
     normalizedItem.children = (item.children || []).map(route => {
       const childRouteKey = route.routeKey || route.code || resolveRouteKey(null, route.component);
       const component = loadView(childRouteKey, route.component);
@@ -42,14 +39,29 @@ async function loadMenus() {
       normalizedRoute.component = component;
       return normalizedRoute;
     });
+    const hasChildren = normalizedItem.children.length > 0;
+    const standaloneComponent = loadView(routeKey, normalizedItem.component);
+    normalizedItem.component = Layout;
     const sharesChildName = normalizedItem.children.some(child => child.name === normalizedItem.name);
-    const route = sharesChildName
-      ? {
-          ...normalizedItem,
-          name: `${normalizedItem.code || normalizedItem.path}:layout`,
-          meta: { ...(normalizedItem.meta || {}), layoutOnly: true }
-        }
-      : normalizedItem;
+    const route = hasChildren
+      ? (sharesChildName
+          ? {
+              ...normalizedItem,
+              name: `${normalizedItem.code || normalizedItem.path}:layout`,
+              meta: { ...(normalizedItem.meta || {}), layoutOnly: true }
+            }
+          : normalizedItem)
+      : standaloneComponent
+        ? {
+            ...normalizedItem,
+            children: [{
+              path: "",
+              name: `${normalizedItem.code || normalizedItem.path}:view`,
+              component: standaloneComponent,
+              meta: { hidden: true, layoutView: true, title: normalizedItem.name }
+            }]
+          }
+        : normalizedItem;
     router.addRoute(route);
     return normalizedItem;
   });

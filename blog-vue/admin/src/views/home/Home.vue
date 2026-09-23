@@ -40,9 +40,9 @@
         <span><strong>关于我</strong><small>编辑关于页面的 Markdown 内容</small></span>
         <AppIcon name="chevronRight" :size="16" />
       </button>
-      <button class="quick-card" type="button" @click="$router.push({ path: '/storage' })">
-        <AppIcon name="folder" :size="20" />
-        <span><strong>媒体存储</strong><small>管理文章和页面图片的存储位置</small></span>
+      <button class="quick-card" type="button" @click="$router.push({ path: '/traffic' })">
+        <AppIcon name="activity" :size="20" />
+        <span><strong>代理监控</strong><small>查看连接、来源 IP 和目标域名</small></span>
         <AppIcon name="chevronRight" :size="16" />
       </button>
     </section>

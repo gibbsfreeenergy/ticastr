@@ -5,7 +5,7 @@
         <div class="page-eyebrow">SITE PAGES</div>
         <div class="page-title-row">
           <span class="page-title-mark" aria-hidden="true"></span>
-          <h1 class="page-title">{{ this.$route.name }}</h1>
+          <h1 class="page-title">{{ $route.meta?.title || "页面管理" }}</h1>
         </div>
         <p class="page-description">管理首页、归档与关于页面的封面和标签</p>
       </div>

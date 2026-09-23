@@ -1,0 +1,41 @@
+name: Deploy Cloudflare D1 API
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "cloudflare/d1/**"
+      - "cloudflare/d1-api-test/src/index.js"
+      - ".github/workflows/deploy-cloudflare-d1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ticastr-cloudflare-d1-api
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.18.0"
+          cache: npm
+          cache-dependency-path: cloudflare/d1-api-test/package-lock.json
+
+      - name: Install Worker dependencies
+        working-directory: cloudflare/d1-api-test
+        run: npm ci
+
+      - name: Deploy production D1 API Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare/d1
+          wranglerVersion: "4"
+          command: deploy --config wrangler.jsonc
