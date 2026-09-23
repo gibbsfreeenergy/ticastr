@@ -5,7 +5,7 @@ import store from "./store";
 import vuetify from "./plugins/vuetify";
 import "./assets/css/index.css";
 import "./assets/css/iconfont.css";
-import "./assets/css/markdown.css";
+import "./assets/css/prose.css";
 import dayjs from "dayjs";
 import { installHttp } from "./api/http";
 import { installSafeHtml } from "./plugins/safeHtml";
@@ -14,6 +14,7 @@ import Toast from "./components/toast/index";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css";
 import { applySeo } from "./utils/seo";
+import { installLiquidGlass } from "./utils/liquidGlass";
 
 const app = createApp(App);
 app.config.globalProperties.date = value => dayjs(value).format("YYYY-MM-DD");
@@ -41,3 +42,4 @@ router.afterEach(() => {
   NProgress.done();
 });
 app.mount("#app");
+installLiquidGlass();

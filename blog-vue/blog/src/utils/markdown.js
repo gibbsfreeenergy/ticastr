@@ -69,7 +69,7 @@ export function renderMarkdownCode(source, language) {
   }
   linesNum += "</span>";
 
-  let html = `<button class="copy-btn iconfont iconfuzhi" type="button" data-clipboard-action="copy" data-clipboard-target="#copy${codeIndex}"></button>${highlighted}`;
+  let html = `<button class="copy-btn iconfont iconfuzhi" type="button" aria-label="复制代码" data-clipboard-action="copy" data-clipboard-target="#copy${codeIndex}"><span class="copy-glyph" aria-hidden="true"></span><span class="copy-label">复制</span></button>${highlighted}`;
   if (linesLength) html += `<b class="name">${escapeHtml(language)}</b>`;
 
   return `<pre class="hljs"><code>${html}</code>${linesNum}</pre><textarea style="position: absolute;top: -9999px;left: -9999px;z-index: -9999;" id="copy${codeIndex}">${escapeHtml(

@@ -1,100 +1,105 @@
 <template>
   <el-card class="main-card settings-card">
-    <el-tabs v-model="activeName">
-      <!-- 修改信息 -->
-      <el-tab-pane label="修改信息" name="info">
-        <div class="info-container">
-          <el-upload
-            class="avatar-uploader"
-            aria-label="更换头像"
-            :action="$api.auth.avatarUploadUrl"
-            :headers="uploadHeaders"
-            :with-credentials="true"
-            :show-file-list="false"
-            :before-upload="beforeUpload"
-            :on-success="updateAvatar"
-            :on-error="uploadError"
-          >
-            <span class="avatar-upload-content">
-              <img v-if="avatar" :src="avatar" class="avatar" alt="当前头像" />
-              <span v-if="avatar" class="avatar-edit-hint">更换头像</span>
-              <span v-else class="avatar-placeholder">
-                <i class="el-icon-plus avatar-uploader-icon" />
-                <span>上传头像</span>
-              </span>
-            </span>
-          </el-upload>
-          <el-form
-            class="info-form"
-            label-width="70px"
-            :model="infoForm"
-          >
-            <el-form-item label="昵称">
-              <el-input v-model="infoForm.nickname" size="small" />
-            </el-form-item>
-            <el-form-item label="个人简介">
-              <el-input v-model="infoForm.intro" type="textarea" :rows="3" resize="vertical" size="small" />
-            </el-form-item>
-            <el-form-item label="个人网站">
-              <el-input v-model="infoForm.webSite" size="small" />
-            </el-form-item>
-            <el-button
-              class="info-submit"
-              @click="updateInfo"
-              type="primary"
-              size="medium"
+    <div class="settings-header">
+      <div>
+        <div class="title">个人中心</div>
+        <p class="settings-description">管理公开资料、头像以及管理员账户的登录安全。</p>
+      </div>
+      <div class="settings-header-mark"><span></span>账户设置</div>
+    </div>
+
+    <el-tabs v-model="activeName" class="settings-tabs">
+      <el-tab-pane label="个人资料" name="info">
+        <div class="profile-layout">
+          <aside class="profile-summary">
+            <div class="profile-summary-top"></div>
+            <el-upload
+              class="profile-avatar-uploader"
+              aria-label="更换头像"
+              :action="$api.auth.avatarUploadUrl"
+              :headers="uploadHeaders"
+              :with-credentials="true"
+              :show-file-list="false"
+              :before-upload="beforeUpload"
+              :on-success="updateAvatar"
+              :on-error="uploadError"
             >
-              保存资料
-            </el-button>
-          </el-form>
+              <span class="profile-avatar-frame">
+                <img v-if="avatar" :src="avatar" class="profile-avatar" alt="当前头像" />
+                <span v-else class="profile-avatar-fallback">{{ profileInitial }}</span>
+                <span class="profile-avatar-edit">更换头像</span>
+              </span>
+            </el-upload>
+            <div class="profile-summary-copy">
+              <h2>{{ infoForm.nickname || "管理员" }}</h2>
+              <p>{{ infoForm.intro || "还没有填写个人简介" }}</p>
+            </div>
+            <div class="profile-summary-meta">
+              <div><span>账户状态</span><strong><i></i>正常</strong></div>
+              <div><span>个人网站</span><strong>{{ infoForm.webSite || "暂未设置" }}</strong></div>
+            </div>
+          </aside>
+
+          <section class="profile-form-panel">
+            <div class="settings-panel-heading">
+              <div>
+                <h2>基本资料</h2>
+                <p>这些信息会展示在你的个人页面和文章作者信息中。</p>
+              </div>
+              <span class="settings-panel-icon"><AppIcon name="settings" :size="18" /></span>
+            </div>
+            <el-form class="info-form" label-position="top" :model="infoForm">
+              <el-form-item label="昵称">
+                <el-input v-model="infoForm.nickname" placeholder="输入你的昵称" />
+              </el-form-item>
+              <el-form-item label="个人简介">
+                <el-input v-model="infoForm.intro" type="textarea" :rows="5" resize="vertical" placeholder="简单介绍一下自己" />
+              </el-form-item>
+              <el-form-item label="个人网站">
+                <el-input v-model="infoForm.webSite" placeholder="https://..." />
+              </el-form-item>
+              <div class="settings-form-actions">
+                <el-button class="info-submit" @click="updateInfo" type="primary">保存资料</el-button>
+              </div>
+            </el-form>
+          </section>
         </div>
       </el-tab-pane>
-      <!-- 修改密码 -->
+
       <el-tab-pane label="修改密码" name="password">
-        <el-form class="password-form" label-width="70px" :model="passwordForm">
-          <el-form-item label="旧密码">
-            <el-input
-              @keyup.enter="updatePassword"
-              v-model="passwordForm.oldPassword"
-              size="small"
-              show-password
-            />
-          </el-form-item>
-          <el-form-item label="新密码">
-            <el-input
-              @keyup.enter="updatePassword"
-              v-model="passwordForm.newPassword"
-              size="small"
-              show-password
-            />
-          </el-form-item>
-          <el-form-item label="确认密码">
-            <el-input
-              @keyup.enter="updatePassword"
-              v-model="passwordForm.confirmPassword"
-              size="small"
-              show-password
-            />
-          </el-form-item>
-          <el-button
-            class="password-submit"
-            type="primary"
-            size="medium"
-            @click="updatePassword"
-          >
-            更新密码
-          </el-button>
-        </el-form>
+        <div class="password-layout">
+          <div class="password-intro">
+            <span class="password-icon"><AppIcon name="settings" :size="22" /></span>
+            <h2>更新登录密码</h2>
+            <p>定期更新密码，保护后台管理账户安全。</p>
+          </div>
+          <el-form class="password-form" label-position="top" :model="passwordForm">
+            <el-form-item label="旧密码">
+              <el-input @keyup.enter="updatePassword" v-model="passwordForm.oldPassword" show-password placeholder="输入当前密码" />
+            </el-form-item>
+            <el-form-item label="新密码">
+              <el-input @keyup.enter="updatePassword" v-model="passwordForm.newPassword" show-password placeholder="至少 6 位字符" />
+            </el-form-item>
+            <el-form-item label="确认密码">
+              <el-input @keyup.enter="updatePassword" v-model="passwordForm.confirmPassword" show-password placeholder="再次输入新密码" />
+            </el-form-item>
+            <div class="settings-form-actions">
+              <el-button class="password-submit" type="primary" @click="updatePassword">更新密码</el-button>
+            </div>
+          </el-form>
+        </div>
       </el-tab-pane>
     </el-tabs>
   </el-card>
 </template>
 
 <script>
+import AppIcon from "../../components/AppIcon.vue";
 import { getCsrfHeaders } from "../../../../shared/http/csrf";
 import { compressImageForUpload } from "../../utils/imageUpload";
 
 export default {
+  components: { AppIcon },
   data: function() {
     return {
       infoForm: {
@@ -173,6 +178,9 @@ export default {
   computed: {
     avatar() {
       return this.$store.state.avatar;
+    },
+    profileInitial() {
+      return (this.infoForm.nickname || "管").slice(0, 1).toUpperCase();
     },
     uploadHeaders() {
       return getCsrfHeaders();
@@ -314,6 +322,345 @@ export default {
     width: 100%;
     display: flex;
     margin: 1.25rem 0 0;
+  }
+}
+
+/* Redesigned account center */
+.settings-card {
+  min-height: auto !important;
+}
+
+.settings-card :deep(.el-card__body) {
+  min-height: auto !important;
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.settings-header .title {
+  margin-bottom: 8px;
+}
+
+.settings-description {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+}
+
+.settings-header-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  background: #f7faff;
+  border: 1px solid #d9e8f9;
+  border-radius: 999px;
+}
+
+.settings-header-mark span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--admin-green);
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.12);
+}
+
+.settings-tabs {
+  margin-top: 24px;
+}
+
+.settings-tabs :deep(.el-tabs__header) {
+  margin-bottom: 26px;
+}
+
+.settings-tabs :deep(.el-tabs__item) {
+  padding: 0 4px;
+  margin-right: 26px;
+  font-size: 14px;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.profile-summary,
+.profile-form-panel,
+.password-layout {
+  overflow: hidden;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(29, 29, 31, 0.035);
+}
+
+.profile-summary {
+  padding-bottom: 20px;
+  text-align: center;
+}
+
+.profile-summary-top {
+  height: 78px;
+  background: linear-gradient(135deg, #dceeff 0%, #f5f9ff 100%);
+}
+
+.profile-avatar-uploader {
+  display: block;
+  width: max-content;
+  margin: -44px auto 0;
+}
+
+.profile-avatar-frame {
+  position: relative;
+  display: grid;
+  width: 88px;
+  height: 88px;
+  place-items: center;
+  overflow: hidden;
+  color: var(--admin-blue);
+  background: var(--admin-blue-soft);
+  border: 4px solid #fff;
+  border-radius: 25px;
+  box-shadow: 0 8px 20px rgba(29, 29, 31, 0.12);
+  cursor: pointer;
+}
+
+.profile-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-fallback {
+  font-size: 28px;
+  font-weight: 750;
+}
+
+.profile-avatar-edit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 5px 2px;
+  color: #fff;
+  font-size: 10px;
+  background: rgba(29, 29, 31, 0.68);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.profile-avatar-frame:hover .profile-avatar-edit,
+.profile-avatar-frame:focus-within .profile-avatar-edit {
+  opacity: 1;
+}
+
+.profile-summary-copy {
+  padding: 14px 20px 0;
+}
+
+.profile-summary-copy h2 {
+  margin: 0;
+  color: var(--admin-text);
+  font-size: 18px;
+  font-weight: 720;
+}
+
+.profile-summary-copy p {
+  min-height: 42px;
+  margin: 7px 0 0;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.profile-summary-meta {
+  padding: 15px 20px 0;
+  margin-top: 17px;
+  border-top: 1px solid #eef0f4;
+  text-align: left;
+}
+
+.profile-summary-meta div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.profile-summary-meta span {
+  color: var(--admin-text-tertiary);
+  font-size: 11px;
+}
+
+.profile-summary-meta strong {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--admin-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-summary-meta strong i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 5px 1px 0;
+  background: var(--admin-green);
+  border-radius: 50%;
+}
+
+.profile-form-panel {
+  padding: 24px;
+}
+
+.settings-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.settings-panel-heading h2,
+.password-intro h2 {
+  margin: 0 0 5px;
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 720;
+}
+
+.settings-panel-heading p,
+.password-intro p {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+}
+
+.settings-panel-icon,
+.password-icon {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  color: var(--admin-blue);
+  place-items: center;
+  background: var(--admin-blue-soft);
+  border-radius: 11px;
+}
+
+.info-form,
+.password-form {
+  width: 100%;
+  max-width: none;
+}
+
+.info-form :deep(.el-form-item),
+.password-form :deep(.el-form-item) {
+  margin-bottom: 17px;
+}
+
+.info-form :deep(.el-form-item__label),
+.password-form :deep(.el-form-item__label) {
+  display: block;
+  width: auto !important;
+  height: auto;
+  padding: 0 0 7px;
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.info-form :deep(.el-input__wrapper),
+.info-form :deep(.el-textarea__inner),
+.password-form :deep(.el-input__wrapper) {
+  min-height: 44px;
+  background: #fbfcff;
+  border-color: #dfe5ee;
+  border-radius: 11px;
+}
+
+.info-form :deep(.el-textarea__inner) {
+  padding: 11px 13px;
+}
+
+.settings-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 3px;
+}
+
+.info-submit,
+.password-submit {
+  min-width: 112px;
+  margin: 0 !important;
+  box-shadow: 0 6px 15px rgba(0, 113, 227, 0.16) !important;
+}
+
+.password-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+}
+
+.password-intro {
+  padding: 4px 8px 0 2px;
+}
+
+.password-intro .password-icon {
+  margin-bottom: 18px;
+}
+
+.password-intro h2 {
+  font-size: 18px;
+}
+
+.password-intro p {
+  line-height: 1.7;
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .settings-header-mark {
+    display: none;
+  }
+
+  .profile-layout,
+  .password-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-form-panel,
+  .password-layout {
+    padding: 18px;
+  }
+
+  .settings-form-actions {
+    justify-content: stretch;
+  }
+
+  .info-submit,
+  .password-submit {
+    width: 100%;
   }
 }
 </style>

@@ -6,10 +6,6 @@
         <h1>博客概览</h1>
         <p class="home-subtitle">管理文章、页面内容和网站基础信息。</p>
       </div>
-      <el-button type="primary" class="publish-button" @click="$router.push({ path: '/articles/new' })">
-        <AppIcon name="pen" :size="16" />
-        <span>发布文章</span>
-      </el-button>
     </section>
 
     <section class="metric-grid" aria-label="博客概览">
@@ -130,13 +126,6 @@ export default {
   font-size: 14px;
 }
 
-.publish-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-}
-
 .metric-grid,
 .quick-grid {
   display: grid;
@@ -245,11 +234,6 @@ export default {
   .home-intro {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .publish-button {
-    width: 100%;
-    justify-content: center;
   }
 
   .quick-grid {

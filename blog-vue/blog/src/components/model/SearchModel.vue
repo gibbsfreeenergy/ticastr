@@ -1,64 +1,60 @@
 <template>
-  <!-- 搜索框 -->
-  <v-dialog v-model="searchFlag" max-width="600" :fullscreen="isMobile">
-    <v-card class="search-wrapper" style="border-radius:4px">
-      <div class="mb-3">
-        <span class="search-title">本地搜索</span>
-        <!-- 关闭按钮 -->
-        <v-icon class="float-right" @click="searchFlag = false">
-          $mdi-close
-        </v-icon>
+  <v-dialog v-model="searchFlag" max-width="720" :fullscreen="isMobile" content-class="search-dialog">
+    <v-card class="search-panel">
+      <div class="search-head">
+        <div>
+          <span class="search-kicker">SEARCH</span>
+          <h2>找一篇想读的文章</h2>
+        </div>
+        <span class="search-close" role="button" tabindex="0" aria-label="关闭搜索" @click="searchFlag = false">×</span>
       </div>
-      <!-- 输入框 -->
-      <div class="search-input-wrapper">
-        <v-icon>$mdi-magnify</v-icon>
-        <input v-model="keywords" placeholder="输入文章标题或内容..." />
-      </div>
-      <!-- 搜索结果 -->
+
+      <label class="search-input-wrapper">
+        <NavIcon name="search" />
+        <input ref="searchInput" v-model="keywords" autofocus placeholder="输入文章标题或内容…" />
+        <kbd>⌘ K</kbd>
+      </label>
+
       <div class="search-result-wrapper">
-        <hr class="divider" />
-        <ul>
-          <li class="search-reslut" v-for="item of articleList" :key="item.id">
-            <!-- 文章标题 -->
+        <div v-if="loading && !articleList.length" class="search-status" role="status">正在寻找文字…</div>
+        <div v-if="error" class="search-status" role="alert">
+          搜索失败，请重试。
+          <button type="button" class="search-more" @click="loadSearch(true)">重试</button>
+        </div>
+        <div v-if="articleList.length" class="search-result-count">找到 {{ articleList.length }} 篇相关内容</div>
+        <ul v-if="articleList.length" class="search-results">
+          <li v-for="item of articleList" :key="item.id" class="search-result-item">
             <a @click="goTo(item.id)" v-safe-html="item.articleTitle" />
-            <!-- 文章内容 -->
-            <p
-              class="search-reslut-content text-justify"
-              v-safe-html="item.snippet"
-            />
+            <p v-safe-html="item.snippet" />
           </li>
         </ul>
-        <!-- 搜索结果不存在提示 -->
-        <p v-if="loading" role="status">搜索中…</p>
-        <div v-if="error" role="alert">
-          搜索失败，请重试。
-          <button type="button" class="search-more" @click="loadSearch(articleList.length > 0)">重试</button>
+        <div v-else-if="!loading && !error && flag && keywords" class="search-status">找不到与“{{ keywords }}”相关的内容。</div>
+        <div v-else-if="!loading && !error" class="search-empty">
+          <span>✦</span>
+          <p>输入几个词，让记忆自己浮上来。</p>
         </div>
         <button
-          v-if="nextCursor && !error"
+          v-if="nextCursor && !error && !loading"
           type="button"
           class="search-more"
-          :disabled="loading"
           @click="loadSearch(true)"
         >加载更多</button>
-        <div
-          v-show="flag && !loading && !error && articleList.length == 0"
-          style="font-size:0.875rem"
-        >
-          找不到您查询的内容：{{ keywords }}
-        </div>
       </div>
     </v-card>
   </v-dialog>
 </template>
 
 <script>
+import NavIcon from "../NavIcon.vue";
+
 export default {
+  name: "SearchModel",
+  components: { NavIcon },
   unmounted() {
     clearTimeout(this.searchTimer);
     this.searchRequestId++;
   },
-  data: function() {
+  data() {
     return {
       keywords: "",
       articleList: [],
@@ -105,102 +101,191 @@ export default {
       }
     },
     isMobile() {
-      const clientWidth = document.documentElement.clientWidth;
-      if (clientWidth > 960) {
-        return false;
-      }
-      return true;
+      return document.documentElement.clientWidth <= 760;
     }
   },
   watch: {
     keywords(value) {
-      this.flag = value.trim() != "" ? true : false;
+      this.flag = value.trim() !== "";
       clearTimeout(this.searchTimer);
       ++this.searchRequestId;
       this.articleList = [];
       this.nextCursor = null;
       this.loading = false;
       this.error = false;
-      if (!this.flag) {
-        return;
-      }
-      this.searchTimer = setTimeout(() => {
-        this.loadSearch();
-      }, 240);
+      if (!this.flag) return;
+      this.searchTimer = setTimeout(() => this.loadSearch(), 240);
+    },
+    searchFlag(value) {
+      if (value) this.$nextTick(() => this.$refs.searchInput?.focus());
     }
   }
 };
 </script>
 
 <style scoped>
-.search-more {
-  margin: 12px 0;
-  padding: 8px 16px;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  color: #49b1f5;
-  cursor: pointer;
+.search-panel {
+  padding: 32px;
+  border-radius: var(--radius-lg) !important;
+  background: var(--paper-strong) !important;
+  color: var(--ink);
 }
-.search-more:disabled {
-  opacity: 0.6;
-  cursor: wait;
+
+.search-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
 }
-.search-wrapper {
-  padding: 1.25rem;
-  height: 100%;
-  background: #fff !important;
+
+.search-kicker {
+  color: var(--sage-deep);
+  font-size: 10px;
+  letter-spacing: 0.2em;
 }
-.search-title {
-  color: #49b1f5;
-  font-size: 1.25rem;
+
+.search-head h2 {
+  margin: 9px 0 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.search-close {
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 30px;
+  font-weight: 300;
   line-height: 1;
 }
+
 .search-input-wrapper {
   display: flex;
-  padding: 5px;
-  height: 35px;
-  width: 100%;
-  border: 2px solid #8e8cd8;
-  border-radius: 2rem;
+  align-items: center;
+  gap: 11px;
+  margin-top: 29px;
+  padding: 0 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--sage-deep);
+  background: var(--paper);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
+
+.search-input-wrapper:focus-within {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 4px rgba(143, 169, 154, 0.12);
+}
+
+.search-input-wrapper :deep(.nav-icon-svg) {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+}
+
 .search-input-wrapper input {
   width: 100%;
-  margin-left: 5px;
-  outline: none;
+  min-height: 48px;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: 14px;
 }
-@media (min-width: 960px) {
-  .search-result-wrapper {
-    padding-right: 5px;
-    height: 450px;
-    overflow: auto;
-  }
+
+.search-input-wrapper kbd {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--paper-strong);
+  font-size: 10px;
+  white-space: nowrap;
 }
-@media (max-width: 959px) {
-  .search-result-wrapper {
-    height: calc(100vh - 110px);
-    overflow: auto;
-  }
+
+.search-result-wrapper {
+  max-height: min(54vh, 480px);
+  margin-top: 25px;
+  overflow-y: auto;
 }
-.search-reslut a {
-  color: #555;
-  font-weight: bold;
-  border-bottom: 1px solid #999;
-  text-decoration: none;
+
+.search-result-count {
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 12px;
 }
-.search-reslut-content {
-  color: #555;
-  cursor: pointer;
-  border-bottom: 1px dashed #ccc;
-  padding: 5px 0;
-  line-height: 2;
+
+.search-results {
+  list-style: none;
+}
+
+.search-result-item {
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.search-result-item a {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+}
+
+.search-result-item a:hover {
+  color: var(--sage-deep);
+}
+
+.search-result-item p {
+  margin: 6px 0 0 !important;
   overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
-.divider {
-  margin: 20px 0;
-  border: 2px dashed #d2ebfd;
+
+.search-status,
+.search-empty {
+  padding: 48px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.search-empty span {
+  color: var(--gold);
+  font-size: 24px;
+}
+
+.search-empty p {
+  margin: 12px 0 0 !important;
+  font-size: 13px;
+}
+
+.search-more {
+  margin: 18px 0 4px;
+  padding: 8px 16px;
+  border: 1px solid var(--sage);
+  border-radius: 999px;
+  color: var(--sage-deep);
+  background: transparent;
+  font-size: 12px;
+}
+
+.search-more:hover {
+  color: #fff;
+  background: var(--sage-deep);
+}
+
+@media (max-width: 760px) {
+  .search-panel {
+    min-height: 100%;
+    padding: 26px 20px;
+    border-radius: 0 !important;
+  }
+
+  .search-head h2 {
+    font-size: 24px;
+  }
 }
 </style>

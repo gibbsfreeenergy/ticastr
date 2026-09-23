@@ -1,39 +1,75 @@
 <template>
-  <div>
-    <!-- banner -->
-    <div class="banner" :style="cover">
-      <h1 class="banner-title">关于我</h1>
-    </div>
-    <!-- 关于我内容 -->
-    <v-card class="blog-container">
-      <!-- 博主头像 -->
-      <div class="my-wrapper">
-        <v-avatar size="110">
-          <img class="author-avatar" :src="avatar" />
-        </v-avatar>
+  <div class="about-page">
+    <section class="page-hero" :style="coverStyle">
+      <div class="page-hero-fade" aria-hidden="true" />
+      <div class="page-width page-hero-content fade-up">
+        <span class="page-hero-index">03 / 03</span>
+        <h1>关于我</h1>
+        <p>{{ blogInfo.websiteConfig.websiteIntro }}</p>
       </div>
-      <!-- 介绍 -->
-      <div
-        ref="about"
-        class="about-content markdown-body"
-        v-safe-html="aboutContent"
-      />
-    </v-card>
+    </section>
+
+    <main class="about-main page-width">
+      <div class="about-shell">
+        <aside class="about-identity">
+          <div class="about-avatar-wrap">
+            <v-avatar size="132">
+              <img class="about-avatar" :src="avatar" :alt="blogInfo.websiteConfig.websiteAuthor" />
+            </v-avatar>
+          </div>
+          <h2>{{ blogInfo.websiteConfig.websiteAuthor }}</h2>
+          <span class="about-rule" aria-hidden="true" />
+          <p class="about-motto">慢一点，也很好。</p>
+          <p class="about-intro">这里是我用来放日常与想法的小角落。关于生活、关于技术，也关于那些细碎而珍贵的时刻。</p>
+          <div class="about-socials" aria-label="社交链接">
+            <SocialLink
+              v-if="isShowSocial('github')"
+              type="github"
+              label="GitHub"
+              :href="blogInfo.websiteConfig.github"
+            />
+            <SocialLink
+              v-if="isShowSocial('gitee')"
+              type="gitee"
+              label="Gitee"
+              :href="blogInfo.websiteConfig.gitee"
+            />
+            <SocialLink
+              v-if="isShowSocial('qq')"
+              type="qq"
+              label="QQ"
+              :href="'http://wpa.qq.com/msgrd?v=3&uin=' + blogInfo.websiteConfig.qq + '&site=qq&menu=yes'"
+            />
+          </div>
+        </aside>
+
+        <article
+          ref="about"
+          class="about-content markdown-body"
+          v-safe-html="aboutContent"
+        />
+      </div>
+    </main>
   </div>
 </template>
 
 <script>
 import { renderMarkdownCode } from "../../utils/markdown";
 import { renderMarkdown } from "../../utils/renderMarkdown";
+import { normalizeMediaUrl } from "../../utils/media";
+import SocialLink from "../../components/SocialLink.vue";
 import Clipboard from "clipboard";
+
 export default {
+  name: "AboutPage",
+  components: { SocialLink },
   created() {
     this.getAboutContent();
   },
   unmounted() {
     this.clipboard?.destroy();
   },
-  data: function() {
+  data() {
     return {
       aboutContent: "",
       clipboard: null,
@@ -42,23 +78,18 @@ export default {
   },
   methods: {
     getAboutContent() {
-      const that = this;
       this.$api.public.about().then(data => {
         this.markdownToHtml(data);
         this.$nextTick(() => {
-          // 添加代码复制功能
           this.clipboard = new Clipboard(".copy-btn");
           this.clipboard.on("success", () => {
             this.$toast({ type: "success", message: "复制成功" });
           });
-          // 添加图片预览功能
-          const imgList = this.$refs.about.getElementsByTagName("img");
-          for (var i = 0; i < imgList.length; i++) {
-            this.imgList.push(imgList[i].src);
-            imgList[i].addEventListener("click", function(e) {
-              that.previewImg(e.target.currentSrc);
-            });
-          }
+          const imgList = this.$refs.about?.getElementsByTagName("img") || [];
+          this.imgList = [...imgList].map(image => image.src);
+          [...imgList].forEach(image => {
+            image.addEventListener("click", () => this.previewImg(image.currentSrc || image.src));
+          });
         });
       });
     },
@@ -68,129 +99,202 @@ export default {
       });
     },
     previewImg(img) {
-      this.$imagePreview({
-        images: this.imgList,
-        index: this.imgList.indexOf(img)
-      });
+      this.$imagePreview({ images: this.imgList, index: this.imgList.indexOf(img) });
     }
   },
   computed: {
-    avatar() {
-      return this.$store.state.blogInfo.websiteConfig.websiteAvatar;
+    blogInfo() {
+      return this.$store.state.blogInfo;
     },
-    cover() {
-      var cover = "";
-      this.$store.state.blogInfo.pageList.forEach(item => {
-        if (item.pageLabel == "about") {
-          cover = item.pageCover;
-        }
-      });
-      return "background: url(" + cover + ") center center / cover no-repeat";
+    avatar() {
+      return normalizeMediaUrl(this.blogInfo.websiteConfig.websiteAvatar);
+    },
+    isShowSocial() {
+      return social => (this.blogInfo.websiteConfig.socialUrlList || []).includes(social);
+    },
+    coverStyle() {
+      const page = (this.blogInfo.pageList || []).find(item => item.pageLabel === "about");
+      const pageCover = normalizeMediaUrl(page?.pageCover);
+      return pageCover ? { backgroundImage: `url("${pageCover}")` } : {};
     }
   }
 };
 </script>
 
 <style scoped>
-.about-content {
-  word-break: break-word;
-  line-height: 1.8;
+.about-main {
+  padding-top: 90px;
+  padding-bottom: 118px;
 }
-.my-wrapper {
+
+.about-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 680px);
+  justify-content: center;
+  gap: 86px;
+}
+
+.about-identity {
+  align-self: start;
+  padding-top: 8px;
   text-align: center;
 }
-.author-avatar {
-  transition: all 0.5s;
-}
-.author-avatar:hover {
-  transform: rotate(360deg);
-}
-</style>
 
-<style lang="scss">
-pre.hljs {
-  padding: 12px 2px 12px 40px !important;
-  border-radius: 5px !important;
+.about-avatar-wrap {
+  display: inline-flex;
+  padding: 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.about-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 600ms ease;
+}
+
+.about-avatar:hover {
+  transform: rotate(5deg) scale(1.04);
+}
+
+.about-identity h2 {
+  margin: 22px 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.about-rule {
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin: 0 auto;
+  background: var(--sage);
+}
+
+.about-motto {
+  margin: 18px 0 0 !important;
+  color: var(--gold);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+}
+
+.about-intro {
+  margin: 14px 0 0 !important;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.9;
+  text-align: left;
+}
+
+.about-socials {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 25px;
+  color: var(--sage-deep);
+}
+
+.about-content {
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 2;
+}
+
+.about-content :deep(h1),
+.about-content :deep(h2),
+.about-content :deep(h3) {
+  border-bottom: 0;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.about-content :deep(h1) {
+  margin-top: 0;
+  font-size: 34px;
+}
+
+.about-content :deep(h2) {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 26px;
+}
+
+.about-content :deep(h3) {
+  font-size: 21px;
+}
+
+.about-content :deep(p) {
+  margin: 0 0 20px !important;
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.about-content :deep(a) {
+  color: var(--sage-deep) !important;
+  text-decoration: underline;
+  text-decoration-color: rgba(85, 118, 107, 0.35);
+  text-underline-offset: 4px;
+}
+
+.about-content :deep(blockquote) {
+  margin: 30px 0;
+  padding: 18px 24px;
+  border-left: 2px solid var(--sage);
+  color: var(--muted);
+  background: rgba(143, 169, 154, 0.1);
+}
+
+.about-content :deep(img) {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
+.about-content :deep(pre.hljs) {
   position: relative;
-  font-size: 14px !important;
-  line-height: 22px !important;
-  overflow: hidden !important;
-  &:hover .copy-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  margin: 28px 0;
+  padding: 48px 22px 20px !important;
+  overflow: auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md) !important;
+  background: #202a35 !important;
+  font-size: 13px !important;
+  line-height: 1.8 !important;
+}
+
+@media (max-width: 860px) {
+  .about-shell {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 46px;
   }
-  code {
-    display: block !important;
-    margin: 0 10px !important;
-    overflow-x: auto !important;
-    &::-webkit-scrollbar {
-      z-index: 11;
-      width: 6px;
-    }
-    &::-webkit-scrollbar:horizontal {
-      height: 6px;
-    }
-    &::-webkit-scrollbar-thumb {
-      border-radius: 5px;
-      width: 6px;
-      background: #666;
-    }
-    &::-webkit-scrollbar-corner,
-    &::-webkit-scrollbar-track {
-      background: #1e1e1e;
-    }
-    &::-webkit-scrollbar-track-piece {
-      background: #1e1e1e;
-      width: 6px;
-    }
+}
+
+@media (max-width: 700px) {
+  .about-main {
+    padding-top: 58px;
+    padding-bottom: 78px;
   }
-  .line-numbers-rows {
-    position: absolute;
-    pointer-events: none;
-    top: 12px;
-    bottom: 12px;
-    left: 0;
-    font-size: 100%;
-    width: 40px;
-    text-align: center;
-    letter-spacing: -1px;
-    border-right: 1px solid rgba(0, 0, 0, 0.66);
-    user-select: none;
-    counter-reset: linenumber;
-    span {
-      pointer-events: none;
-      display: block;
-      counter-increment: linenumber;
-      &:before {
-        content: counter(linenumber);
-        color: #999;
-        display: block;
-        text-align: center;
-      }
-    }
+
+  .about-shell {
+    display: block;
   }
-  b.name {
-    position: absolute;
-    top: 7px;
-    right: 45px;
-    z-index: 1;
-    color: #999;
-    pointer-events: none;
+
+  .about-identity {
+    max-width: 300px;
+    margin: 0 auto 54px;
   }
-  .copy-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 1;
-    color: #ccc;
-    background-color: #525252;
-    border-radius: 6px;
-    display: none;
-    font-size: 14px;
-    width: 32px;
-    height: 24px;
-    outline: none;
+
+  .about-content :deep(h1) {
+    font-size: 29px;
+  }
+
+  .about-content :deep(p) {
+    font-size: 15px;
   }
 }
 </style>

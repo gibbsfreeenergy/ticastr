@@ -43,9 +43,14 @@ async function loadMenus() {
       return normalizedRoute;
     });
     const sharesChildName = normalizedItem.children.some(child => child.name === normalizedItem.name);
-    router.addRoute(sharesChildName
-      ? { ...normalizedItem, name: `${normalizedItem.code || normalizedItem.path}:layout` }
-      : normalizedItem);
+    const route = sharesChildName
+      ? {
+          ...normalizedItem,
+          name: `${normalizedItem.code || normalizedItem.path}:layout`,
+          meta: { ...(normalizedItem.meta || {}), layoutOnly: true }
+        }
+      : normalizedItem;
+    router.addRoute(route);
     return normalizedItem;
   });
   store.commit("saveUserMenuList", normalizedMenuList);

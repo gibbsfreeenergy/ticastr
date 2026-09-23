@@ -1,6 +1,15 @@
 <template>
   <el-card class="main-card">
-    <div class="title">文章列表</div>
+    <div class="article-list-header">
+      <div>
+        <div class="title">文章列表</div>
+        <p class="article-list-description">集中管理已发布、私密和草稿文章。</p>
+      </div>
+      <el-button type="primary" class="publish-article-button" @click="$router.push({ path: '/articles/new' })">
+        <AppIcon name="pen" :size="16" />
+        <span>发布文章</span>
+      </el-button>
+    </div>
     <div class="article-status-menu" role="tablist" aria-label="文章状态">
       <span class="status-label">状态</span>
       <div class="status-options">
@@ -130,8 +139,11 @@
 </template>
 
 <script>
+import AppIcon from "../../components/AppIcon.vue";
+
 export default {
   name: "ArticleList",
+  components: { AppIcon },
   data() {
     return {
       loading: true,
@@ -240,6 +252,37 @@ export default {
 </script>
 
 <style scoped>
+.article-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.article-list-header .title {
+  margin-bottom: 8px;
+}
+
+.article-list-description {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
+}
+
+.publish-article-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+.publish-article-button :deep(.app-icon) {
+  margin-right: 0;
+}
+
 .operation-container {
   display: flex;
   align-items: center;
@@ -405,6 +448,17 @@ export default {
 }
 
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .article-list-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .publish-article-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .operation-container,
   .filters {
     align-items: stretch;

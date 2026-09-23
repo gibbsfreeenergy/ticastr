@@ -1,22 +1,14 @@
 <template>
   <el-card class="main-card about-page">
-    <div class="title">{{ $route.name }}</div>
+    <div class="title">关于我</div>
+    <p class="about-description">更新展示在网站上的个人介绍和页面内容，保存后会同步到前台。</p>
 
-    <div class="about-intro">
-      <div>
-        <p class="about-kicker">CONTENT / MARKDOWN</p>
-        <p class="about-description">这里只编辑 Markdown 源码，保存后前台页面会负责渲染。</p>
-      </div>
-      <span class="about-source-status"><span class="about-source-dot" />源码模式</span>
-    </div>
-
-    <section class="about-editor-section" aria-label="Markdown 编辑器">
+    <section class="about-editor-section" aria-label="关于我内容编辑器">
       <div class="about-section-heading">
         <div>
-          <h2>Markdown 源码</h2>
-          <p>直接编写标题、列表、链接、代码块等 Markdown 内容。</p>
+          <h2>内容编辑</h2>
+          <p>支持标题、列表、链接、图片等常用格式。</p>
         </div>
-        <span class="about-section-note">纯源码</span>
       </div>
       <md-editor
         ref="md"
@@ -140,59 +132,24 @@ export default {
 </script>
 
 <style scoped>
-.about-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: -8px 0 18px;
+.about-description {
+  margin: -14px 0 24px;
+  color: var(--admin-text-secondary);
+  font-size: 13px;
 }
 
-.about-kicker {
-  margin: 0 0 6px;
-  color: var(--admin-blue);
-  font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.12em;
-}
-
-.about-description,
 .about-section-heading p {
   margin: 0;
   color: var(--admin-text-secondary);
   font-size: 13px;
 }
 
-.about-source-status,
-.about-section-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  flex: 0 0 auto;
-  padding: 7px 10px;
-  color: var(--admin-blue);
-  font-size: 11px;
-  background: var(--admin-blue-soft);
-  border: 1px solid rgba(0, 113, 227, 0.16);
-  border-radius: 999px;
-}
-
-.about-source-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--admin-blue);
-  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
-}
-
 .about-editor-section {
-  padding: 18px;
+  padding: 22px;
   border: 1px solid var(--admin-border);
   border-radius: 16px;
-}
-
-.about-editor-section {
   background: var(--admin-surface);
+  box-shadow: 0 10px 26px rgba(29, 29, 31, 0.035);
 }
 
 .about-section-heading {
@@ -209,12 +166,6 @@ export default {
   font-size: 16px;
   font-weight: 720;
   letter-spacing: -0.02em;
-}
-
-.about-section-note {
-  padding: 5px 9px;
-  font-size: 10px;
-  white-space: nowrap;
 }
 
 .about-editor {
@@ -236,13 +187,8 @@ export default {
 }
 
 @media (max-width: 900px), (hover: none) and (pointer: coarse) {
-  .about-intro {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .about-editor-section {
-    padding: 14px;
+    padding: 16px;
   }
 
   .about-editor {

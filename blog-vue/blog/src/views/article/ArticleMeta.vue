@@ -1,17 +1,19 @@
 <template>
-  <header class="banner" :style="coverStyle">
-    <div class="article-info-container">
-      <h1 class="article-title">{{ article.articleTitle }}</h1>
-      <div class="article-info">
-        <span><i class="iconfont iconrili" /> 发表于 {{ date(article.createTime) }}</span>
-        <span class="separator">|</span>
-        <span><i class="iconfont icongengxinshijian" /> 更新于 {{ date(article.updateTime || article.createTime) }}</span>
-        <div class="article-reading-info">
-          <span><i class="iconfont iconzishu" /> 字数统计: {{ num(wordNum) }}</span>
-          <span class="separator">|</span>
-          <span><i class="iconfont iconshijian" /> 阅读时长: {{ readTime }}</span>
+  <header class="article-hero" :style="coverStyle">
+    <div class="article-hero-fade" aria-hidden="true" />
+    <div class="article-hero-inner page-width">
+      <div class="article-hero-copy fade-up">
+        <span class="article-hero-label">随笔 · 文章</span>
+        <h1>{{ article.articleTitle }}</h1>
+        <div class="article-info">
+          <span>{{ date(article.createTime) }}</span>
+          <span class="info-dot" aria-hidden="true" />
+          <span>阅读时长 {{ statsReady ? readTime : "计算中" }}</span>
+          <span class="info-dot" aria-hidden="true" />
+          <span>{{ statsReady ? formatWordCount(wordNum) : "正在统计字数" }}{{ statsReady ? " 字" : "" }}</span>
         </div>
       </div>
+      <div class="article-hero-side" aria-hidden="true">向生活靠近<br />也向自己靠近</div>
     </div>
   </header>
 </template>
@@ -23,73 +25,110 @@ export default {
     article: { type: Object, required: true },
     wordNum: { type: [Number, String], default: 0 },
     readTime: { type: String, default: "" },
-    coverStyle: { type: String, default: "" }
+    statsReady: { type: Boolean, default: false },
+    coverStyle: { type: [Object, String], default: "" }
+  },
+  methods: {
+    formatWordCount(value) {
+      return Number(value || 0).toLocaleString("zh-CN");
+    }
   }
 };
 </script>
 
 <style scoped>
-.banner {
-  color: #eee !important;
+.article-hero {
+  position: relative;
+  min-height: 480px;
+  overflow: hidden;
+  background: radial-gradient(circle at 78% 18%, rgba(238, 214, 202, 0.92), transparent 30%), linear-gradient(135deg, #718794 0%, #9699b3 48%, #c79c8d 100%);
+  background-position: center;
+  background-size: cover;
+  color: #fff;
 }
 
-.banner::before {
+.article-hero-fade {
   position: absolute;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  content: "";
+  background: linear-gradient(90deg, rgba(18, 32, 43, 0.54), rgba(18, 32, 43, 0.08) 75%), linear-gradient(180deg, rgba(18, 32, 43, 0.16), rgba(18, 32, 43, 0.1) 58%, var(--paper) 100%);
 }
 
-.article-info-container {
-  position: absolute;
-  bottom: 6.25rem;
-  z-index: 1;
-  width: 100%;
-  padding: 0 8%;
-  text-align: center;
+.article-hero-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 480px;
+  padding-top: 120px;
+  padding-bottom: 92px;
 }
 
-.article-title {
-  margin: 20px 0 8px;
-  font-size: 35px;
+.article-hero-copy {
+  max-width: 770px;
+}
+
+.article-hero-label {
+  display: block;
+  margin-bottom: 18px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+
+.article-hero h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 1.2;
+  text-shadow: 0 4px 22px rgba(18, 32, 43, 0.2);
 }
 
 .article-info {
-  display: inline-block;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 11px;
+  margin-top: 28px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+}
+
+.info-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--blush);
+}
+
+.article-hero-side {
+  padding: 0 0 8px 22px;
+  border-left: 1px solid rgba(255, 255, 255, 0.56);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  letter-spacing: 0.12em;
   line-height: 1.9;
 }
 
-.article-info span {
-  font-size: 95%;
-}
-
-.article-info i {
-  font-size: 14px;
-}
-
-.article-reading-info {
-  display: inline;
-}
-
-@media (max-width: 759px) {
-  .banner {
-    height: 360px;
+@media (max-width: 760px) {
+  .article-hero,
+  .article-hero-inner {
+    min-height: 430px;
   }
 
-  .article-info-container {
-    bottom: 1.3rem;
-    padding: 0 5%;
-    text-align: left;
+  .article-hero-inner {
+    padding-top: 100px;
+    padding-bottom: 68px;
   }
 
-  .article-title {
-    margin-bottom: 0.4rem;
-    font-size: 1.5rem;
+  .article-hero h1 {
+    font-size: 34px;
   }
 
-  .article-reading-info {
-    display: block;
+  .article-hero-side {
+    display: none;
   }
 }
 </style>

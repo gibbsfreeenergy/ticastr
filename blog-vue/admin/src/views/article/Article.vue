@@ -400,7 +400,9 @@ export default {
         await this.editor.saveNow({ force: true });
         await this.saveMetadata(1);
         this.article.status = 1;
+        sessionStorage.removeItem("article");
         this.addOrEdit = false;
+        await this.$router.push({ path: "/articles" });
         this.$notify.success({ title: "成功", message: "文章发布成功" });
       } catch (error) {
         this.$notify.error({ title: "失败", message: normalizeHttpError(error).message });
