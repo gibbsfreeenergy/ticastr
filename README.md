@@ -45,7 +45,7 @@
    npm run dev
    ```
 
-两个 Vite 应用都只使用相对 `/api` 和 `/uploads` 路径；开发代理会转发到 API。
+两个 Vite 应用都只使用相对 `/api` 和 `/uploads` 路径；开发代理、服务器 Nginx 和 Cloudflare Pages Functions 都会把它们转发到 API。
 
 首次初始化管理员时临时设置 `BOOTSTRAP_ADMIN_ENABLED=true`、用户名和至少 12 位密码，成功后立即关闭 bootstrap。旧 `STORAGE_ACTIVE_PROVIDER`、`STORAGE_LOCAL_*`、`OSS_*`、`COS_*`、`TOS_*` 只在存储 bootstrap 未完成时一次性导入，完成后数据库档案是唯一运行时事实源。
 
@@ -93,7 +93,7 @@ Docker 不可用时，Testcontainers 集成测试会明确标记 skipped；这�
 
 反向代理必须保留 `/api` 和 `/uploads` 规则。监控通过 API 的 `/actuator/prometheus`，使用独立的 `X-Monitoring-Token` 请求头。
 
-更多契约：[API-CONTRACT.md](docs/API-CONTRACT.md)、[CONFIGURATION.md](docs/CONFIGURATION.md)、[DEPENDENCY-MATRIX.md](docs/DEPENDENCY-MATRIX.md)、[REDIS-CONTRACT.md](docs/REDIS-CONTRACT.md)、[MESSAGE-RELIABILITY.md](docs/MESSAGE-RELIABILITY.md)、[MEDIA-LIFECYCLE.md](docs/MEDIA-LIFECYCLE.md)、[DEPLOYMENT-CONTRACT.md](docs/DEPLOYMENT-CONTRACT.md)、[OPERATIONS-RUNBOOK.md](docs/OPERATIONS-RUNBOOK.md)。
+更多契约：[API-CONTRACT.md](docs/API-CONTRACT.md)、[CONFIGURATION.md](docs/CONFIGURATION.md)、[DEPENDENCY-MATRIX.md](docs/DEPENDENCY-MATRIX.md)、[REDIS-CONTRACT.md](docs/REDIS-CONTRACT.md)、[MESSAGE-RELIABILITY.md](docs/MESSAGE-RELIABILITY.md)、[MEDIA-LIFECYCLE.md](docs/MEDIA-LIFECYCLE.md)、[DEPLOYMENT-CONTRACT.md](docs/DEPLOYMENT-CONTRACT.md)、[CLOUDFLARE-PAGES.md](docs/CLOUDFLARE-PAGES.md)、[OPERATIONS-RUNBOOK.md](docs/OPERATIONS-RUNBOOK.md)。
 
 ## 约定
 

@@ -3,7 +3,7 @@ node_modules
 /dist
 dist/
 **/target/
-uploads/
+/uploads/
 /blog-springboot/data/
 /tmp/
 deploy/backend/app.jar
@@ -17,6 +17,10 @@ blog-springboot/src/main/resources/application-local.yml
 .env.local
 .env.*.local
 .vercel/
+**/.wrangler/
+**/.dev.vars
+**/.dev.vars.*
+!**/.dev.vars.example
 
 # Log files
 npm-debug.log*

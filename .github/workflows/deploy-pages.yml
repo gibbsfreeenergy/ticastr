@@ -1,0 +1,66 @@
+name: Deploy Cloudflare Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "blog-vue/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ticastr-cloudflare-pages-${{ matrix.app }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: blog
+            project: ticastr-blog
+          - app: admin
+            project: ticastr-admin
+    defaults:
+      run:
+        working-directory: blog-vue/${{ matrix.app }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TICASTR_PAGES_API_ORIGIN: ${{ secrets.TICASTR_PAGES_API_ORIGIN || format('http://{0}:8090', secrets.TICASTR_DEPLOY_HOST) }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.18.0"
+          cache: npm
+          cache-dependency-path: blog-vue/${{ matrix.app }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Deploy Pages project
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: blog-vue/${{ matrix.app }}
+          wranglerVersion: "4"
+          preCommands: |
+            if ! curl --fail --silent --show-error \
+              --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects" \
+              | jq -e --arg project "${{ matrix.project }}" '.result[]? | select(.name == $project)' >/dev/null; then
+              wrangler pages project create "${{ matrix.project }}" --production-branch master
+            fi
+            printf '%s' "$TICASTR_PAGES_API_ORIGIN" | wrangler pages secret put API_ORIGIN --project-name="${{ matrix.project }}"
+          command: pages deploy dist --project-name="${{ matrix.project }}" --branch=master

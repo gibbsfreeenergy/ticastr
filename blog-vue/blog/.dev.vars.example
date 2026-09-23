@@ -1,0 +1,3 @@
+# Used by `wrangler pages dev` for the local Pages Function proxy.
+# The value must be the backend origin where /login, /articles, and /uploads are available.
+API_ORIGIN=http://localhost:8090

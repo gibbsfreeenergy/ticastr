@@ -14,3 +14,21 @@ test ! -f blog-vue/blog/vercel.json
 test ! -f blog-vue/admin/vercel.json
 test -f blog-vue/blog/vercel.mjs
 test -f blog-vue/admin/vercel.mjs
+
+for file in blog-vue/blog/wrangler.jsonc blog-vue/admin/wrangler.jsonc; do
+  rg -q '"pages_build_output_dir"[[:space:]]*:[[:space:]]*"dist"' "$file"
+  rg -q '"API_ORIGIN"' "$file"
+done
+
+for file in \
+  'blog-vue/blog/functions/api/[[path]].js' \
+  'blog-vue/blog/functions/uploads/[[path]].js' \
+  'blog-vue/admin/functions/api/[[path]].js' \
+  'blog-vue/admin/functions/uploads/[[path]].js'; do
+  test -f "$file"
+done
+
+for file in blog-vue/blog/public/_routes.json blog-vue/admin/public/_routes.json; do
+  rg -q '"/api/\*"' "$file"
+  rg -q '"/uploads/\*"' "$file"
+done
