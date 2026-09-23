@@ -56,5 +56,5 @@ jobs:
           workingDirectory: blog-vue/${{ matrix.app }}
           wranglerVersion: "4"
           preCommands: >-
-            if ! curl --fail --silent --show-error --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects" | jq -e --arg project "${{ matrix.project }}" '.result[]? | select(.name == $project)' >/dev/null; then wrangler pages project create "${{ matrix.project }}" --production-branch master; fi; printf '%s' "$TICASTR_PAGES_API_ORIGIN" | wrangler pages secret put API_ORIGIN --project-name="${{ matrix.project }}"
+            if ! curl --fail --silent --show-error --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects" | jq -e --arg project "${{ matrix.project }}" '.result[]? | select(.name == $project)' >/dev/null; then npx --yes wrangler@4 pages project create "${{ matrix.project }}" --production-branch master; fi; printf '%s' "$TICASTR_PAGES_API_ORIGIN" | npx --yes wrangler@4 pages secret put API_ORIGIN --project-name="${{ matrix.project }}"
           command: pages deploy dist --project-name="${{ matrix.project }}" --branch=master
