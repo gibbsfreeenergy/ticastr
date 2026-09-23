@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          unexpected_sql="$(git ls-files '*.sql' | grep -Ev '^(blog-springboot/src/main/resources/db/migration/|blog-springboot/src/test/resources/db/legacy-schema\.sql$)' || true)"
+          unexpected_sql="$(git ls-files '*.sql' | grep -Ev '^(blog-springboot/src/main/resources/db/migration/|blog-springboot/src/test/resources/db/legacy-schema\.sql$|cloudflare/d1/migrations/)' || true)"
           if [[ -n "$unexpected_sql" ]]; then
             echo "Unexpected tracked SQL export(s):"
             echo "$unexpected_sql"
@@ -32,6 +32,7 @@ jobs:
           if git grep -n -E 'Source (Host|Server)|DROP TABLE IF EXISTS|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|14\.103\.129\.219|81\.68\.228\.31' -- \
             ':!docs/ARCHITECTURE-ROADMAP.md' \
             ':!blog-springboot/src/main/resources/db/migration/**' \
+            ':!cloudflare/d1/migrations/**' \
             ':!.github/workflows/verify.yml'; then
             echo "Tracked files contain database-export metadata or known infrastructure addresses."
             exit 1
