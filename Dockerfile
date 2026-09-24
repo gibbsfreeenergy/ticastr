@@ -9,7 +9,7 @@ RUN jar tf target/*.jar | grep -q 'BOOT-INF/lib/spring-data-redis-' \
     && jar tf target/*.jar | grep -q 'BOOT-INF/lib/lettuce-core-' \
     || (echo 'Redis-enabled runtime contract failed: client libraries are missing from the executable JAR' >&2 && exit 1)
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends wget \
